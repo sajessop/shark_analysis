@@ -1,0 +1,924 @@
+                # SCRIPT FOR ANALYSING AND REPORTING PARKS AUSTRALIA PROJECT 2019
+#to do: catch rates by gear, and by gear.hook.combo
+#       catch composition
+
+library(tidyverse)
+library(dplyr)
+library("readxl")
+library(ggrepel)
+library(ggpubr)
+library(rlang)
+library(MASS)
+
+options(stringsAsFactors = FALSE,
+        dplyr.summarise.inform = FALSE) 
+
+#---------DATA SECTION------------
+
+#Sharks data base
+User="Matias"
+if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R")
+
+#TEPS interactions
+setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
+TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
+
+#Number of hook combos
+Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
+
+
+#---------CONTROL SECTION------------
+explr.dat.entry=TRUE
+do.len_len=FALSE
+do.Historic=FALSE
+
+#---------Manipulate TEPS------------
+TEPS<-TEPS%>%
+      rename(sheet_no="Sheet #",
+             ves.act="Ves act",
+             obs.sector="Obs sector",
+             common.name="Common name",
+             sighting.period="Period",
+             sighting.dist="Dist",
+             sighting.count.method="Count method",
+             sighting.count="Count",
+             sighting.behav="Behav",
+             gear.type="Gear type",
+             hook.type="Hook type",
+             hook.size="Hook size",
+             snood.type="Snood type",
+             contact.code="Contact code",
+             contact.count="Contact count",
+             disc.prey="Disc prey",
+             steam.away="Steam away")%>%
+      data.frame
+
+
+#---------Manipulate Hook.combos------------
+Hook.combos<-Hook.combos%>%
+          rename(sheet_no="Sheet no",
+                 baiting.time='Baiting time (min)',
+                 baiting.crew='Baiting staff no',
+                 hooks.baited='no of baited hooks',
+                 hooks.deployed='Total deployed')%>%
+          filter(!is.na(sheet_no))%>%
+          mutate_at(c("C10/W","C12/W","C14/W",
+                      "Eb10/W","Eb12/W","Eb14/W",
+                      "C10/M","C12/M","C14/M",
+                      "Eb10/M","Eb12/M","Eb14/M"), as.numeric)%>%
+          data.frame
+
+
+#---------Manipulate DATA------------
+DATA=DATA[grep("PA", DATA$SHEET_NO), ]%>%
+      filter(year>=2020)%>%
+      rename(IDL=TrunkL)%>%
+  dplyr::select(SHEET_NO,LINE_NO,Mid.Lat,Mid.Long,Lat.round,Long.round,zone,date,Day,Month,year,BOAT,BLOCK,SKIPPER,BOTDEPTH,
+                Set.time,Haul.time,Set.time.end,Haul.time.end,Set.time.avg,Haul.time.avg,SOAK.TIME,
+                BaitSpeciesId,Method,MESH_SIZE,MESH_DROP,NET_LENGTH,
+                N.hooks,HookLocation,HookRemoved,HookType,HookSize,WireTrace,
+                SPECIES,COMMON_NAME,SCIENTIFIC_NAME,Taxa,RetainedFlag,SEX,Number,TL,FL,PL,IDL,
+                BloodFlag,FinClipFlag,MuscleFlag,Lactate,BleedingFlag,BAG_NO,COMMENTS,COMMENTS.hdr)
+names(DATA)=tolower(names(DATA))
+DATA=DATA%>%
+  mutate(hooktype=case_when(hooktype%in%c('Circular','Offset circular')~'circular',
+         hooktype=='EZ-baiter kerbed'~'Ezb'),
+         hooksize=as.numeric(substr(hooksize,1,2)))
+
+#---------Check missing DATA------------
+if(explr.dat.entry)
+{
+  setwd('C:/Matias/Analyses/Parks Australia/fix this')
+  file.remove(list.files())
+  
+  No.times=DATA%>%
+    filter(is.na(soak.time))%>%
+    distinct(sheet_no,.keep_all = T)
+  if(nrow(No.times)>0)write.csv(No.times,'No.times.csv',row.names = F)
+  
+  No.position=DATA%>%
+    filter(is.na(mid.lat) | is.na(mid.long))%>%
+    distinct(sheet_no,.keep_all = T)
+  if(nrow(No.position)>0)write.csv(No.position,'No.position.csv',row.names = F)
+  
+  No.species=DATA%>%
+    filter(is.na(common_name) | is.na(scientific_name))
+  if(nrow(No.species)>0) write.csv(No.species,'No.species.csv',row.names = F)
+  
+    
+  LL.issues=DATA%>%
+    filter(method=="LL")%>%
+    filter(is.na(hooktype) | is.na(hooksize) | is.na(wiretrace) | n.hooks<1)%>%
+    dplyr::select(sheet_no,species,method,line_no,n.hooks,hooktype,hooksize,wiretrace)
+  if(nrow(LL.issues)>0) write.csv(LL.issues,'LL.issues.csv',row.names = F)
+  
+  GN.issues=DATA%>%filter(method=="GN")%>%
+    filter(is.na(net_length) | net_length<3 | net_length>8)%>%
+    distinct(sheet_no,.keep_all = T)
+  if(nrow(GN.issues)>0) write.csv(GN.issues,'GN.issues.csv',row.names = F)
+  
+  
+  a=subset(DATA,method=="LL")%>%
+    dplyr::select(sheet_no,line_no,n.hooks,hooks.deployed)%>%
+    mutate(dummy=paste(sheet_no,line_no))%>%
+    distinct(dummy,.keep_all = T)%>%
+    dplyr::select(-dummy)
+  a$keep=a$n.hooks==a$hooks.deployed
+  a=subset(a,keep=="FALSE")
+  if(nrow(a)>0) write.csv(a,'N_hooks.different_to_hooks.deployed.csv',row.names = F)
+}
+
+
+#---------Effort------------
+DATA=DATA%>% 
+    left_join(Hook.combos%>%
+                dplyr::select(-c(Date,baiting.time,baiting.crew,hooks.baited,Comments)),by='sheet_no')%>%
+    mutate(Effort=case_when(method=="GN"~soak.time*net_length,
+                           method=="LL"~soak.time*n.hooks),
+           Effort.hook.combo=case_when(
+             method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='Yes' ~soak.time * C10.W,
+             method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='Yes' ~soak.time * C12.W,
+             method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='Yes' ~soak.time * C14.W,
+             method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='No' ~soak.time * C10.M,
+             method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='No' ~soak.time * C12.M,
+             method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='No' ~soak.time * C14.M,
+             method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='Yes' ~soak.time * Eb10.W,
+             method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='Yes' ~soak.time * Eb12.W,
+             method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='Yes' ~soak.time * Eb14.W,
+             method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='No' ~soak.time * Eb10.M,
+             method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='No' ~soak.time * Eb12.M,
+             method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='No' ~soak.time * Eb14.M,
+             TRUE~NA_real_))
+
+ 
+#---------Length-length relationships------------     
+#using robust regression to deal with outliers
+if(do.len_len)
+{
+  setwd('C:/Matias/Analyses/Parks Australia/outputs/length_length')
+  r2ww <- function(x)
+  {
+    SSe <- sum(x$w*(x$resid)^2)
+    observed <- x$resid+x$fitted
+    SSt <- sum(x$w*(observed-weighted.mean(observed,x$w))^2)
+    value <- 1-SSe/SSt;
+    return(value);
+  }
+  
+  ggplotRegression <- function(dat, xvar, yvar,tolerance=.5)
+  {
+    dat=dat%>%filter(!is.na((!!sym(xvar))) & !is.na((!!sym(yvar))))
+    fml <- as.formula(paste(yvar, "~", xvar))
+    fit <- rlm(fml, dat)   #robust regression
+    d1=dat%>%
+      mutate(pred=predict(fit),
+             delta=abs(pred-(!!sym(yvar))))%>%
+      filter(delta>tolerance*sd(d1$delta))
+    p=dat%>%
+      ggplot(aes_string(xvar,yvar,label = 'sheet_no'))+geom_point(na.rm= TRUE,colour='black')+
+      geom_text_repel(data=  d1,size=3,na.rm= TRUE,segment.alpha=.4)+
+      stat_smooth(method = "lm", col = "red")+
+      labs(title = paste("Adj.R2= ",round(r2ww(fit),2),
+                         "Inter.=",signif(fit$coef[[1]],5),
+                         " Slope=",signif(fit$coef[[2]], 5)))+
+      theme(plot.title = element_text(size=10))
+    
+    return(p)
+  }
+  fn.idl=function(SP)
+  {
+    d=DATA%>%filter(species==SP)
+    TL.FL=ggplotRegression(d, "tl", "fl")
+    FL.TL=ggplotRegression(d, "fl", "tl")
+    idl.TL=ggplotRegression(d, "idl", "tl")
+    idl.FL=ggplotRegression(d, "idl", "fl")
+    ggarrange(TL.FL, idl.TL, FL.TL, idl.FL,ncol = 2, nrow = 2)
+    ggsave(paste(unique(d$common_name),".tiff",sep=''), width = 8,height = 8, dpi = 300,
+           compression = "lzw")
+  }
+  idl.species=table(DATA$species,1000*round(DATA$idl/1000))
+  idl.species=rownames(idl.species)[which(idl.species>5)]
+  for(i in 1:length(idl.species)) fn.idl(SP=idl.species[i])
+}
+
+#---------Historic catches------------    
+if(do.Historic)  
+{
+  library(fields)
+  library(gridExtra)
+  library(grid)
+  library(data.table)
+  library(plotrix)
+  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Plot.Map.R")
+  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R")
+  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R")
+  Do.tiff="YES"
+  Do.jpeg="NO"
+  hndl="C:/Matias/Analyses/Parks Australia/outputs/Historic_catch_effort"
+  
+  setwd('C:/Matias/Analyses/Data_outs')
+  Data.daily.original=fread("Data.daily.original.csv",data.table=FALSE)
+  Data.daily=fread("Data.daily.csv",data.table=FALSE)
+  Effort.daily=fread("Effort.daily.csv",data.table=FALSE)
+  Data.monthly=fread("Data.monthly.csv",data.table=FALSE)
+  Effort.monthly=fread("Effort.monthly.csv",data.table=FALSE)
+  
+  
+  TARGETS=list(whiskery=17003,gummy=17001,dusky=c(18001,18003),sandbar=18007) 
+  Scalefish.species=188000:599001
+  Current.yr="2018-19" 
+  
+  #Power analysis
+  seq.lat=c(-26.83, -26.67, -26.50, -26.33, -26.17, -26.00,
+            -27.83, -27.67, -27.50, -27.33, -27.17, -27.00,
+            -28.83, -28.67, -28.50, -28.33, -28.17, -28.00,
+            -29.83, -29.67, -29.50, -29.33, -29.17, -29.00,
+            -30.83, -30.67, -30.50, -30.33, -30.17, -30.00,
+            -31.83, -31.67, -31.50, -31.33, -31.17, -31.00,
+            -32.83, -32.67, -32.50, -32.33, -32.17, -32.00,
+            -33.83, -33.67, -33.50, -33.33, -33.17, -33.00,
+            -34.83, -34.67, -34.50, -34.33, -34.17, -34.00,
+            -35.83, -35.67, -35.50, -35.33, -35.17, -35.00)
+  seq.lon=c(113.83, 113.67, 113.50, 113.33, 113.17, 113.00,
+            114.83, 114.67, 114.50, 114.33, 114.17, 114.00,
+            115.83, 115.67, 115.50, 115.33, 115.17, 115.00,
+            116.83, 116.67, 116.50, 116.33, 116.17, 116.00,
+            117.83, 117.67, 117.50, 117.33, 117.17, 117.00,
+            118.83, 118.67, 118.50, 118.33, 118.17, 118.00,
+            119.83, 119.67, 119.50, 119.33, 119.17, 119.00,
+            120.83, 120.67, 120.50, 120.33, 120.17, 120.00,
+            121.83, 121.67, 121.50, 121.33, 121.17, 121.00,
+            122.83, 122.67, 122.50, 122.33, 122.17, 122.00,
+            123.83, 123.67, 123.50, 123.33, 123.17, 123.00,
+            124.83, 124.67, 124.50, 124.33, 124.17, 124.00,
+            125.83, 125.67, 125.50, 125.33, 125.17, 125.00,
+            126.83, 126.67, 126.50, 126.33, 126.17, 126.00,
+            127.83, 127.67, 127.50, 127.33, 127.17, 127.00,
+            128.83, 128.67, 128.50, 128.33, 128.17, 128.00,
+            129.83, 129.67, 129.50, 129.33, 129.17, 129.00)
+  
+  fn.scale=function(x,MX,scaler) ((x/MX)^0.5)*scaler
+  fn.plt=function(dd,Main,titl,MAX)
+  {
+    with(dd,
+         {
+           plot(LONG,LAT,pch=19,ylim=Ylim,xlim=Xlim,col="steelblue",cex=fn.scale(mean.cpue,MAX,2.5),main=Main)
+           legend("topright",paste(round(MAX,2)),bty='n',cex=1.25,
+                  pt.cex=fn.scale(MAX,MAX,2),pch=19,col="steelblue",title=titl)
+         })
+  }
+  fn.img.plt=function(dd,TITL)
+  {
+    seq.lat1=subset(seq.lat,seq.lat<=Ylim[2] & seq.lat>=Ylim[1])
+    seq.lon1=subset(seq.lon,seq.lon<=Xlim[2] & seq.lon>=Xlim[1])
+    misn.lat=seq.lat1[which(!seq.lat1%in%unique(dd$lat10.corner))]
+    
+    misn.lon=seq.lon1[which(!seq.lon1%in%unique(dd$long10.corner))]
+    if(length(misn.lat)>0 | length(misn.lon)>0)
+    {
+      combo=expand.grid(lat10.corner=seq.lat1, long10.corner=seq.lon1)
+      dd=combo%>%left_join(dd,by=c("lat10.corner","long10.corner"))
+    }
+    dd=dd%>%arrange(long10.corner)
+    dd=dd[,-match('block10',names(dd))]  
+    dd=dd%>%
+      spread(lat10.corner,mean.cpue)
+    Lon=as.numeric(dd$long10.corner)
+    dd=as.matrix(dd[,-1]) 
+    LaT=as.numeric(colnames(dd))
+    brk<- quantile( c(dd),probs=seq(0,1,.2),na.rm=T)
+    YLim=Ylim
+    XLim=Xlim
+    YLim[1]=YLim[1]-0.5
+    YLim[2]=YLim[2]+0.5
+    XLim[1]=XLim[1]-0.5
+    XLim[2]=XLim[2]+0.5
+    image.plot(Lon,LaT,dd, breaks=brk, col=rev(heat.colors(length(brk)-1)), 
+               lab.breaks=names(brk),ylim=YLim,xlim=XLim,ylab="",xlab="")
+    legend('topright',TITL,bty='n',cex=.9)
+    
+  }
+  fn.parks.power=function(ktch,efF,do.what)
+  {
+    ktch=ktch%>%filter(METHOD%in%c('GN','LL') & Estuary=="NO")%>%
+      group_by(Same.return.SNo,METHOD,day,FINYEAR,MONTH,BLOCKX,block10,LAT,LONG) %>%
+      summarise(LIVEWT.c=sum(LIVEWT.c))%>%data.frame
+    efF=efF%>%dplyr::select(-c(block10,LAT,LONG))%>%
+      mutate(hook.days=hooks,
+             hook.hours=hooks*hours.c)
+    d=left_join(ktch,efF,by='Same.return.SNo')%>%
+      dplyr::select(Same.return.SNo,METHOD,day,FINYEAR,MONTH,BLOCKX,block10,LAT,LONG,LIVEWT.c,
+                    hours.c,shots.c,netlen.c,hooks,Km.Gillnet.Hours.c,hook.hours)%>%
+      mutate(Hundred.m.Gillnet.Hours.c=Km.Gillnet.Hours.c*10,
+             Hundred.hook.hours=hook.hours/100,
+             cpue.hour=ifelse(METHOD=="GN",LIVEWT.c/Hundred.m.Gillnet.Hours.c,   
+                              ifelse(METHOD=="LL",LIVEWT.c/Hundred.hook.hours,NA)))%>%
+      filter(!cpue.hour=="Inf")
+    Ylim=floor(range(d$LAT))
+    Xlim=floor(range(d$LONG))
+    
+    #Overal boxplots and histograms
+    d=d%>%group_by(METHOD)%>%mutate(n=n()/nrow(d))  #add data weight
+    p=vector('list',6)
+    p[[1]]=ggplot(d,aes(x=METHOD,y=cpue.hour))+
+      geom_boxplot(varwidth = T,fill="grey60")+ facet_wrap(~ MONTH)+
+      coord_cartesian(ylim=c(0, quantile(d$cpue.hour,.99)))+
+      ylab("cpue (100 gillnet metres / number of hooks per hour)")
+    p[[2]]=ggplot(d,aes(fill=METHOD,x=cpue.hour))+
+      geom_density(,col=NA,alpha=.35)+ facet_wrap(~ MONTH)+
+      coord_cartesian(ylim=c(0, 5),xlim=c(0,quantile(d$cpue.hour,.99)))+
+      xlab("cpue (100 gillnet metres / number of hooks per hour)")
+    p[[3]]=ggplot(d,aes(x=METHOD,y=cpue.hour))+
+      geom_violin(fill="grey60")+ facet_wrap(~ MONTH)+
+      coord_cartesian(ylim=c(0, quantile(d$cpue.hour,.99)))+
+      ylab("cpue (100 gillnet metres / number of hooks per hour)")
+    
+    d.block=d%>%group_by(BLOCKX)%>%
+      mutate(n=n()/nrow(d))%>%
+      filter(n>0.01)%>%
+      data.frame
+    p[[4]]=ggplot(d.block,aes(x=METHOD,y=cpue.hour))+
+      geom_boxplot(varwidth = T,fill="grey60")+ facet_wrap(~ BLOCKX)+
+      coord_cartesian(ylim=c(0, quantile(d$cpue.hour,.999)))+
+      ylab("cpue (100 gillnet metres / number of hooks per hour)")
+    p[[5]]=ggplot(d.block,aes(fill=METHOD,x=cpue.hour))+
+      geom_density(,col=NA,alpha=.35)+ facet_wrap(~ BLOCKX)+
+      coord_cartesian(ylim=c(0, 5),xlim=c(0,quantile(d$cpue.hour,.99)))+
+      xlab("cpue (100 gillnet metres / number of hooks per hour)")
+    p[[6]]=ggplot(d.block,aes(x=METHOD,y=cpue.hour))+
+      geom_violin(fill="grey60")+ facet_wrap(~ BLOCKX)+
+      coord_cartesian(ylim=c(0, quantile(d$cpue.hour,.999)))+
+      ylab("cpue (100 gillnet metres / number of hooks per hour)")
+    print(p)
+    
+    #Spatial
+    #LL vs GN, all years combined
+    par(mfcol=c(2,1),mar=c(1,1,2,1),oma=c(2,2,.1,.1),mgp=c(1,.45,0))
+    if(do.what=="bubbles")
+    {
+      agg=d%>%group_by(METHOD,LAT,LONG)%>%summarise(mean.cpue=mean(cpue.hour))%>%data.frame
+      fn.plt(dd=subset(agg,METHOD=="GN"),Main="All daily gillnet records",
+             titl="kg per 100m gn hour",MAX=max(subset(agg,METHOD=="GN")$mean.cpue))
+      fn.plt(dd=subset(agg,METHOD=="LL"),Main="All daily longline records",
+             titl="kg per 100 hook hour",MAX=max(subset(agg,METHOD=="LL")$mean.cpue))
+    }
+    if(do.what=="image")
+    {
+      agg=d%>%group_by(METHOD,block10)%>%summarise(mean.cpue=mean(cpue.hour))%>%
+        mutate(lat10.corner=round(-(abs(as.numeric(substr(block10,1,2))+10*(as.numeric(substr(block10,3,3)))/60)),2),
+               long10.corner=round(100+as.numeric(substr(block10,4,5))+10*(as.numeric(substr(block10,6,6)))/60,2))%>%
+        data.frame
+      fn.img.plt(dd=agg%>%filter(METHOD=="GN")%>%dplyr::select(-METHOD),TITL="All daily gillnet records")
+      fn.img.plt(dd=agg%>%filter(METHOD=="LL")%>%dplyr::select(-METHOD),TITL="All daily longline records")
+    }
+    
+    #LL vs GN, by month
+    mnth=1:12
+    par(mfcol=c(4,3),mar=c(1,2,2,2),oma=c(2,1,.1,1),mgp=c(1,.45,0))
+    if(do.what=="bubbles")
+    {
+      agg=d%>%group_by(METHOD,MONTH,LAT,LONG)%>%summarise(mean.cpue=mean(cpue.hour))%>%data.frame
+      for(m in mnth) 
+      {
+        if(nrow(subset(agg,METHOD=="GN" & MONTH==mnth[m]))==0) plot.new() else
+          fn.plt(dd=subset(agg,METHOD=="GN" & MONTH==mnth[m]),Main=paste("Gillnet, Month=",mnth[m]),
+                 titl="kg per 100m gn hour",MAX=quantile(subset(agg,METHOD=="GN")$mean.cpue,.99))
+      }
+      for(m in mnth) 
+      {
+        if(nrow(subset(agg,METHOD=="LL" & MONTH==mnth[m]))==0) plot.new() else
+          fn.plt(dd=subset(agg,METHOD=="LL" & MONTH==mnth[m]),Main=paste("Longline, Month=",mnth[m]),
+                 titl="kg per 100 hook hour",MAX=quantile(subset(agg,METHOD=="LL")$mean.cpue,.99))
+      }
+    }
+    if(do.what=="image")
+    {
+      agg=d%>%group_by(METHOD,MONTH,block10)%>%summarise(mean.cpue=mean(cpue.hour))%>%
+        mutate(lat10.corner=round(-(abs(as.numeric(substr(block10,1,2))+10*(as.numeric(substr(block10,3,3)))/60)),2),
+               long10.corner=round(100+as.numeric(substr(block10,4,5))+10*(as.numeric(substr(block10,6,6)))/60,2))%>%
+        data.frame
+      for(m in mnth)
+      {
+        if(nrow(subset(agg,METHOD=="GN" & MONTH==mnth[m]))<=1) plot.new() else
+        {
+          dd1=agg%>%filter(METHOD=="GN"& MONTH==mnth[m])%>%dplyr::select(-c(METHOD,MONTH))
+          fn.img.plt(dd=dd1,TITL=paste("Gillnet, Month=",mnth[m]))
+        }
+      }
+      for(m in mnth)
+      {
+        if(nrow(subset(agg,METHOD=="LL" & MONTH==mnth[m]))<=1) plot.new() else
+        {
+          dd1=agg%>%filter(METHOD=="LL"& MONTH==mnth[m])%>%dplyr::select(-c(METHOD,MONTH))
+          fn.img.plt(dd=dd1,TITL=paste("Longline, Month=",mnth[m]))
+        }
+      }
+    }
+    
+    #LL vs GN, by year
+    yr=sort(unique(d$FINYEAR))
+    par(mfcol=c(4,3),mar=c(1,2,2,2),oma=c(2,1,.1,1),mgp=c(1,.45,0))
+    if(do.what=="bubbles")
+    {
+      agg=d%>%group_by(METHOD,FINYEAR,LAT,LONG)%>%summarise(mean.cpue=mean(cpue.hour))%>%data.frame   
+      for(m in 1:length(yr)) 
+      {
+        if(nrow(subset(agg,METHOD=="GN" & FINYEAR==yr[m]))==0) plot.new() else
+          fn.plt(dd=subset(agg,METHOD=="GN" & FINYEAR==yr[m]),Main=paste("Gillnet",yr[m]),
+                 titl="kg per 100m gn hour",MAX=quantile(subset(agg,METHOD=="GN")$mean.cpue,.99))
+      }
+      for(m in 1:length(yr))
+      {
+        if(nrow(subset(agg,METHOD=="LL" & FINYEAR==yr[m]))==0) plot.new() else
+          fn.plt(dd=subset(agg,METHOD=="LL" & FINYEAR==yr[m]),Main=paste("Longline",yr[m]),
+                 titl="kg per 100 hook hour",MAX=quantile(subset(agg,METHOD=="LL")$mean.cpue,.99))
+      }
+    }
+    if(do.what=="image")
+    {
+      agg=d%>%group_by(METHOD,FINYEAR,block10)%>%summarise(mean.cpue=mean(cpue.hour))%>%
+        mutate(lat10.corner=round(-(abs(as.numeric(substr(block10,1,2))+10*(as.numeric(substr(block10,3,3)))/60)),2),
+               long10.corner=round(100+as.numeric(substr(block10,4,5))+10*(as.numeric(substr(block10,6,6)))/60,2))%>%
+        data.frame
+      for(m in 1:length(yr))
+      {
+        if(nrow(subset(agg,METHOD=="GN" & FINYEAR==yr[m]))<=1) plot.new() else
+        {
+          dd1=agg%>%filter(METHOD=="GN"& FINYEAR==yr[m])%>%dplyr::select(-c(METHOD,FINYEAR))
+          fn.img.plt(dd=dd1,TITL=paste("Gillnet, Finyear=",yr[m]))
+        }
+      }
+      for(m in 1:length(yr))
+      {
+        if(nrow(subset(agg,METHOD=="LL" & FINYEAR==yr[m]))<=1) plot.new() else
+        {
+          dd1=agg%>%filter(METHOD=="LL"& FINYEAR==yr[m])%>%dplyr::select(-c(METHOD,FINYEAR))
+          fn.img.plt(dd=dd1,TITL=paste("Longline, Finyear=",yr[m]))
+        }
+      }
+      
+    }
+    
+    topmonth.GN=d%>%filter(METHOD=="GN")%>%
+      group_by(MONTH)%>%
+      summarise(mean.cpue=mean(cpue.hour))%>%
+      top_n(2,mean.cpue)%>%
+      dplyr::select(MONTH)%>%data.frame
+    
+    topmonth.LL=d%>%filter(METHOD=="LL")%>%
+      group_by(MONTH)%>%
+      summarise(mean.cpue=mean(cpue.hour))%>%
+      top_n(2,mean.cpue)%>%
+      dplyr::select(MONTH)%>%data.frame
+    
+    #GN
+    a=d%>%filter(MONTH%in%topmonth.GN$MONTH & METHOD=="GN")
+    a=sort(table(a$block10))
+    a=names(a[a>=quantile(a,.975)])
+    b=d%>%filter(MONTH%in%topmonth.GN$MONTH & METHOD=="GN" & block10%in%a)
+    par(mfcol=c(1,1),mar=c(2,2,2,2),oma=c(2,1,.1,1),mgp=c(1,.45,0))
+    boxplot(b$cpue.hour~as.factor(b$block10),col=2,main=paste("Gillnet, month=",paste(topmonth.GN$MONTH,collapse="&"),sep=""),
+            las=2,ylab="cpue",xlab='')
+    unik.bl=unique(b$block10)
+    smart.par(length(unik.bl),c(1,2,2,2),c(2,1,.1,1),c(1,.45,0))
+    for(u in 1:length(unik.bl))with(subset(b,block10==unik.bl[u]),hist(cpue.hour,col=2,xlim=c(0,max(b$cpue.hour)),
+                                                                       ylab="",cex.main=0.9,main=paste("month=",paste(topmonth.GN$MONTH,collapse="&"),", block=",unik.bl[u],sep="")))
+    
+    #LL
+    par(mfcol=c(1,1),mar=c(2,2,2,2),oma=c(2,1,.1,1),mgp=c(1,.45,0))
+    a=d%>%filter(MONTH%in%topmonth.LL$MONTH & METHOD=="LL")
+    a=sort(table(a$block10))
+    a=names(a[a>=quantile(a,probs=c(.90))])
+    b=d%>%filter(MONTH%in%topmonth.LL$MONTH & METHOD=="LL" & block10%in%a)
+    boxplot(b$cpue.hour~as.factor(b$block10),col=2,main=paste("Longline, month=",paste(topmonth.LL$MONTH,collapse="&"),sep=""),
+            las=2,ylab="cpue",xlab='')
+    unik.bl=unique(b$block10)
+    smart.par(length(unik.bl),c(1,2,2,2),c(2,1,.1,1),c(1,.45,0))
+    for(u in 1:length(unik.bl))with(subset(b,block10==unik.bl[u]),hist(cpue.hour,col=2,xlim=c(0,max(b$cpue.hour)),
+                                                                       ylab="",cex.main=0.9,main=paste("month=",paste(topmonth.LL$MONTH,collapse="&"),", block=",unik.bl[u],sep="")))
+    
+  }
+  
+  for(i in 1:length(TARGETS))
+  {
+    pdf(file=paste(hndl,"/Power.analysis_",names(TARGETS)[i],".pdf",sep=""))
+    fn.parks.power(ktch=subset(Data.daily,SPECIES%in%TARGETS[[i]]),
+                   efF=Effort.daily%>%distinct(Same.return.SNo,.keep_all=T),
+                   do.what="image")
+    dev.off()
+  }
+  
+  #Catch composition GN and LL
+  fn.br.plt=function(dd,TOP,yMx,CX.nm)
+  {
+    dd=dd%>%
+      mutate(Prop=Total/sum(dd$Total))%>%
+      arrange(-Prop)%>%mutate(new.sp=SNAME)
+    if(nrow(dd)>TOP) dd$new.sp[(TOP+1):nrow(dd)]="Other"  
+    n.other=length(unique(dd$SNAME))-(length(unique(dd$new.sp))-1)
+    dd=dd%>%mutate(colr=ifelse(SPECIES<50000,"steelblue","firebrick"),
+                   colr=ifelse(new.sp=="Other","forestgreen",colr),
+                   new.sp=ifelse(new.sp=="Other",paste("Other (n=",n.other," species)",sep=""),new.sp))%>%
+      group_by(new.sp,colr)%>%
+      summarise(Prop=sum(Prop))%>%
+      data.frame%>%
+      arrange(new.sp)
+    with(dd,barplot(Prop,horiz = T,col=colr,names.arg=new.sp,cex.names=CX.nm,las=2))
+    box()
+  }
+  fn.ktch.comp=function(ktch,what,Min.overlap)
+  {
+    ktch=ktch%>%mutate(SNAME=tolower(SNAME),
+                       SNAME=ifelse(SNAME%in%c("shark, spinner (long-nose grey)",
+                                               "shark, spinner (long-nose grey"),"shark, spinner",
+                                    ifelse(SNAME=="shark, thickskin (sandbar)","shark, sandbar",
+                                           ifelse(SNAME%in%c("shark, bronze whaler","dusky whaler oversize",
+                                                             "shark, bronze whaler (dusky)"),"shark, dusky",         
+                                                  ifelse(SNAME=="shark, golden, copper whaler","shark, copper",
+                                                         ifelse(SNAME=="jewfish, westralian (dhufish)","wa dhufish",
+                                                                ifelse(SNAME=="foxfish, hogfish, pigfish","foxfish",
+                                                                       ifelse(SNAME=="trevally, other (skippy)","trevally",
+                                                                              ifelse(SNAME=="salmon, western australian","salmon, australian",
+                                                                                     ifelse(SNAME=="snapper, nor_west (sp emperor)","spangled emperor",
+                                                                                            ifelse(SNAME=="footballer, ftbllr sweep, bndd","footballer sweep",
+                                                                                                   ifelse(SNAME=="samson fish, sea kingfish","samson fish",SNAME))))))))))))
+    
+    
+    
+    #Overall comparison GN vs LL
+    dat=ktch%>%group_by(METHOD,SPECIES,SNAME)%>%
+      summarise(Total = sum(LIVEWT.c))
+    fn.fig(paste(hndl,"/Catch_composition_GN_LL_overall",what,sep=""),2400,1600)
+    par(mfcol=c(1,2),mar=c(2,9,1,.1),oma=c(1,.1,.5,.3),mgp=c(1.5,.5,0))
+    fn.br.plt(dd=dat%>%filter(METHOD=='GN'),TOP=20,yMx=1,CX.nm=1)
+    mtext(paste("Gillnet (",round(sum(subset(dat,METHOD=='GN')$Total)/1000,0)," tonnes)",sep=""),3,cex=1)
+    fn.br.plt(dd=dat%>%filter(METHOD=='LL'),TOP=20,yMx=1,CX.nm=1)
+    mtext(paste("Longline (",round(sum(subset(dat,METHOD=='LL')$Total)/1000,0)," tonnes)",sep=""),3,cex=1)
+    mtext("Proportion of total catch",1,outer=T,line=0,cex=1.25) 
+    dev.off()
+    
+    #By zone comparison GN vs LL
+    dat=ktch%>%group_by(METHOD,zone,SPECIES,SNAME)%>%
+      summarise(Total = sum(LIVEWT.c))
+    CX.NM=.7
+    Top=15
+    fn.fig(paste(hndl,"/Catch_composition_GN_LL_by zone",what,sep=""),2400,1600)
+    par(mfcol=c(3,2),mar=c(2,7,.1,.1),oma=c(1,.1,1.1,.3),mgp=c(1.5,.5,0))
+    #GN
+    fn.br.plt(dd=dat%>%filter(METHOD=='GN' & zone=="West"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    mtext("Gillnet",3,cex=1)
+    legend('topright',paste("West (",round(sum(subset(dat,METHOD=='GN'& zone=="West")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    fn.br.plt(dd=dat%>%filter(METHOD=='GN' & zone=="Zone1"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    legend('topright',paste("Zone1 (",round(sum(subset(dat,METHOD=='GN'& zone=="Zone1")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    fn.br.plt(dd=dat%>%filter(METHOD=='GN' & zone=="Zone2"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    legend('topright',paste("Zone2 (",round(sum(subset(dat,METHOD=='GN'& zone=="Zone2")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    
+    #LL
+    fn.br.plt(dd=dat%>%filter(METHOD=='LL' & zone=="West"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    mtext("Longline",3,cex=1)
+    legend('topright',paste("West (",round(sum(subset(dat,METHOD=='LL'& zone=="West")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    fn.br.plt(dd=dat%>%filter(METHOD=='LL' & zone=="Zone1"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    legend('topright',paste("Zone1 (",round(sum(subset(dat,METHOD=='LL'& zone=="Zone1")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    fn.br.plt(dd=dat%>%filter(METHOD=='LL' & zone=="Zone2"),TOP=Top,yMx=1,CX.nm=CX.NM)
+    legend('topright',paste("Zone2 (",round(sum(subset(dat,METHOD=='LL'& zone=="Zone2")$Total)/1000,1),
+                            " tonnes)",sep=""),bty='n')
+    mtext("Proportion of total catch",1,outer=T,line=0,cex=1.25) 
+    dev.off()
+    
+    #By similar block-month comparison GN vs LL
+    ktch=ktch%>%mutate(BLK={if("block10" %in% names(.)) block10 else BLOCKX})
+    
+    dat=ktch%>%group_by(METHOD,BLK,MONTH,FINYEAR,SPECIES,SNAME)%>%
+      summarise(Total = sum(LIVEWT.c))%>%mutate(dummy=paste(BLK,MONTH,FINYEAR))
+    LL.recrds=dat%>%filter(METHOD=="LL")
+    GN.recrds=dat%>%filter(METHOD=="GN")
+    same.recs=intersect(LL.recrds$dummy, GN.recrds$dummy)
+    dat=dat%>%filter(dummy%in%same.recs)
+    TAB=as.data.frame.matrix(with(dat,table(dummy,METHOD)))
+    same.recs=TAB%>%mutate(dummy=rownames(TAB))%>%filter(GN>=Min.overlap & LL>=Min.overlap)%>%.$dummy
+    dat=dat%>%filter(dummy%in%same.recs)
+    
+    unIk=sort(unique(dat$dummy))
+    
+    Top=10
+    CX.NM=.7*4/length(unIk)
+    fn.fig(paste(hndl,"/Catch_composition_GN_LL_by blk_yr_mn",what,sep=""),2400,1600)
+    par(mfcol=c(length(unIk),2),mar=c(2,7,.1,.1),oma=c(1,.1,1.1,.3),mgp=c(1.5,.5,0))
+    #GN    
+    for(u in 1:length(unIk))
+    {
+      fn.br.plt(dd=dat%>%filter(METHOD=='GN' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM)
+      if(u==1)mtext("Gillnet",3,cex=1)
+      legend('topright',paste(unIk[u]," (",round(sum(subset(dat,METHOD=='GN'& dummy==unIk[u])$Total)/1000,1),
+                              " tonnes)",sep=""),bty='n',cex=.8)
+    }
+    #LL
+    for(u in 1:length(unIk))
+    {
+      fn.br.plt(dd=dat%>%filter(METHOD=='LL' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM)
+      if(u==1)mtext("Longline",3,cex=1)
+      legend('topright',paste(unIk[u]," (",round(sum(subset(dat,METHOD=='LL'& dummy==unIk[u])$Total)/1000,1),
+                              " tonnes)",sep=""),bty='n',cex=.8)
+    }
+    mtext("Proportion of total catch",1,outer=T,line=0,cex=1.25) 
+    dev.off()
+    
+  }
+  
+  fn.ktch.comp(ktch=Data.daily%>%filter(METHOD%in%c('GN',"LL"))%>%dplyr::select(Same.return.SNo,
+                                                                                FINYEAR,METHOD,zone,block10,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
+               what="_Daily",Min.overlap=10)
+  fn.ktch.comp(ktch=Data.monthly%>%filter(METHOD%in%c('GN',"LL"))%>%dplyr::select(Same.return,
+                                                                                  FINYEAR,METHOD,zone,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
+               what="_Monthly",Min.overlap=18)
+  
+  #Hook info
+  d=Effort.monthly%>%
+    filter(METHOD=="LL")%>%
+    dplyr::select(c(Same.return,HOURS.c,HOOKS,SHOTS.c))%>%
+    mutate(dat="Monthly")%>%
+    distinct(Same.return,.keep_all=T)
+  d1=Data.daily.original%>%
+    filter(METHOD=="LL")%>%
+    dplyr::select(c(DSNo,TSNo,SNo,HOURS,HOOKS,SHOTS,
+                    HookSize,HookType))%>%
+    mutate(dat="Daily",Same.return.SNo=paste(DSNo,TSNo,SNo))%>%
+    distinct(Same.return.SNo,.keep_all=T)
+  colnames(d)=tolower(colnames(d))
+  colnames(d1)=tolower(colnames(d1))
+  d1$hours.c=d1$hours
+  d1$shots.c=d1$shots
+  
+  fn.fig(paste(hndl,"/longline.number of hooks",sep=""),2400,1600)
+  rbind(d%>%dplyr::select(dat,hooks),d1%>%dplyr::select(dat,hooks)) %>% 
+    gather(key=dat, value=hooks) %>% 
+    ggplot(aes(x=hooks,fill=dat)) + 
+    geom_histogram(position="dodge",binwidth=100)+
+    scale_fill_manual(values=c("darksalmon", "steelblue"))+
+    xlab('Number of hooks')+ylab('Frequency')+ guides(fill=guide_legend(title="Data set"))+
+    theme_grey(base_size = 22)
+  dev.off()
+  
+  fn.fig(paste(hndl,"/longline.soak times",sep=""),2400,1600)
+  rbind(d%>%dplyr::select(dat,hours.c),d1%>%dplyr::select(dat,hours.c)) %>% 
+    gather(key=dat, value=hours.c) %>% 
+    ggplot(aes(x=hours.c,fill=dat)) + 
+    geom_histogram(position="dodge",binwidth=1)+
+    scale_fill_manual(values=c("darksalmon", "steelblue"))+
+    xlab('Soak hours')+ylab('Frequency')+ guides(fill=guide_legend(title="Data set"))+
+    theme_grey(base_size = 22)
+  dev.off()
+  
+  fn.fig(paste(hndl,"/longline.hook size_daily only",sep=""),2400,1600)
+  subset(d1,hooksize>0) %>%
+    ggplot(aes(x=hooksize)) + 
+    geom_histogram(position="dodge",binwidth=1,fill="darksalmon")+
+    xlab('Hook size')+ylab('Frequency')+
+    scale_x_continuous(breaks=6:15,
+                       labels=6:15)+
+    theme_grey(base_size = 22)
+  dev.off()
+  
+  fn.fig(paste(hndl,"/longline.hook type_daily only",sep=""),2400,1600)
+  ggplot(subset(d1,!is.na(hooktype)), aes(hooktype)) + geom_bar(fill="darksalmon")+
+    theme_grey(base_size = 22)+ylab('Frequency')
+  dev.off()
+  
+  
+  #Tim Nicholas request
+  South.WA.lat=c(-36,-25); South.WA.long=c(112,130)
+  PLATE=c(.01,.9,.075,.9)
+  Yrs=c("2017-18","2018-19")  
+  aa= Data.daily.original%>%filter(FINYEAR%in%Yrs) %>%
+    mutate(LatDeg=as.numeric(substr(block10,1,2)),
+           LatMin=ifelse(is.na(LatMin),10*as.numeric(substr(block10,3,3)),LatMin),
+           Lat=-abs(LatDeg+(LatMin/60)),
+           LongDeg=ifelse(is.na(LongDeg),100+as.numeric(substr(block10,4,5)),LongDeg), 
+           LongMin=ifelse(is.na(LongMin),10*as.numeric(substr(block10,6,6)),LongMin),
+           Long=LongDeg+(LongMin/60))%>%
+    filter(Lat<=(-26) & Lat>(-36.5)& Long<=(129) & Long >(111.9))
+  
+  numInt=20
+  couleurs=rev(heat.colors(numInt)) 
+  tcl.1=.5
+  tcl.2=.5
+  Long.seq=seq(South.WA.long[1]+1,South.WA.long[2]-1,by=3)
+  Lat.seq=c(-26,-28,-30,-32,-34)
+  numberLab=5
+  colLeg=(rep(c("black",rep("transparent",numberLab-1)),(numInt+1)/numberLab))
+  
+  #lodged returns
+  TAB1=aa %>% filter(FINYEAR%in%Yrs) %>%
+    group_by(FINYEAR)%>%
+    summarise(Unique_TSNo=n_distinct(TSNo))%>%
+    data.frame
+  
+  TAB2=aa %>% filter(FINYEAR%in%Yrs) %>%
+    group_by(FINYEAR,METHOD)%>%
+    summarise(Unique_TSNo=n_distinct(TSNo))%>%
+    data.frame
+  
+  #Who's been using hooks?
+  TAB3_trips=aa%>%group_by(METHOD,FINYEAR,VESSEL)%>%
+    summarise(Trips=n_distinct(TSNo))%>%
+    spread(METHOD, Trips,fill=0)%>%
+    data.frame
+  
+  
+  bb=aa%>%filter(METHOD=="LL")%>%
+    distinct(Same.return.SNo,.keep_all =T) %>%
+    dplyr::select(VESSEL,BoatName,MastersName,port,block10,FINYEAR,MONTH,bioregion,Lat,Long,depthMax,
+                  NilCatch,species,nfish,livewt,
+                  HookSize,HookType,HOOKS,HOURS,nlines,SHOTS)
+  
+  TAB4=bb%>%group_by(VESSEL,BoatName,MastersName,port)%>%
+    summarise(mean.hook.n=mean(HOOKS,na.rm=T),
+              mean.hook.size=mean(HookSize,na.rm=T),
+              mean.hook.hours=mean(HOURS,na.rm=T))%>%
+    replace(is.na(.), "")%>%
+    data.frame
+  mytheme <- gridExtra::ttheme_default(
+    base_size = 10,
+    core = list(padding=unit(c(1, 1), "mm"),fg_params=list(cex = .65)),
+    colhead = list(fg_params=list(cex = .75)),
+    rowhead = list(fg_params=list(cex = .75)))
+  
+  pdf(file=paste(hndl,"/Parks_Australia_2018-19.effort_catch.pdf",sep=""))
+  
+  grid.draw(gridExtra::tableGrob(TAB3_trips, theme = mytheme,rows = NULL))
+  grid.newpage()
+  
+  grid.draw(gridExtra::tableGrob(TAB4, theme = mytheme,rows = NULL))
+  
+  #effort
+  b=aa %>% filter(METHOD=="GN") %>%
+    mutate(Km.Gillnet.Hours=HOURS*NETLEN/1000)%>%
+    filter(Km.Gillnet.Hours>0)%>%
+    group_by(Same.return.SNo,FINYEAR, block10) %>%
+    summarize(Km.Gillnet.Hours = max(Km.Gillnet.Hours, na.rm = TRUE))%>%
+    group_by(FINYEAR, block10) %>%
+    summarize(sum = sum(Km.Gillnet.Hours, na.rm = TRUE))%>%
+    mutate(LatDeg=as.numeric(substr(block10,1,2)),
+           LatMin=10*as.numeric(substr(block10,3,3)),
+           Lat=-abs(LatDeg+(LatMin/60)),
+           LongDeg=100+as.numeric(substr(block10,4,5)), 
+           LongMin=10*as.numeric(substr(block10,6,6)),
+           Long=LongDeg+(LongMin/60))%>%
+    data.frame
+  b=subset(b,select=c(FINYEAR,sum,Lat,Long))
+  BREAKS=quantile(b$sum,probs=seq(0,1,1/numInt),na.rm=T)
+  
+  par(mfrow=c(2,1),mai = c(0.3, 0.4, 0.15, 0.2),oma = c(0.5, 0.4, 0.2, 0.1),mgp=c(.1, 0.15, 0))
+  for(y in 1:length(Yrs))
+  {
+    bb=subset(b,FINYEAR==Yrs[y],select=-FINYEAR)%>%
+      arrange(Lat,Long)
+    long=sort(unique(bb$Long))
+    lat=sort(unique(bb$Lat))      
+    Reshaped=as.matrix(reshape(bb,idvar="Long",timevar="Lat",v.names="sum", direction="wide"))	
+    Reshaped=Reshaped[order(Reshaped[,1]),]
+    Reshaped=Reshaped[,-1]	
+    
+    a=South.WA.long[1]:South.WA.long[2]
+    bx=seq(South.WA.lat[1],South.WA.lat[2],length.out=length(a))
+    plotmap(a,bx,PLATE,"transparent",South.WA.long,South.WA.lat)
+    image(long,lat,z=Reshaped,xlab="",ylab="",col =couleurs,breaks=BREAKS,axes = FALSE,add=T)			
+    axis(side = 1, at =South.WA.long[1]:South.WA.long[2], labels = F, tcl = tcl.1)
+    axis(side = 2, at = South.WA.lat[2]:South.WA.lat[1], labels = F,tcl =tcl.1)
+    axis(side = 1, at =Long.seq, labels = Long.seq, tcl = .35,las=1,cex.axis=1,padj=-.15)
+    axis(side = 2, at = Lat.seq, labels = -Lat.seq,tcl = .35,las=2,cex.axis=1,hadj=1.1)
+    if(y==2)color.legend(129.5,South.WA.lat[2],South.WA.long[2],-33,round(BREAKS,0),
+                         rect.col=couleurs,gradient="y",col=colLeg,cex=0.85)
+    nnn=with(TAB2%>%filter(FINYEAR==Yrs[y]),paste(paste(Yrs[y]," (gillnet returns= ",Unique_TSNo[1],"; longline returns= ",Unique_TSNo[2],")",sep="")))
+    mtext(nnn,3,-2)
+  }
+  mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=-1,las=3,cex=1.1,outer=T)
+  mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=-.5,cex=1.1,outer=T)
+  mtext("Effort (Km.gn.hours)",3,-0.75,outer=T)
+  
+  #catch
+  for(s in 1:length(TARGETS))
+  {
+    b=aa %>% filter(METHOD=="GN" & species%in%TARGETS[[s]]) %>%
+      group_by(FINYEAR, block10) %>%
+      summarize(sum = sum(livewt, na.rm = TRUE))%>%
+      mutate(LatDeg=as.numeric(substr(block10,1,2)),
+             LatMin=10*as.numeric(substr(block10,3,3)),
+             Lat=-abs(LatDeg+(LatMin/60)),
+             LongDeg=100+as.numeric(substr(block10,4,5)), 
+             LongMin=10*as.numeric(substr(block10,6,6)),
+             Long=LongDeg+(LongMin/60))%>%
+      data.frame
+    b=subset(b,select=c(FINYEAR,sum,Lat,Long))
+    BREAKS=quantile(b$sum,probs=seq(0,1,1/numInt),na.rm=T)
+    
+    par(mfrow=c(2,1),mai = c(0.3, 0.4, 0.15, 0.2),oma = c(0.5, 0.4, 0.2, 0.1),mgp=c(.1, 0.15, 0))
+    for(y in 1:length(Yrs))
+    {
+      bb=subset(b,FINYEAR==Yrs[y],select=-FINYEAR)%>%
+        arrange(Lat,Long)
+      long=sort(unique(bb$Long))
+      lat=sort(unique(bb$Lat))      
+      Reshaped=as.matrix(reshape(bb,idvar="Long",timevar="Lat",v.names="sum", direction="wide"))	
+      Reshaped=Reshaped[order(Reshaped[,1]),]
+      Reshaped=Reshaped[,-1]	
+      
+      a=South.WA.long[1]:South.WA.long[2]
+      bx=seq(South.WA.lat[1],South.WA.lat[2],length.out=length(a))
+      plotmap(a,bx,PLATE,"transparent",South.WA.long,South.WA.lat)
+      image(long,lat,z=Reshaped,xlab="",ylab="",col =couleurs,breaks=BREAKS,axes = FALSE,add=T)			
+      axis(side = 1, at =South.WA.long[1]:South.WA.long[2], labels = F, tcl = tcl.1)
+      axis(side = 2, at = South.WA.lat[2]:South.WA.lat[1], labels = F,tcl =tcl.1)
+      axis(side = 1, at =Long.seq, labels = Long.seq, tcl = .35,las=1,cex.axis=1,padj=-.15)
+      axis(side = 2, at = Lat.seq, labels = -Lat.seq,tcl = .35,las=2,cex.axis=1,hadj=1.1)
+      if(y==2)color.legend(129.5,South.WA.lat[2],South.WA.long[2],-33,round(BREAKS,0),
+                           rect.col=couleurs,gradient="y",col=colLeg,cex=0.85)
+      mtext(Yrs[y],3,-2)
+    }
+    mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=-1,las=3,cex=1.1,outer=T)
+    mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=-.5,cex=1.1,outer=T)
+    mtext(paste(names(TARGETS)[s],"(catch in kg)"),3,-.75,outer=T)
+    
+    
+  }
+  
+  #all scalefish
+  {
+    b=aa %>% filter(METHOD=="GN" & species%in%Scalefish.species) %>%
+      group_by(FINYEAR, block10) %>%
+      summarize(sum = sum(livewt, na.rm = TRUE))%>%
+      mutate(LatDeg=as.numeric(substr(block10,1,2)),
+             LatMin=10*as.numeric(substr(block10,3,3)),
+             Lat=-abs(LatDeg+(LatMin/60)),
+             LongDeg=100+as.numeric(substr(block10,4,5)), 
+             LongMin=10*as.numeric(substr(block10,6,6)),
+             Long=LongDeg+(LongMin/60))%>%
+      data.frame
+    b=subset(b,select=c(FINYEAR,sum,Lat,Long))
+    BREAKS=quantile(b$sum,probs=seq(0,1,1/numInt),na.rm=T)
+    
+    par(mfrow=c(2,1),mai = c(0.3, 0.4, 0.15, 0.2),oma = c(0.5, 0.4, 0.2, 0.1),mgp=c(.1, 0.15, 0))
+    for(y in 1:length(Yrs))
+    {
+      bb=subset(b,FINYEAR==Yrs[y],select=-FINYEAR)%>%
+        arrange(Lat,Long)
+      long=sort(unique(bb$Long))
+      lat=sort(unique(bb$Lat))      
+      Reshaped=as.matrix(reshape(bb,idvar="Long",timevar="Lat",v.names="sum", direction="wide"))	
+      Reshaped=Reshaped[order(Reshaped[,1]),]
+      Reshaped=Reshaped[,-1]	
+      
+      a=South.WA.long[1]:South.WA.long[2]
+      bx=seq(South.WA.lat[1],South.WA.lat[2],length.out=length(a))
+      plotmap(a,bx,PLATE,"transparent",South.WA.long,South.WA.lat)
+      image(long,lat,z=Reshaped,xlab="",ylab="",col =couleurs,breaks=BREAKS,axes = FALSE,add=T)			
+      axis(side = 1, at =South.WA.long[1]:South.WA.long[2], labels = F, tcl = tcl.1)
+      axis(side = 2, at = South.WA.lat[2]:South.WA.lat[1], labels = F,tcl =tcl.1)
+      axis(side = 1, at =Long.seq, labels = Long.seq, tcl = .35,las=1,cex.axis=1,padj=-.15)
+      axis(side = 2, at = Lat.seq, labels = -Lat.seq,tcl = .35,las=2,cex.axis=1,hadj=1.1)
+      if(y==2)color.legend(129.5,South.WA.lat[2],South.WA.long[2],-33,round(BREAKS,0),
+                           rect.col=couleurs,gradient="y",col=colLeg,cex=0.85)
+      mtext(Yrs[y],3,-2)
+    }
+    mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=-1,las=3,cex=1.1,outer=T)
+    mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=-.5,cex=1.1,outer=T)
+    mtext("Scalefish (catch in kg)",3,-.75,outer=T)
+    
+    
+  }
+  dev.off()
+  
+  #Average catch price per shot
+  a= Data.daily%>%
+    filter(FINYEAR=="2017-18" & METHOD%in%c("GN","LL"))%>%
+    group_by(Same.return.SNo,VESSEL,SPECIES)%>%
+    summarize(Total.ktch = sum(LIVEWT.c))
+  setwd("C:/Matias/Analyses/Data_outs")
+  PRICES=read.csv("PRICES.csv",stringsAsFactors = F)
+  PRICES=PRICES%>%mutate(dolar.per.kg=PRICES[,match('Processor.Weighted.Average.Price',names(PRICES))],
+                         dolar.per.kg=as.numeric(gsub("\\$", "", dolar.per.kg)))%>%
+    mutate(SPECIES=as.numeric(ASA.Species.Code))
+  a=left_join(a,PRICES,by="SPECIES")%>%
+    mutate(ktch.price=dolar.per.kg*Total.ktch)%>%
+    group_by(Same.return.SNo,VESSEL)%>%
+    summarize(Catch.value=sum(ktch.price))
+  
+  b=Effort.daily%>%filter(finyear=="2017-18" & method%in%c("GN","LL"))%>%
+    group_by(Same.return.SNo,vessel)%>%
+    summarize(Effort = max(Km.Gillnet.Hours.c))
+  
+  d=left_join(a,b,by=c("Same.return.SNo"))%>%
+    group_by(vessel)%>%
+    summarise(average.ktch.value=mean(Catch.value,na.rm=T),
+              min.ktch.value=min(Catch.value,na.rm=T),
+              max.ktch.value=max(Catch.value,na.rm=T),
+              average.effort=mean(Effort,na.rm=T))%>%
+    data.frame
+  write.csv(d,paste(hndl,"/Average catch price per shot.csv",sep=""),row.names = F)
+  
+}
