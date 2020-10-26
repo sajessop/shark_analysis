@@ -1,6 +1,10 @@
                 # SCRIPT FOR ANALYSING AND REPORTING PARKS AUSTRALIA PROJECT 2019
-#to do: catch rates by gear, and by gear.hook.combo
+#to do: 
+#   Historic:
+#       catch rates by gear, and by gear.hook.combo
 #       catch composition
+#   Current:
+#       ALL
 
 library(tidyverse)
 library(dplyr)
@@ -9,11 +13,12 @@ library(ggrepel)
 library(ggpubr)
 library(rlang)
 library(MASS)
+library(ggmosaic)
 
 options(stringsAsFactors = FALSE,
         dplyr.summarise.inform = FALSE) 
 
-#---------DATA SECTION------------
+#---------HISTORIC DATA ------------
 
 #Sharks data base
 User="Matias"
@@ -27,12 +32,25 @@ TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
+#---------CURRENT DATA ------------
+setwd('C:/Matias/Parks Australia/2019_project/Data')
+#Video
+  #net
+Video.net.interaction <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Interaction")
+Video.net.maxN <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
+Video.net.obs <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Observation")
+  #longline
+Video.longline.interaction <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Interactions")
+Video.longline.maxN <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
+Video.longline.obs <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Observations")
+
+
 #---------CONTROL SECTION------------
 explr.dat.entry=TRUE
 do.len_len=FALSE
 do.Historic=FALSE
 
-#---------Manipulate TEPS------------
+#---------Manipulate Historic TEPS------------
 TEPS<-TEPS%>%
       rename(sheet_no="Sheet #",
              ves.act="Ves act",
@@ -54,7 +72,7 @@ TEPS<-TEPS%>%
       data.frame
 
 
-#---------Manipulate Hook.combos------------
+#---------Manipulate Historic Hook.combos------------
 Hook.combos<-Hook.combos%>%
           rename(sheet_no="Sheet no",
                  baiting.time='Baiting time (min)',
@@ -69,7 +87,7 @@ Hook.combos<-Hook.combos%>%
           data.frame
 
 
-#---------Manipulate DATA------------
+#---------Manipulate Historic DATA------------
 DATA=DATA[grep("PA", DATA$SHEET_NO), ]%>%
       filter(year>=2020)%>%
       rename(IDL=TrunkL)%>%
@@ -85,7 +103,7 @@ DATA=DATA%>%
          hooktype=='EZ-baiter kerbed'~'Ezb'),
          hooksize=as.numeric(substr(hooksize,1,2)))
 
-#---------Check missing DATA------------
+#---------Check missing Historic DATA------------
 if(explr.dat.entry)
 {
   setwd('C:/Matias/Analyses/Parks Australia/fix this')
@@ -129,7 +147,7 @@ if(explr.dat.entry)
 }
 
 
-#---------Effort------------
+#---------Historic Effort------------
 DATA=DATA%>% 
     left_join(Hook.combos%>%
                 dplyr::select(-c(Date,baiting.time,baiting.crew,hooks.baited,Comments)),by='sheet_no')%>%
@@ -151,7 +169,7 @@ DATA=DATA%>%
              TRUE~NA_real_))
 
  
-#---------Length-length relationships------------     
+#--------- Current length-length relationships------------     
 #using robust regression to deal with outliers
 if(do.len_len)
 {
@@ -922,3 +940,29 @@ if(do.Historic)
   write.csv(d,paste(hndl,"/Average catch price per shot.csv",sep=""),row.names = F)
   
 }
+
+#---------Current Video------------ 
+Video.net.interaction=Video.net.interaction%>%
+              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
+                     SP.code=Code-dummy,
+                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
+                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
+                                        dummy==3.5e+07 ~"Invertebrate"))
+
+Video.longline.interaction=Video.longline.interaction%>%
+              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
+                     SP.code=Code-dummy,
+                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
+                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
+                                        dummy==3.5e+07 ~"Invertebrate"))
+
+ggplot(data = Video.net.interaction) +
+  geom_mosaic(aes(x = product(SP.group, Interaction), fill=SP.group), na.rm=TRUE) + 
+  labs(x = "SP.group", title='xxx')
+# Video.net.interaction
+# Video.net.maxN
+# Video.net.obs
+# 
+# Video.longline.interaction
+# Video.longline.maxN
+# Video.longline.obs
