@@ -4,8 +4,13 @@
 #       catch rates by gear, and by gear.hook.combo
 #       catch composition
 #   Current:
-#       ALL
+#       ALL data sets, variable 'Code' has NA for some species hence cannot classify into shark, finfish, etc
+#           and reason why getting warnings
+#       Analyse: TEPS (stand alone paper with GHATF observer data?), catch rates (use Hook.combos); video
 
+#     use 'explr.dat.entry' to check data entry errors
+
+rm(list=ls(all=TRUE))
 library(tidyverse)
 library(dplyr)
 library("readxl")
@@ -28,21 +33,23 @@ if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Sh
 setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
 TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
-#Number of hook combos
+#Number of hook combinations used in PA project
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
 #---------CURRENT DATA ------------
 setwd('C:/Matias/Parks Australia/2019_project/Data')
-#Video
+
+#Underwater video
   #net
 Video.net.interaction <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Interaction")
 Video.net.maxN <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
-Video.net.obs <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Observation")
+#Video.net.obs <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Observation") #note: this should be merged with _interaction
+
   #longline
 Video.longline.interaction <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Interactions")
 Video.longline.maxN <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
-Video.longline.obs <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Observations")
+#Video.longline.obs <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Observations")
 
 
 #---------CONTROL SECTION------------
@@ -50,44 +57,22 @@ explr.dat.entry=TRUE
 do.len_len=FALSE
 do.Historic=FALSE
 
-#---------Manipulate Historic TEPS------------
-TEPS<-TEPS%>%
-      rename(sheet_no="Sheet #",
-             ves.act="Ves act",
-             obs.sector="Obs sector",
-             common.name="Common name",
-             sighting.period="Period",
-             sighting.dist="Dist",
-             sighting.count.method="Count method",
-             sighting.count="Count",
-             sighting.behav="Behav",
-             gear.type="Gear type",
-             hook.type="Hook type",
-             hook.size="Hook size",
-             snood.type="Snood type",
-             contact.code="Contact code",
-             contact.count="Contact count",
-             disc.prey="Disc prey",
-             steam.away="Steam away")%>%
-      data.frame
-
-
-#---------Manipulate Historic Hook.combos------------
+#---------Current Hook.combos Manipulate ------------
 Hook.combos<-Hook.combos%>%
-          rename(sheet_no="Sheet no",
-                 baiting.time='Baiting time (min)',
-                 baiting.crew='Baiting staff no',
-                 hooks.baited='no of baited hooks',
-                 hooks.deployed='Total deployed')%>%
-          filter(!is.na(sheet_no))%>%
-          mutate_at(c("C10/W","C12/W","C14/W",
-                      "Eb10/W","Eb12/W","Eb14/W",
-                      "C10/M","C12/M","C14/M",
-                      "Eb10/M","Eb12/M","Eb14/M"), as.numeric)%>%
-          data.frame
+  rename(sheet_no="Sheet no",
+         baiting.time='Baiting time (min)',
+         baiting.crew='Baiting staff no',
+         hooks.baited='no of baited hooks',
+         hooks.deployed='Total deployed')%>%
+  filter(!is.na(sheet_no))%>%
+  mutate_at(c("C10/W","C12/W","C14/W",
+              "Eb10/W","Eb12/W","Eb14/W",
+              "C10/M","C12/M","C14/M",
+              "Eb10/M","Eb12/M","Eb14/M"), as.numeric)%>%
+  data.frame
 
 
-#---------Manipulate Historic DATA------------
+#---------Historic DATA Manipulate ------------
 DATA=DATA[grep("PA", DATA$SHEET_NO), ]%>%
       filter(year>=2020)%>%
       rename(IDL=TrunkL)%>%
@@ -103,7 +88,30 @@ DATA=DATA%>%
          hooktype=='EZ-baiter kerbed'~'Ezb'),
          hooksize=as.numeric(substr(hooksize,1,2)))
 
-#---------Check missing Historic DATA------------
+#---------add number of hook combo to PA data------------
+DATA=DATA%>% 
+  left_join(Hook.combos%>%
+              dplyr::select(-c(Date,baiting.time,baiting.crew,hooks.baited,Comments)),by='sheet_no')%>%
+  mutate(Effort=case_when(method=="GN"~soak.time*net_length,
+                          method=="LL"~soak.time*n.hooks),
+         Effort.hook.combo=case_when(
+           method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='Yes' ~soak.time * C10.W,
+           method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='Yes' ~soak.time * C12.W,
+           method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='Yes' ~soak.time * C14.W,
+           method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='No' ~soak.time * C10.M,
+           method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='No' ~soak.time * C12.M,
+           method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='No' ~soak.time * C14.M,
+           method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='Yes' ~soak.time * Eb10.W,
+           method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='Yes' ~soak.time * Eb12.W,
+           method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='Yes' ~soak.time * Eb14.W,
+           method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='No' ~soak.time * Eb10.M,
+           method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='No' ~soak.time * Eb12.M,
+           method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='No' ~soak.time * Eb14.M,
+           TRUE~NA_real_))
+
+
+
+#---------Explore PA data------------
 if(explr.dat.entry)
 {
   setwd('C:/Matias/Analyses/Parks Australia/fix this')
@@ -146,80 +154,7 @@ if(explr.dat.entry)
   if(nrow(a)>0) write.csv(a,'N_hooks.different_to_hooks.deployed.csv',row.names = F)
 }
 
-
-#---------Historic Effort------------
-DATA=DATA%>% 
-    left_join(Hook.combos%>%
-                dplyr::select(-c(Date,baiting.time,baiting.crew,hooks.baited,Comments)),by='sheet_no')%>%
-    mutate(Effort=case_when(method=="GN"~soak.time*net_length,
-                           method=="LL"~soak.time*n.hooks),
-           Effort.hook.combo=case_when(
-             method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='Yes' ~soak.time * C10.W,
-             method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='Yes' ~soak.time * C12.W,
-             method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='Yes' ~soak.time * C14.W,
-             method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='No' ~soak.time * C10.M,
-             method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='No' ~soak.time * C12.M,
-             method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='No' ~soak.time * C14.M,
-             method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='Yes' ~soak.time * Eb10.W,
-             method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='Yes' ~soak.time * Eb12.W,
-             method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='Yes' ~soak.time * Eb14.W,
-             method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='No' ~soak.time * Eb10.M,
-             method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='No' ~soak.time * Eb12.M,
-             method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='No' ~soak.time * Eb14.M,
-             TRUE~NA_real_))
-
- 
-#--------- Current length-length relationships------------     
-#using robust regression to deal with outliers
-if(do.len_len)
-{
-  setwd('C:/Matias/Analyses/Parks Australia/outputs/length_length')
-  r2ww <- function(x)
-  {
-    SSe <- sum(x$w*(x$resid)^2)
-    observed <- x$resid+x$fitted
-    SSt <- sum(x$w*(observed-weighted.mean(observed,x$w))^2)
-    value <- 1-SSe/SSt;
-    return(value);
-  }
-  
-  ggplotRegression <- function(dat, xvar, yvar,tolerance=.5)
-  {
-    dat=dat%>%filter(!is.na((!!sym(xvar))) & !is.na((!!sym(yvar))))
-    fml <- as.formula(paste(yvar, "~", xvar))
-    fit <- rlm(fml, dat)   #robust regression
-    d1=dat%>%
-      mutate(pred=predict(fit),
-             delta=abs(pred-(!!sym(yvar))))%>%
-      filter(delta>tolerance*sd(d1$delta))
-    p=dat%>%
-      ggplot(aes_string(xvar,yvar,label = 'sheet_no'))+geom_point(na.rm= TRUE,colour='black')+
-      geom_text_repel(data=  d1,size=3,na.rm= TRUE,segment.alpha=.4)+
-      stat_smooth(method = "lm", col = "red")+
-      labs(title = paste("Adj.R2= ",round(r2ww(fit),2),
-                         "Inter.=",signif(fit$coef[[1]],5),
-                         " Slope=",signif(fit$coef[[2]], 5)))+
-      theme(plot.title = element_text(size=10))
-    
-    return(p)
-  }
-  fn.idl=function(SP)
-  {
-    d=DATA%>%filter(species==SP)
-    TL.FL=ggplotRegression(d, "tl", "fl")
-    FL.TL=ggplotRegression(d, "fl", "tl")
-    idl.TL=ggplotRegression(d, "idl", "tl")
-    idl.FL=ggplotRegression(d, "idl", "fl")
-    ggarrange(TL.FL, idl.TL, FL.TL, idl.FL,ncol = 2, nrow = 2)
-    ggsave(paste(unique(d$common_name),".tiff",sep=''), width = 8,height = 8, dpi = 300,
-           compression = "lzw")
-  }
-  idl.species=table(DATA$species,1000*round(DATA$idl/1000))
-  idl.species=rownames(idl.species)[which(idl.species>5)]
-  for(i in 1:length(idl.species)) fn.idl(SP=idl.species[i])
-}
-
-#---------Historic catches------------    
+#---------Historic catch Analyses------------    
 if(do.Historic)  
 {
   library(fields)
@@ -940,29 +875,248 @@ if(do.Historic)
   write.csv(d,paste(hndl,"/Average catch price per shot.csv",sep=""),row.names = F)
   
 }
+#---------Current TEPS Manipulate ------------
+TEPS.code_contact=data.frame(contact.code=c('WWC','BFC','WER','WEN','WDNN','WDNF','WDDN','WDDF'),
+                             contact.code.meaning=c('Wildlife on/in water, contact with vessel',
+                                                    'Bird flying, contact with vessel or gear',
+                                                    'Wildlife entangled in ropes',
+                                                    'Wildlife entangled/hooked',
+                                                    'Wildlife diving for but not feeding from net/longline',
+                                                    'Wildlife diving for and feeding from net/longline',
+                                                    'Wildlife diving for but not feeding on discards',
+                                                    'Wildlife diving for and feeding on discards'))
+TEPS.code_behav=data.frame(sighting.behav=c('INT','IRR','DES','ROW'),
+                           sighting.behav.meaning=c('Intensively searching',
+                                                    'Irregularly searching',
+                                                    'desinterested',
+                                                    'Roaming wild'))
 
-#---------Current Video------------ 
+TEPS<-TEPS%>%
+  rename(sheet_no="Sheet #",
+         ves.act="Ves act",
+         obs.sector="Obs sector",
+         common.name="Common name",
+         sighting.period="Period",
+         sighting.dist="Dist",
+         sighting.count.method="Count method",
+         sighting.count="Count",
+         sighting.behav="Behav",
+         gear.type="Gear type",
+         hook.type="Hook type",
+         hook.size="Hook size",
+         snood.type="Snood type",
+         contact.code="Contact code",
+         contact.count="Contact count",
+         disc.prey="Disc prey",
+         steam.away="Steam away")%>%
+  mutate(contact.code=ifelse(contact.code=="WEN/ WWC" & sheet_no=='PA0036',NA,contact.code))%>%
+  data.frame%>%
+  filter(!is.na(contact.code))%>%
+  left_join(TEPS.code_contact,by='contact.code')%>%
+  left_join(TEPS.code_behav,by='sighting.behav')
+
+TEPS=TEPS%>%
+  mutate(common.name=tolower(common.name),
+         SP.group=case_when(common.name%in%c("grey nurse shark")~"protected sharks",
+                            common.name%in%c("australian sealion")~"marine mammals",
+                            TRUE~"other stuff"))
+
+
+#--------- Current length-length relationships------------     
+#using robust regression to deal with outliers
+if(do.len_len)
+{
+  setwd('C:/Matias/Analyses/Parks Australia/outputs/length_length')
+  r2ww <- function(x)
+  {
+    SSe <- sum(x$w*(x$resid)^2)
+    observed <- x$resid+x$fitted
+    SSt <- sum(x$w*(observed-weighted.mean(observed,x$w))^2)
+    value <- 1-SSe/SSt;
+    return(value);
+  }
+  
+  ggplotRegression <- function(dat, xvar, yvar,tolerance=.5)
+  {
+    dat=dat%>%filter(!is.na((!!sym(xvar))) & !is.na((!!sym(yvar))))
+    fml <- as.formula(paste(yvar, "~", xvar))
+    fit <- rlm(fml, dat)   #robust regression
+    d1=dat%>%
+      mutate(pred=predict(fit),
+             delta=abs(pred-(!!sym(yvar))))%>%
+      filter(delta>tolerance*sd(d1$delta))
+    p=dat%>%
+      ggplot(aes_string(xvar,yvar,label = 'sheet_no'))+geom_point(na.rm= TRUE,colour='black')+
+      geom_text_repel(data=  d1,size=3,na.rm= TRUE,segment.alpha=.4)+
+      stat_smooth(method = "lm", col = "red")+
+      labs(title = paste("Adj.R2= ",round(r2ww(fit),2),
+                         "Inter.=",signif(fit$coef[[1]],5),
+                         " Slope=",signif(fit$coef[[2]], 5)))+
+      theme(plot.title = element_text(size=10))
+    
+    return(p)
+  }
+  fn.idl=function(SP)
+  {
+    d=DATA%>%filter(species==SP)
+    TL.FL=ggplotRegression(d, "tl", "fl")
+    FL.TL=ggplotRegression(d, "fl", "tl")
+    idl.TL=ggplotRegression(d, "idl", "tl")
+    idl.FL=ggplotRegression(d, "idl", "fl")
+    ggarrange(TL.FL, idl.TL, FL.TL, idl.FL,ncol = 2, nrow = 2)
+    ggsave(paste(unique(d$common_name),".tiff",sep=''), width = 8,height = 8, dpi = 300,
+           compression = "lzw")
+  }
+  idl.species=table(DATA$species,1000*round(DATA$idl/1000))
+  idl.species=rownames(idl.species)[which(idl.species>5)]
+  for(i in 1:length(idl.species)) fn.idl(SP=idl.species[i])
+}
+
+
+
+#---------Current Video Manipulate------------ 
+DATA_PA=DATA%>%
+  distinct(sheet_no,.keep_all=TRUE)%>%
+  dplyr::select(sheet_no,mid.lat,mid.long,date,day,month,year,
+                boat,block,skipper,botdepth,set.time,set.time.end,haul.time,haul.time.end,
+                set.time.avg,haul.time.avg,soak.time,method,mesh_size,net_length,n.hooks)
+
 Video.net.interaction=Video.net.interaction%>%
               mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
                      SP.code=Code-dummy,
                      SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
                                         SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                        dummy==3.5e+07 ~"Invertebrate"))
+                                        dummy==3.5e+07 ~"Invertebrate"),
+                     Period=tolower(Period),
+                     Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                     sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
+                     Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)),
+                     Escape2=ifelse(Escape=='landed',NA,Escape),
+                     Interaction2=ifelse(Interaction%in%grep(paste(c("Caught","caught"),collapse="|"),Interaction, value=TRUE) &
+                                         !is.na(Escape2),"Escape",Interaction))%>%
+              left_join(DATA_PA,by='sheet_no')%>%
+              data.frame
+
 
 Video.longline.interaction=Video.longline.interaction%>%
               mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
                      SP.code=Code-dummy,
                      SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
                                         SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                        dummy==3.5e+07 ~"Invertebrate"))
+                                        dummy==3.5e+07 ~"Invertebrate"),
+                     Period=tolower(Period),
+                     Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                     sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
+                     Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)),
+                     Escape2=ifelse(Escape=='landed',NA,Escape),
+                     Interaction2=ifelse(Interaction%in%grep(paste(c("Caught","caught"),collapse="|"),Interaction, value=TRUE) &
+                                           !is.na(Escape2),"Escape",Interaction))%>%
+              left_join(DATA_PA,by='sheet_no')%>%
+              data.frame
 
+Video.net.maxN=Video.net.maxN%>%
+              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
+                     SP.code=Code-dummy,
+                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
+                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
+                                        dummy==3.5e+07 ~"Invertebrate"),
+                     Period=tolower(Period),
+                     Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                     sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
+                     Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)))%>%
+                left_join(DATA_PA,by='sheet_no')%>%
+                data.frame
+Video.longline.maxN=Video.longline.maxN%>%
+                mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
+                       SP.code=Code-dummy,
+                       SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
+                                          SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
+                                          dummy==3.5e+07 ~"Invertebrate"),
+                       Period=tolower(Period),
+                       Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                       sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
+                       Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)))%>%
+                left_join(DATA_PA,by='sheet_no')%>%
+                data.frame
+
+
+#---------Current Video General tables and plots------------ 
 ggplot(data = Video.net.interaction) +
   geom_mosaic(aes(x = product(SP.group, Interaction), fill=SP.group), na.rm=TRUE) + 
   labs(x = "SP.group", title='xxx')
-# Video.net.interaction
-# Video.net.maxN
-# Video.net.obs
-# 
-# Video.longline.interaction
-# Video.longline.maxN
-# Video.longline.obs
+
+
+
+
+#---------Current TEPS Analyses ------------
+fn.tep.barplot=function(d,all.gn.shots,all.ll.shots)   #ACA, incomplete
+{
+  d.nets=d%>%filter(gear.type=="GN")
+  d.ll=d%>%filter(gear.type=="LL")
+  
+  no.teps=all.gn.shots[which(!all.gn.shots%in%unique(d.nets$sheet_no))]
+  if(length(no.teps)>0)
+  {
+    add.d=d.nets[1:length(no.teps),]
+    add.d[,]=NA
+    add.d$sheet_no=no.teps
+    d.nets=rbind(d.nets,add.d)
+  }
+  
+  no.teps=all.ll.shots[which(!all.ll.shots%in%unique(d.ll$sheet_no))]
+  if(length(no.teps)>0)
+  {
+    add.d=d.ll[1:length(no.teps),]
+    add.d[,]=NA
+    add.d$sheet_no=no.teps
+    d.ll=rbind(d.ll,add.d)
+  }
+  
+  #gillnet
+  dd=d.nets%>%
+    group_by(sheet_no,SP.group,gear.type,contact.code.meaning)%>%
+    tally()%>%
+    mutate(n=ifelse(is.na(contact.code.meaning),0,n),)
+  
+      #protected sharks
+  p1=dd%>%
+    filter(SP.group=="protected sharks" & gear.type=="GN")%>%
+    ggplot(aes(fill=contact.code.meaning, y=n, x=sheet_no)) + 
+    geom_bar(position="stack", stat="identity")+
+    scale_fill_discrete(na.translate=FALSE)
+  
+      #mammals
+  
+      #seabirds
+  
+  #Longlines
+  dd=d.ll%>%
+    group_by(sheet_no,SP.group,gear.type,contact.code.meaning)%>%
+    tally()%>%
+    mutate(n=ifelse(is.na(contact.code.meaning),0,n),)
+  
+  
+  infographic=grid.arrange(p1,p4,p2,p5,p3,p6, nrow = 3,ncol=2,
+                           heights=c(3,3,3))
+  annotate_figure(infographic,
+                  bottom = text_grob("Year",size = 20),
+                  left = text_grob("Tonnes",rot = 90,size = 20))
+  ggsave(le.paste("TEPS/Numbers.inter.tiff"), width = 12,
+         height = 10,compression = "lzw")
+  
+  
+  
+}
+
+HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
+le.paste=function(x) paste(HNDL,x,sep='')
+
+fn.tep.barplot(d=TEPS,
+               all.gn.shots=DATA%>%
+                              filter(method=="GN")%>%
+                              distinct(sheet_no)%>%
+                              pull(sheet_no),
+               all.ll.shots=DATA%>%
+                             filter(method=="LL")%>%
+                             distinct(sheet_no)%>%
+                             pull(sheet_no))
