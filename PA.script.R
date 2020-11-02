@@ -19,6 +19,9 @@ library(ggpubr)
 library(rlang)
 library(MASS)
 library(ggmosaic)
+library(Hmisc)
+library(gridExtra)
+library(stringr)
 
 options(stringsAsFactors = FALSE,
         dplyr.summarise.inform = FALSE) 
@@ -57,7 +60,7 @@ explr.dat.entry=TRUE
 do.len_len=FALSE
 do.Historic=FALSE
 
-#---------Current Hook.combos Manipulate ------------
+#---------Current. Hook.combos Manipulate ------------
 Hook.combos<-Hook.combos%>%
   rename(sheet_no="Sheet no",
          baiting.time='Baiting time (min)',
@@ -72,7 +75,7 @@ Hook.combos<-Hook.combos%>%
   data.frame
 
 
-#---------Historic DATA Manipulate ------------
+#---------Historic. DATA Manipulate ------------
 DATA=DATA[grep("PA", DATA$SHEET_NO), ]%>%
       filter(year>=2020)%>%
       rename(IDL=TrunkL)%>%
@@ -88,7 +91,7 @@ DATA=DATA%>%
          hooktype=='EZ-baiter kerbed'~'Ezb'),
          hooksize=as.numeric(substr(hooksize,1,2)))
 
-#---------add number of hook combo to PA data------------
+#---------Current. Add number of hook combo to PA data------------
 DATA=DATA%>% 
   left_join(Hook.combos%>%
               dplyr::select(-c(Date,baiting.time,baiting.crew,hooks.baited,Comments)),by='sheet_no')%>%
@@ -111,7 +114,7 @@ DATA=DATA%>%
 
 
 
-#---------Explore PA data------------
+#---------Current. Explore PA data------------
 if(explr.dat.entry)
 {
   setwd('C:/Matias/Analyses/Parks Australia/fix this')
@@ -154,7 +157,7 @@ if(explr.dat.entry)
   if(nrow(a)>0) write.csv(a,'N_hooks.different_to_hooks.deployed.csv',row.names = F)
 }
 
-#---------Historic catch Analyses------------    
+#---------Historic. Catch Analyses------------    
 if(do.Historic)  
 {
   library(fields)
@@ -875,7 +878,7 @@ if(do.Historic)
   write.csv(d,paste(hndl,"/Average catch price per shot.csv",sep=""),row.names = F)
   
 }
-#---------Current TEPS Manipulate ------------
+#---------Current. TEPS Manipulate ------------
 TEPS.code_contact=data.frame(contact.code=c('WWC','BFC','WER','WEN','WDNN','WDNF','WDDN','WDDF'),
                              contact.code.meaning=c('Wildlife on/in water, contact with vessel',
                                                     'Bird flying, contact with vessel or gear',
@@ -884,7 +887,15 @@ TEPS.code_contact=data.frame(contact.code=c('WWC','BFC','WER','WEN','WDNN','WDNF
                                                     'Wildlife diving for but not feeding from net/longline',
                                                     'Wildlife diving for and feeding from net/longline',
                                                     'Wildlife diving for but not feeding on discards',
-                                                    'Wildlife diving for and feeding on discards'))
+                                                    'Wildlife diving for and feeding on discards'),
+                             contact.code.to.complete=c('on/in water, contact with vessel',
+                                                    'flying, contact with vessel or gear',
+                                                    'entangled in ropes',
+                                                    'entangled/hooked',
+                                                    'diving for but not feeding from net/longline',
+                                                    'feeding from net/longline',
+                                                    'diving for but not feeding on discards',
+                                                    'feeding on discards'))
 TEPS.code_behav=data.frame(sighting.behav=c('INT','IRR','DES','ROW'),
                            sighting.behav.meaning=c('Intensively searching',
                                                     'Irregularly searching',
@@ -922,7 +933,7 @@ TEPS=TEPS%>%
                             TRUE~"other stuff"))
 
 
-#--------- Current length-length relationships------------     
+#--------- Current. Build length-length relationships------------     
 #using robust regression to deal with outliers
 if(do.len_len)
 {
@@ -974,7 +985,7 @@ if(do.len_len)
 
 
 
-#---------Current Video Manipulate------------ 
+#---------Current. Video footage data manipulations------------ 
 DATA_PA=DATA%>%
   distinct(sheet_no,.keep_all=TRUE)%>%
   dplyr::select(sheet_no,mid.lat,mid.long,date,day,month,year,
@@ -1040,7 +1051,7 @@ Video.longline.maxN=Video.longline.maxN%>%
                 data.frame
 
 
-#---------Current Video General tables and plots------------ 
+#---------Current. Video General tables and plots------------ 
 ggplot(data = Video.net.interaction) +
   geom_mosaic(aes(x = product(SP.group, Interaction), fill=SP.group), na.rm=TRUE) + 
   labs(x = "SP.group", title='xxx')
@@ -1048,12 +1059,14 @@ ggplot(data = Video.net.interaction) +
 
 
 
-#---------Current TEPS Analyses ------------
-fn.tep.barplot=function(d,all.gn.shots,all.ll.shots)   #ACA, incomplete
+#---------Current. TEPS Analyses ------------
+fn.tep.barplot=function(d,all.gn.shots,all.ll.shots) 
 {
   d.nets=d%>%filter(gear.type=="GN")
   d.ll=d%>%filter(gear.type=="LL")
   
+  #add 0 record if no TEPS
+    #gillnet
   no.teps=all.gn.shots[which(!all.gn.shots%in%unique(d.nets$sheet_no))]
   if(length(no.teps)>0)
   {
@@ -1061,8 +1074,12 @@ fn.tep.barplot=function(d,all.gn.shots,all.ll.shots)   #ACA, incomplete
     add.d[,]=NA
     add.d$sheet_no=no.teps
     d.nets=rbind(d.nets,add.d)
+    Shots=data.frame(sheet_no=sort(unique(d.nets$sheet_no)))
+    Shots$shot=1:nrow(Shots)
+    d.nets=d.nets%>%
+            left_join(Shots,by="sheet_no")
   }
-  
+    #lonline
   no.teps=all.ll.shots[which(!all.ll.shots%in%unique(d.ll$sheet_no))]
   if(length(no.teps)>0)
   {
@@ -1070,38 +1087,60 @@ fn.tep.barplot=function(d,all.gn.shots,all.ll.shots)   #ACA, incomplete
     add.d[,]=NA
     add.d$sheet_no=no.teps
     d.ll=rbind(d.ll,add.d)
+    
+    Shots=data.frame(sheet_no=sort(unique(d.ll$sheet_no)))
+    Shots$shot=1:nrow(Shots)
+    d.ll=d.ll%>%
+      left_join(Shots,by="sheet_no")
   }
   
-  #gillnet
-  dd=d.nets%>%
-    group_by(sheet_no,SP.group,gear.type,contact.code.meaning)%>%
-    tally()%>%
-    mutate(n=ifelse(is.na(contact.code.meaning),0,n),)
+  #Add species contact group
+  Drop= paste(c("/hooked","/longline"), collapse = "|")
+  d.nets=d.nets%>%
+    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
   
-      #protected sharks
-  p1=dd%>%
-    filter(SP.group=="protected sharks" & gear.type=="GN")%>%
-    ggplot(aes(fill=contact.code.meaning, y=n, x=sheet_no)) + 
+  Drop= paste(c("entangled/","net/"), collapse = "|")
+  d.ll=d.ll%>%
+    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
+
+  
+  #Plot gillnet
+  p1=d.nets%>%
+    group_by(shot,gear.type,con.code.sp)%>%
+    tally()%>%
+    mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
+    ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
     geom_bar(position="stack", stat="identity")+
-    scale_fill_discrete(na.translate=FALSE)
+    scale_fill_discrete(na.translate=FALSE)+
+    ylab('')+xlab('')+ labs(fill = "Gillnet")+
+    theme(legend.position="top")+ 
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
   
-      #mammals
   
-      #seabirds
-  
-  #Longlines
-  dd=d.ll%>%
-    group_by(sheet_no,SP.group,gear.type,contact.code.meaning)%>%
+
+  #Plot longlines
+  p2=d.ll%>%
+    group_by(shot,gear.type,con.code.sp)%>%
     tally()%>%
-    mutate(n=ifelse(is.na(contact.code.meaning),0,n),)
+    mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
+    ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
+    geom_bar(position="stack", stat="identity")+
+    scale_fill_discrete(na.translate=FALSE)+
+    ylab('')+xlab('')+ labs(fill = "Longline")+
+    theme(legend.position="top")+ 
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
   
   
-  infographic=grid.arrange(p1,p4,p2,p5,p3,p6, nrow = 3,ncol=2,
-                           heights=c(3,3,3))
+  #export graphs
+  infographic=grid.arrange(p1,p2, nrow = 2,ncol=1,heights=c(3,3))
   annotate_figure(infographic,
-                  bottom = text_grob("Year",size = 20),
-                  left = text_grob("Tonnes",rot = 90,size = 20))
-  ggsave(le.paste("TEPS/Numbers.inter.tiff"), width = 12,
+                  bottom = text_grob("Shot",size = 20),
+                  left = text_grob("Number of interactions",rot = 90,size = 20))
+  ggsave(le.paste("TEPS/Numbers.interactions.by.gear.tiff"), width = 12,
          height = 10,compression = "lzw")
   
   
