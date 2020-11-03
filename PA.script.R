@@ -22,6 +22,7 @@ library(ggmosaic)
 library(Hmisc)
 library(gridExtra)
 library(stringr)
+library(extdplyr)
 
 options(stringsAsFactors = FALSE,
         dplyr.summarise.inform = FALSE) 
@@ -45,14 +46,14 @@ setwd('C:/Matias/Parks Australia/2019_project/Data')
 
 #Underwater video
   #net
-Video.net.interaction <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Interaction")
-Video.net.maxN <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
-#Video.net.obs <- read_excel("Gillnet_Data_22_10_2020_Clean.xlsx", sheet = "Observation") #note: this should be merged with _interaction
+Video.net.interaction <- read_excel("Gillnet_Data_3_11_2020_Clean.xlsx", sheet = "Interactions")
+Video.net.maxN <- read_excel("Gillnet_Data_3_11_2020_Clean.xlsx", sheet = "MaxN")
+Video.net.obs <- read_excel("Gillnet_Data_3_11_2020_Clean.xlsx", sheet = "Observation") 
 
   #longline
-Video.longline.interaction <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Interactions")
-Video.longline.maxN <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "MaxN")
-#Video.longline.obs <- read_excel("Longline_Data_22_10_2020_Clean.xlsx", sheet = "Observations")
+Video.longline.interaction <- read_excel("Longline_Data_3_11_2020_Clean.xlsx", sheet = "Interactions")
+Video.longline.maxN <- read_excel("Longline_Data_3_11_2020_Clean.xlsx", sheet = "MaxN")
+Video.longline.obs <- read_excel("Longline_Data_3_11_2020_Clean.xlsx", sheet = "Observations")
 
 
 #---------CONTROL SECTION------------
@@ -992,6 +993,42 @@ DATA_PA=DATA%>%
                 boat,block,skipper,botdepth,set.time,set.time.end,haul.time,haul.time.end,
                 set.time.avg,haul.time.avg,soak.time,method,mesh_size,net_length,n.hooks)
 
+#Combine Interaction with Observation data sheets
+Video.net.obs=Video.net.obs%>%
+                        mutate(Interaction='Swim Past',
+                               Escape=NA,
+                               Method="Gillnet", 
+                               Position="Gillnet",
+                               Species=tolower(observation))
+cols.vid.inter=colnames(Video.net.interaction)
+add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.net.obs))]
+empty_df = Video.net.obs[,1:length(add)]
+colnames(empty_df)=add
+empty_df[,]=NA
+Video.net.obs=cbind(Video.net.obs,empty_df)
+Video.net.obs=Video.net.obs[,colnames(Video.net.interaction)]
+Video.net.interaction=rbind(Video.net.interaction,Video.net.obs)
+
+
+Video.longline.obs=Video.longline.obs%>%
+                        mutate(Interaction='Swim Past',
+                               Escape=NA,
+                               Method="longline", 
+                               Position="longline",
+                               Species=tolower(Observation))
+
+cols.vid.inter=colnames(Video.longline.interaction)
+add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.longline.obs))]
+empty_df = Video.longline.obs[,1:length(add)]
+colnames(empty_df)=add
+empty_df[,]=NA
+Video.longline.obs=cbind(Video.longline.obs,empty_df)
+Video.longline.obs=Video.longline.obs[,colnames(Video.longline.interaction)]
+Video.longline.interaction=rbind(Video.longline.interaction,Video.longline.obs)
+
+
+
+#some manipulations                       #MISSING: add whale, seal, etc SP.group
 Video.net.interaction=Video.net.interaction%>%
               mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
                      SP.code=Code-dummy,
@@ -1025,6 +1062,7 @@ Video.longline.interaction=Video.longline.interaction%>%
               left_join(DATA_PA,by='sheet_no')%>%
               data.frame
 
+
 Video.net.maxN=Video.net.maxN%>%
               mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
                      SP.code=Code-dummy,
@@ -1052,9 +1090,49 @@ Video.longline.maxN=Video.longline.maxN%>%
 
 
 #---------Current. Video General tables and plots------------ 
+HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
+le.paste=function(x) paste(HNDL,x,sep='')
+
+#Lollipop graph of % of interaction types by gear
+df=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number),
+         Video.net.interaction%>%dplyr::select(Method,Interaction,Number))
+df=pct_routine(df, Method, Interaction)
+ggplot(df)+
+  geom_linerange(aes(x = Interaction, ymin = 0, ymax = pct, colour = Method), 
+                 position = position_dodge(width = 1))+
+  geom_point(aes(x = Interaction, y = pct, colour = Method),
+             position = position_dodge(width = 1))+
+  coord_flip()
+ggsave(le.paste("Video/underwater/Interactions_lollipop.tiff"), 
+       width = 12,height = 10,compression = "lzw")
+
+
+#Mosaic plot
+  #gillnet
+TAB=table(Video.net.interaction$Interaction)
+lab=c(TAB)
+lab=paste(names(TAB)," (n= ",lab,")",sep='')
+names(lab)=names(TAB)
+
 ggplot(data = Video.net.interaction) +
-  geom_mosaic(aes(x = product(SP.group, Interaction), fill=SP.group), na.rm=TRUE) + 
-  labs(x = "SP.group", title='xxx')
+  geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
+  labs(x = "",y='', title='Gillnet')+
+  facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
+ggsave(le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"), 
+       width = 12,height = 10,compression = "lzw")
+
+  #longline
+TAB=table(Video.longline.interaction$Interaction)
+lab=c(TAB)
+lab=paste(names(TAB)," (n= ",lab,")",sep='')
+names(lab)=names(TAB)
+
+ggplot(data = Video.longline.interaction) +
+  geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
+  labs(x = "",y='', title='Gillnet')+
+  facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
+ggsave(le.paste("Video/underwater/Interactions_mosaic_longline.tiff"), 
+       width = 12,height = 10,compression = "lzw")
 
 
 
@@ -1146,10 +1224,6 @@ fn.tep.barplot=function(d,all.gn.shots,all.ll.shots)
   
   
 }
-
-HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
-le.paste=function(x) paste(HNDL,x,sep='')
-
 fn.tep.barplot(d=TEPS,
                all.gn.shots=DATA%>%
                               filter(method=="GN")%>%
