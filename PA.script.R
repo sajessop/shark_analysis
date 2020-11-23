@@ -42,7 +42,7 @@ Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
 #---------CURRENT DATA ------------
-setwd('C:/Matias/Parks Australia/2019_project/Data')
+setwd('C:/Matias/Parks Australia/2019_project/Data/cameras')
 
 #Underwater video
   #net
