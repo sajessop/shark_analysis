@@ -1,0 +1,55 @@
+---
+title: "2021 Parks Australia Report"
+author: "Matias Braccini"
+date: "13/01/2021"
+output:
+  word_document:  
+    toc: yes
+knit: (function(inputFile, encoding) {
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Parks Australia/2019_project/Report to Parks Australia") })
+
+---
+
+```{=openxml}
+<w:p><w:r><w:br w:type="page"/></w:r></w:p>
+```
+```{r globaloptions, include=FALSE}
+knitr::opts_chunk$set(fig.width = 10,fig.height = 10,
+                        echo = TRUE, warning=FALSE,message=FALSE)
+```
+
+
+## Socio-economic
+From catch and effort data: report who is fishing (number of boats)
+From Licence data: report who has licence/units, how many units, who’s transferring units by year, etc. Describe dynamics
+
+
+
+## Introduction
+Some text
+
+<!-- global for setting path to figures -->
+```{r, echo=FALSE}
+PA.outpus='C:/Matias/Analyses/Parks Australia/outputs'
+PA.historic=paste(PA.outpus,'Historic_catch_effort',sep='/')
+```
+
+<!-- 1. Overall catch compostion by method -->
+```{r, echo=FALSE}
+path=paste(PA.historic,'Catch_composition/Overall_GN_LL_overall_Monthly.tiff',sep='/')
+```
+![Figure X. Cumulative reported catch by method. Monthly records](`r path`){width=600px}
+```{r, echo=FALSE}
+path=paste(PA.historic,'Catch_composition/Overall_GN_LL_overall_Daily.tiff',sep='/')
+```
+![Figure X. Cumulative reported catch by method. Daily records](`r path`){width=600px}
+
+
+```{r, echo=FALSE}
+path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_Monthly.tiff',sep='/')
+```
+![Figure X. Cumulative reported catch by method and zone. Monthly records](`r path`){width=600px}
+```{r, echo=FALSE}
+path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_Daily.tiff',sep='/')
+```
+![Figure X. Cumulative reported catch by method and zone. Daily records](`r path`){width=600px}
