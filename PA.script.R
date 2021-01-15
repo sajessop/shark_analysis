@@ -68,6 +68,8 @@ Video.habitat<- read_excel(file.name.habitat, sheet = "gillnet habitat")
 
 
 #PA deck camera 1 (points to measuring board)
+file.name.habitat.deck="15_01_2020_Deck 1 habitat and fish.xlsx"
+Video.habitat.deck<- read_excel(file.name.habitat.deck, sheet = "Habitat")
 
 
 #PA deck camera 2 (points to roller)
@@ -80,6 +82,9 @@ Video.habitat<- read_excel(file.name.habitat, sheet = "gillnet habitat")
 explr.dat.entry=TRUE
 do.len_len=FALSE
 do.Historic=FALSE
+
+distance.roller.spreader.Anthony=4.3  #in metres
+mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jess
 
 #---------Manipulate PA hook size, type and snood combinations  ------------
 Hook.combos<-Hook.combos%>%
@@ -492,6 +497,7 @@ if(do.Historic)
   
   #Some manipulations
   Data.monthly=Data.monthly%>%
+    filter(TYPE.DATA=='monthly')%>%
     mutate(SNAME=tolower(SNAME),
            SNAME=case_when(SPECIES== 10001~ 'shark, shortfin mako',
                            SPECIES== 13000~ 'shark, wobbegong',
@@ -1368,3 +1374,25 @@ dev.off()
 
 
 # 2. Habitat interactions (deck cameras)
+Video.habitat.deck=Video.habitat.deck%>%
+          data.frame%>%
+          mutate(Period=tolower(Period),
+                 SHEET_NO=case_when(Period=='gillnet'~str_remove(word(DIPRD.code,1,sep = "\\/"),'GN'),
+                                    Period=='longline'~str_remove(word(DIPRD.code,2,sep = "\\/"),'LL')),
+                 Percentage.cover=ifelse(Percentage.cover=='<1',1,Percentage.cover),
+                 Percentage.cover=as.numeric(Percentage.cover),
+                 Frame_sheet=paste(SHEET_NO,Frame,Period))
+
+Video.habitat.deck.GN=Video.habitat.deck%>%
+                filter(Period=='gillnet')%>%
+                group_by(Frame_sheet,Frame,SHEET_NO,Family,Genus,Species)%>%
+                summarise(Percentage.cover=sum(Percentage.cover))%>%
+                mutate(dist.roller.spreader=distance.roller.spreader.Anthony,
+                       mesh.deep=mesh.deep.Anthony,
+                       quadrant.surface=dist.roller.spreader*mesh.deep,
+                       habitat.damage.m2=quadrant.surface*Percentage.cover/100)%>%
+                data.frame
+#MISSING: put this in perspective, need all habitat.damage.m2 footage (i.e all frames), with and without damage!!
+#     report as a proportion of all frames
+
+

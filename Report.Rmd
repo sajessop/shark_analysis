@@ -5,6 +5,7 @@ date: "13/01/2021"
 output:
   word_document:  
     toc: yes
+bibliography: library.bib
 knit: (function(inputFile, encoding) {
   rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Parks Australia/2019_project/Report to Parks Australia") })
 
@@ -27,14 +28,16 @@ From Licence data: report who has licence/units, how many units, who’s transfe
 
 ## Introduction
 Some text
+This is a paper from Andre [@Punt2019]
 
 <!-- global for setting path to figures -->
 ```{r, echo=FALSE}
 PA.outpus='C:/Matias/Analyses/Parks Australia/outputs'
 PA.historic=paste(PA.outpus,'Historic_catch_effort',sep='/')
+PA.video.underwater=paste(PA.outpus,'Video/underwater',sep='/')
 ```
 
-<!-- 1. Overall catch compostion by method -->
+### Reported catch composition by method
 ```{r, echo=FALSE}
 path=paste(PA.historic,'Catch_composition/Overall_GN_LL_overall_Monthly.tiff',sep='/')
 ```
@@ -53,3 +56,14 @@ path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_Monthly.tiff',se
 path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_Daily.tiff',sep='/')
 ```
 ![Figure X. Cumulative reported catch by method and zone. Daily records](`r path`){width=600px}
+
+
+
+### Habitat mapping
+```{r, echo=FALSE}
+path=paste(PA.video.underwater,'Habitats_coarse.records.tiff',sep='/')
+```
+![Figure X. Observed overall habitat types](`r path`){width=800px,height=800px}
+
+
+## References
