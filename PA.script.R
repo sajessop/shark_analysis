@@ -1381,18 +1381,116 @@ Video.habitat.deck=Video.habitat.deck%>%
                                     Period=='longline'~str_remove(word(DIPRD.code,2,sep = "\\/"),'LL')),
                  Percentage.cover=ifelse(Percentage.cover=='<1',1,Percentage.cover),
                  Percentage.cover=as.numeric(Percentage.cover),
-                 Frame_sheet=paste(SHEET_NO,Frame,Period))
+                 Species=capitalize(tolower(Species)),
+                 Frame_sheet=paste(SHEET_NO,Frame))%>%
+        left_join(DATA%>%
+                    distinct(sheet_no,.keep_all=T)%>%
+                    dplyr::select(sheet_no,net_length),
+                  by=c("SHEET_NO"="sheet_no"))%>%
+        mutate(net_length=net_length*1000,      #add net length in m
+               Species=ifelse(Species=="Radiata","Macroalgae",Species))    #group Eklonia with macroalgae
 
-Video.habitat.deck.GN=Video.habitat.deck%>%
+Video.habitat.deck_GN=Video.habitat.deck%>%
                 filter(Period=='gillnet')%>%
-                group_by(Frame_sheet,Frame,SHEET_NO,Family,Genus,Species)%>%
+                group_by(Frame,SHEET_NO,net_length,Species)%>%
                 summarise(Percentage.cover=sum(Percentage.cover))%>%
-                mutate(dist.roller.spreader=distance.roller.spreader.Anthony,
-                       mesh.deep=mesh.deep.Anthony,
-                       quadrant.surface=dist.roller.spreader*mesh.deep,
-                       habitat.damage.m2=quadrant.surface*Percentage.cover/100)%>%
+                group_by(Frame,SHEET_NO,net_length)%>%
+                mutate(Total.damage=sum(Percentage.cover))%>%
+                spread(Species,Percentage.cover,fill = 0)%>%
+                mutate(Dist.roller.spreader=distance.roller.spreader.Anthony)%>%
                 data.frame
-#MISSING: put this in perspective, need all habitat.damage.m2 footage (i.e all frames), with and without damage!!
-#     report as a proportion of all frames
+                
+#add 0 habitat damage frames
+habitat.sheet_GN=unique(Video.habitat.deck_GN$SHEET_NO)
+dummy=vector('list',length(habitat.sheet_GN))
+for(l in 1:length(habitat.sheet_GN))
+{
+  a=subset(Video.habitat.deck_GN,SHEET_NO==habitat.sheet_GN[l])
+  n.exp=floor(a$net_length[1]/a$Dist.roller.spreader[1])
+  Plus.row=n.exp-nrow(a)
+  PLUS=a[1:Plus.row,]
+  PLUS[,]=0
+  PLUS$SHEET_NO=a$SHEET_NO[1]
+  PLUS$Frame='dummy'
+  PLUS$net_length=a$net_length[1]
+  PLUS$Dist.roller.spreader=a$Dist.roller.spreader[1]
+  a$Frame=as.character(a$Frame)
+  dummy[[l]]=rbind(a,PLUS)
+}
+Video.habitat.deck_GN.no.zeros=Video.habitat.deck_GN
+Video.habitat.deck_GN=do.call(rbind,dummy)            
 
+#exploratory stuff
+fn.hist=function(x,Main) hist(x,col=2,main=Main,xlab="",ylab="")
+fn.hab.explr=function(d.no_zeros,d)
+{
+  par(mfrow=c(5,2),mar=c(2,2,1,.1),oma=c(2,2,3,.1),mgp=c(1.5,.6,0))
+  fn.hist(d$Macroalgae,"Macroalgae")
+  mtext("With 0s",3,line=1.5,col="steelblue",cex=1.5)
+  fn.hist(d.no_zeros$Macroalgae,"Macroalgae")
+  mtext("Without 0s",3,line=1.5,col="steelblue",cex=1.5)
+  fn.hist(d$Coral,"Coral"); fn.hist(d.no_zeros$Coral,"Coral")
+  fn.hist(d$Rock,"Rock"); fn.hist(d.no_zeros$Rock,"Rock")
+  fn.hist(d$Seagrass,"Seagrass"); fn.hist(d.no_zeros$Seagrass,"Seagrass")
+  fn.hist(d$Sponge,"Sponge"); fn.hist(d.no_zeros$Sponge,"Sponge")
+  mtext('Percentage damage',1,outer=T,cex=1.25)
+  mtext('Frequency',2,outer=T,cex=1.25,las=3)
+  
+  par(mfrow=c(1,2),mar=c(2,2,1,.1),oma=c(2,2,3,.1))
+  fn.hist(d$Total.damage,"Total.damage")
+  mtext("With 0s",3,line=1.5,col="steelblue",cex=1.5)
+  fn.hist(d.no_zeros$Total.damage,"Total.damage")
+  mtext("Without 0s",3,line=1.5,col="steelblue",cex=1.5)
+  mtext('Percentage damage',1,outer=T,cex=1.25)
+  mtext('Frequency',2,outer=T,cex=1.25,las=3)
+}
+
+pdf(le.paste("Video/deck.cameras/Habitat.damage_explore.pdf"))
+fn.hab.explr(d.no_zeros=Video.habitat.deck_GN.no.zeros,d=Video.habitat.deck_GN)
+dev.off()
+
+
+#Pie chart of frame with damage / no damage
+Video.habitat.deck_GN%>%
+  mutate(Damage=ifelse(Total.damage>0,"Damage","No damage"))%>%
+  group_by(Damage)%>%
+  tally()%>%
+  mutate(Percent=100*round(n/sum(n),2),
+         ymax=cumsum(Percent),
+         ymin = c(0, head(ymax, n=-1)),
+         labelPosition =(ymax + ymin) / 2)%>%
+  ggplot(aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Damage)) +
+  geom_rect() +
+  geom_text(x=3.5,aes(y=labelPosition, label=paste(Percent,"%")),size = 10,check_overlap = TRUE)+
+  scale_fill_manual(values=c("forestgreen","brown2"))+ 
+  coord_polar(theta="y") + xlim(c(2, 4)) +
+  theme_void() +
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 25))
+ggsave(le.paste("Video/deck.cameras/Habitat.pie.chart_percent.frames_damaged.not.damaged.tiff"),width = 10,height = 10,compression = "lzw")
+
+
+
+
+#Pie chart of different habitat damage categories
+Video.habitat.deck_GN.no.zeros%>%
+  dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader)%>%
+  gather(Species,Percent)%>%
+  group_by(Species)%>%
+  summarise(Percent=sum(Percent))%>%
+  mutate(label=paste(round(100*Percent/sum(Percent),1),'%'),
+         ymax=cumsum(Percent),
+         ymin = c(0, head(ymax, n=-1)),
+         labelPosition =(ymax + ymin) / 2)%>%
+  ggplot(aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Species)) +
+  geom_rect() +
+  geom_text(x=3.5,aes(y=labelPosition, label=label),size = 6,check_overlap = TRUE)+
+  scale_fill_manual(values=c("deepskyblue2","darkorange1","tomato4","forestgreen",'khaki3'))+ 
+  coord_polar(theta="y") + xlim(c(2, 4)) +
+  theme_void() +
+  theme(legend.position = "top",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 20))
+ggsave(le.paste("Video/deck.cameras/Habitat.pie.chart_damaged.categories.tiff"),width = 10,height = 10,compression = "lzw")
 
