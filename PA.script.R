@@ -27,6 +27,7 @@ library(Hmisc)
 library(gridExtra)
 library(stringr)
 library(extdplyr)
+library(ggpubr)
 
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
@@ -73,6 +74,9 @@ Video.habitat.deck<- read_excel(file.name.habitat.deck, sheet = "Habitat")
 
 
 #PA deck camera 2 (points to roller)
+file.name.camera2.deck="20_01_2020_Deck 2.xlsx"
+Video.camera2.deck<- read_excel(file.name.camera2.deck, sheet = "Deck 2")
+Video.camera2.deck_observations<- read_excel(file.name.camera2.deck, sheet = "Other observations")
 
 
 #PA subsurface camera
@@ -84,7 +88,9 @@ do.len_len=FALSE
 do.Historic=FALSE
 
 distance.roller.spreader.Anthony=4.3  #in metres
-mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jess
+mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jeff
+
+metres.observed=5 # average metres observed underwater
 
 #---------Manipulate PA hook size, type and snood combinations  ------------
 Hook.combos<-Hook.combos%>%
@@ -677,7 +683,7 @@ if(do.Historic)
                     dplyr::select(Same.return,FINYEAR,METHOD,zone,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
                what="_Monthly",
                Min.overlap=18)
-  #ACA
+
   #Hook info
   d=Effort.monthly%>%
     filter(METHOD=="LL")%>%
@@ -1084,6 +1090,7 @@ Video.net.obs=Video.net.obs%>%
                                Method="Gillnet", 
                                Position="Gillnet",
                                Species=tolower(observation))
+if(!is.na(match('code',colnames(Video.net.obs)))) Video.net.obs=Video.net.obs%>%rename(Code=code)
 cols.vid.inter=colnames(Video.net.interaction)
 add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.net.obs))]
 empty_df = Video.net.obs[,1:length(add)]
@@ -1100,7 +1107,7 @@ Video.longline.obs=Video.longline.obs%>%
                                Method="longline", 
                                Position="longline",
                                Species=tolower(Observation))
-
+if(!is.na(match('code',colnames(Video.longline.obs)))) Video.longline.obs=Video.longline.obs%>%rename(Code=code)
 cols.vid.inter=colnames(Video.longline.interaction)
 add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.longline.obs))]
 empty_df = Video.longline.obs[,1:length(add)]
@@ -1112,13 +1119,18 @@ Video.longline.interaction=rbind(Video.longline.interaction,Video.longline.obs)
 
 
 
-#some manipulations                       #MISSING: add whale, seal, etc SP.group
+#some manipulations                       
 Video.net.interaction=Video.net.interaction%>%
-              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
-                     SP.code=Code-dummy,
-                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
-                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                        dummy==3.5e+07 ~"Invertebrate"),
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+                                        Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                        Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                        Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
+                                        Code >=4.1e+07 & Code<=4.115e+07 ~"Marine mammals",
+                                        Code >=4.0e+07 & Code<4.1e+07 ~"Seabirds",
+                                        Code >=1.2e7 & Code<3.7e7 ~"Invertebrates",
+                                        Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
+                                        Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
+                                        Code == 10000910 ~"Sponges"),
                      Period=tolower(Period),
                      Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
                      sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
@@ -1131,11 +1143,16 @@ Video.net.interaction=Video.net.interaction%>%
 
 
 Video.longline.interaction=Video.longline.interaction%>%
-              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
-                     SP.code=Code-dummy,
-                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
-                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                        dummy==3.5e+07 ~"Invertebrate"),
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+                                        Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                        Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                        Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
+                                        Code >=4.1e+07 & Code<=4.115e+07 ~"Marine mammals",
+                                        Code >=4.0e+07 & Code<4.1e+07 ~"Seabirds",
+                                        Code >=1.2e7 & Code<3.7e7 ~"Invertebrates",
+                                        Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
+                                        Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
+                                        Code == 10000910 ~"Sponges"),
                      Period=tolower(Period),
                      Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
                      sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
@@ -1317,6 +1334,7 @@ fn.tep.barplot(d=TEPS,
                              filter(method=="LL")%>%
                              distinct(sheet_no)%>%
                              pull(sheet_no))
+
 #---------Analyse PA Habitat ------------
 
 # 1. Underwater habitat classification
@@ -1373,7 +1391,29 @@ mtext('Macroalgae',1,las=1,line=0.75,cex=1.1)
 dev.off()
 
 
-# 2. Habitat interactions (deck cameras)
+# 2. Underwater observations of habitat damage  
+Net.damage.underwater=Video.net.interaction%>%
+                mutate(Habitat.damage=ifelse(
+                            SP.group%in%c("Macro algae","Rock/reef structure","Sponges"),"Damage",
+                            "No damage"))%>%
+                dplyr::select(sheet_no,Camera,Habitat.damage)
+Damage.events=Net.damage.underwater%>%
+                group_by(Habitat.damage)%>%tally()
+Total.observed.metres=length(unique(Video.net.interaction$OpCode))*metres.observed
+
+text = paste(Damage.events%>%filter(Habitat.damage=='Damage')%>%pull(n),
+             "habitat damage events in\n",
+             Total.observed.metres,
+             "metres of nets observed with \n",
+             "  underwater cameras")
+p1=ggplot() + 
+  annotate("text", x = 4, y = 25, size=7, label = text) + 
+  ggtitle(label ="Underwater cameras")+
+  theme_void()+
+  theme(plot.title = element_text(size = 20, face = "bold"))
+
+
+# 3. Deck camera Habitat interactions 
 Video.habitat.deck=Video.habitat.deck%>%
           data.frame%>%
           mutate(Period=tolower(Period),
@@ -1451,7 +1491,7 @@ dev.off()
 
 
 #Pie chart of frame with damage / no damage
-Video.habitat.deck_GN%>%
+p2=Video.habitat.deck_GN%>%
   mutate(Damage=ifelse(Total.damage>0,"Damage","No damage"))%>%
   group_by(Damage)%>%
   tally()%>%
@@ -1461,20 +1501,21 @@ Video.habitat.deck_GN%>%
          labelPosition =(ymax + ymin) / 2)%>%
   ggplot(aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Damage)) +
   geom_rect() +
-  geom_text(x=3.5,aes(y=labelPosition, label=paste(Percent,"%")),size = 10,check_overlap = TRUE)+
-  scale_fill_manual(values=c("forestgreen","brown2"))+ 
-  coord_polar(theta="y") + xlim(c(2, 4)) +
+  geom_text(x=3.5,aes(y=labelPosition, label=paste(Percent,"%")),size = 8,check_overlap = TRUE)+
+  scale_fill_manual(values=c("brown2","steelblue"))+ 
+  coord_polar(theta="y") + xlim(c(2, 4)) + 
+  ggtitle(label ="Deck cameras",
+          subtitle = "Percentage of frames (4.3 m of net) with damage")+
   theme_void() +
-  theme(legend.position = "top",
+  theme(legend.position = "right",
         legend.title = element_blank(),
-        legend.text = element_text(size = 25))
-ggsave(le.paste("Video/deck.cameras/Habitat.pie.chart_percent.frames_damaged.not.damaged.tiff"),width = 10,height = 10,compression = "lzw")
-
-
+        legend.text = element_text(size = 16),
+        plot.title = element_text(size = 20, face = "bold",hjust=-920),
+        plot.subtitle = element_text(size = 17,face = "italic",hjust=0.3))
 
 
 #Pie chart of different habitat damage categories
-Video.habitat.deck_GN.no.zeros%>%
+p3=Video.habitat.deck_GN.no.zeros%>%
   dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader)%>%
   gather(Species,Percent)%>%
   group_by(Species)%>%
@@ -1488,9 +1529,71 @@ Video.habitat.deck_GN.no.zeros%>%
   geom_text(x=3.5,aes(y=labelPosition, label=label),size = 6,check_overlap = TRUE)+
   scale_fill_manual(values=c("deepskyblue2","darkorange1","tomato4","forestgreen",'khaki3'))+ 
   coord_polar(theta="y") + xlim(c(2, 4)) +
+  ggtitle(label ="",
+          subtitle = "Habitat damage categories")+
   theme_void() +
-  theme(legend.position = "top",
+  theme(legend.position = "right",
         legend.title = element_blank(),
-        legend.text = element_text(size = 20))
-ggsave(le.paste("Video/deck.cameras/Habitat.pie.chart_damaged.categories.tiff"),width = 10,height = 10,compression = "lzw")
+        legend.text = element_text(size = 16),
+        plot.title = element_text(size = 20, face = "bold"),
+        plot.subtitle = element_text(size = 17,face = "italic",hjust=1))
 
+
+#Histogram of proportion of net damage
+p4=Video.habitat.deck_GN.no.zeros%>%
+        dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader)%>%
+        gather(Species,Percent)%>%
+        filter(Percent>0)%>%
+        mutate(Percent.bin=5*round(Percent/5))%>%
+        ggplot( aes(x=Percent.bin)) +
+        geom_histogram( fill="red",col="black", alpha=0.9,binwidth = 5)+
+        ggtitle(label ="",
+                subtitle = "Percentage damage per frame")+
+        theme_classic()+
+        theme(axis.text=element_text(size=14),
+              axis.title=element_text(size=16),
+              plot.title = element_text(size = 20, face = "bold"),
+              plot.subtitle = element_text(size = 17,face = "italic",hjust=-.15))+
+        xlab("Percentage")+
+        ylab("Number of frames")
+
+
+
+#export these figures
+ggarrange(p1, p2, p3, p4, ncol = 1, nrow = 4)
+ggsave(le.paste("Video/Habitat.interactions.tiff"),width = 6,height = 10,compression = "lzw")
+
+
+
+# Drop out rates, composition around weight or float & gaffing ------------------------------------------------------
+Video.camera2.deck=Video.camera2.deck%>%
+  data.frame%>%
+  mutate(Period=tolower(Period),
+         SHEET_NO=case_when(Period=='gillnet'~str_remove(word(DPIRD.code,1,sep = "\\/"),'GN'),
+                            Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')),
+         dropout=ifelse(is.na(dropout),'No',dropout))
+
+Video.camera2.deck_observations=Video.camera2.deck_observations%>%  
+  data.frame%>%
+  mutate(Period=tolower(Period),
+         SHEET_NO=case_when(Period=='gillnet'~str_remove(word(DPIRD.code,1,sep = "\\/"),'GN'),
+                            Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')))
+
+  #1. Dropout rates
+these.drop.out.sp=c(37017001,37017003,37018001,37018003,37018023,37019004,
+                    37353001,37320004,37384002,37377004,37384039)
+Video.camera2.deck%>%
+  filter(Code%in%these.drop.out.sp)%>%
+  group_by(Code,dropout,Period)%>%
+  tally()%>%
+  mutate(dropout=factor(dropout),
+         Code=factor(Code),
+         Period=factor(capitalize(Period)))%>%
+  ggplot(aes(fill=dropout, y=n, x=Code)) + 
+  geom_bar(position="stack", stat="identity")+
+  facet_wrap(~Period,dir='v')+ 
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+
+  #2. Composition around weight or float  #ACA
+
+  #3. Gaffing
