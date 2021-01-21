@@ -5,8 +5,6 @@
 #       catch composition
 
 #   Video:
-#       ALL data sets, variable 'Code' has NA for some species hence cannot classify into shark, finfish, etc
-#           and reason why getting warnings
 #       Analyse: TEPS (stand alone paper with GHATF observer data?), catch rates (use Hook.combos); video
 #       'Current. TEPS Analyses' must combined subsurface, underwater & deck cameras and observer data and must
 #           display what camera picked up the interaction
@@ -33,21 +31,24 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #--------- DATA ------------
 
+#Species list
+All.species.names=read.csv("C:/Matias/Data/Species.code.csv")
+
 #Sharks data base
 User="Matias"
 if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R")
 
 
-#PA TEPS interactions
+#PA - TEPS interactions
 setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
 TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
-#PA number of hook combinations used in PA project
+#PA - number of hook combinations used in PA project
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
-#PA underwater video
+#PA - underwater video
 setwd('C:/Matias/Parks Australia/2019_project/Data/cameras')
 
   #net
@@ -62,25 +63,27 @@ Video.longline.interaction <- read_excel(file.name.LL, sheet = "Interactions")
 Video.longline.maxN <- read_excel(file.name.LL, sheet = "MaxN")
 Video.longline.obs <- read_excel(file.name.LL, sheet = "Observations")
 
-  #habitat
+  #habitat 
 #note: CATAMI code used to determine habitat types
 file.name.habitat="Gillnet_longline habitat.xlsx"
 Video.habitat<- read_excel(file.name.habitat, sheet = "gillnet habitat")
 
 
-#PA deck camera 1 (points to measuring board)
+#PA - deck camera 1 (points to measuring board)
 file.name.habitat.deck="15_01_2020_Deck 1 habitat and fish.xlsx"
 Video.habitat.deck<- read_excel(file.name.habitat.deck, sheet = "Habitat")
+Video.camera1.deck<- read_excel(file.name.habitat.deck, sheet = "Deck 1 fish landed")
+Video.camera1.deck_extra.records<- read_excel(file.name.habitat.deck, sheet = "extra records")
 
 
-#PA deck camera 2 (points to roller)
+#PA - deck camera 2 (points to roller)
 file.name.camera2.deck="20_01_2020_Deck 2.xlsx"
 Video.camera2.deck<- read_excel(file.name.camera2.deck, sheet = "Deck 2")
 Video.camera2.deck_observations<- read_excel(file.name.camera2.deck, sheet = "Other observations")
 
 
-#PA subsurface camera
-
+#PA - subsurface camera   MISSING. Add to TEPS analysis
+#Video.subsurface=
 
 #---------CONTROL SECTION------------
 explr.dat.entry=TRUE
@@ -91,6 +94,18 @@ distance.roller.spreader.Anthony=4.3  #in metres
 mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jeff
 
 metres.observed=5 # average metres observed underwater
+
+#---------Manipulate Species names------------
+suppressWarnings({
+  All.species.names=All.species.names%>%
+    mutate(Code=ifelse(Taxa=='Elasmobranch'&!is.na(CAAB_code) & nchar(CAAB_code)==4,
+                       as.numeric(paste('3700',CAAB_code,sep='')),
+                ifelse(Taxa=='Elasmobranch'&!is.na(CAAB_code) & nchar(CAAB_code)==5,
+                       as.numeric(paste('370',CAAB_code,sep='')),
+                ifelse(Taxa=='Teleost'&!is.na(CAAB_code),as.numeric(paste('37',CAAB_code,sep='')),
+                NA)))) 
+})
+
 
 #---------Manipulate PA hook size, type and snood combinations  ------------
 Hook.combos<-Hook.combos%>%
@@ -969,7 +984,7 @@ if(do.Historic)
   write.csv(d,paste(hndl,"/Average catch price per shot.csv",sep=""),row.names = F)
   
 }
-#---------Manipulate PA TEPS ------------
+#---------Manipulate PA observer TEPS ------------
 TEPS.code_contact=data.frame(contact.code=c('WWC','BFC','WER','WEN','WDNN','WDNF','WDDN','WDDF'),
                              contact.code.meaning=c('Wildlife on/in water, contact with vessel',
                                                     'Bird flying, contact with vessel or gear',
@@ -1085,7 +1100,7 @@ DATA_PA=DATA%>%
 
 #Combine Interaction with Observation data sheets
 Video.net.obs=Video.net.obs%>%
-                        mutate(Interaction='Swim Past',
+                        mutate(Interaction=case_when(!code%in%c(54079901,11183901,11183902)~'Swim Past'),
                                Escape=NA,
                                Method="Gillnet", 
                                Position="Gillnet",
@@ -1102,12 +1117,20 @@ Video.net.interaction=rbind(Video.net.interaction,Video.net.obs)
 
 
 Video.longline.obs=Video.longline.obs%>%
-                        mutate(Interaction='Swim Past',
+                        mutate(Interaction=ifelse(Activity=='Passing','Swim Past',NA),
                                Escape=NA,
                                Method="longline", 
                                Position="longline",
                                Species=tolower(Observation))
-if(!is.na(match('code',colnames(Video.longline.obs)))) Video.longline.obs=Video.longline.obs%>%rename(Code=code)
+if(!is.na(match('code',colnames(Video.longline.obs))))
+{
+  if(!is.na(match('Code',colnames(Video.longline.obs))))
+  {
+    if(is.na(sum(Video.longline.obs$Code))) Video.longline.obs=Video.longline.obs%>%dplyr::select(-Code)
+    Video.longline.obs=Video.longline.obs%>%rename(Code=code)
+  }
+  
+}
 cols.vid.inter=colnames(Video.longline.interaction)
 add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.longline.obs))]
 empty_df = Video.longline.obs[,1:length(add)]
@@ -1165,11 +1188,16 @@ Video.longline.interaction=Video.longline.interaction%>%
 
 
 Video.net.maxN=Video.net.maxN%>%
-              mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
-                     SP.code=Code-dummy,
-                     SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
-                                        SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                        dummy==3.5e+07 ~"Invertebrate"),
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+                                        Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                        Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                        Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
+                                        Code >=4.1e+07 & Code<=4.115e+07 ~"Marine mammals",
+                                        Code >=4.0e+07 & Code<4.1e+07 ~"Seabirds",
+                                        Code >=1.2e7 & Code<3.7e7 ~"Invertebrates",
+                                        Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
+                                        Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
+                                        Code == 10000910 ~"Sponges"),
                      Period=tolower(Period),
                      Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
                      sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
@@ -1177,11 +1205,16 @@ Video.net.maxN=Video.net.maxN%>%
                 left_join(DATA_PA,by='sheet_no')%>%
                 data.frame
 Video.longline.maxN=Video.longline.maxN%>%
-                mutate(dummy=as.numeric(paste(substr(Code, 1, 2),'000000',sep='')),
-                       SP.code=Code-dummy,
-                       SP.group=case_when(SP.code<5e4 & dummy==3.7e+07 ~"Sharks and rays",
-                                          SP.code>5e4 & dummy==3.7e+07 ~"Scalefish",
-                                          dummy==3.5e+07 ~"Invertebrate"),
+                mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+                                          Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                          Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                          Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
+                                          Code >=4.1e+07 & Code<=4.115e+07 ~"Marine mammals",
+                                          Code >=4.0e+07 & Code<4.1e+07 ~"Seabirds",
+                                          Code >=1.2e7 & Code<3.7e7 ~"Invertebrates",
+                                          Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
+                                          Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
+                                          Code == 10000910 ~"Sponges"),
                        Period=tolower(Period),
                        Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
                        sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
@@ -1194,49 +1227,85 @@ Video.longline.maxN=Video.longline.maxN%>%
 HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
 le.paste=function(x) paste(HNDL,x,sep='')
 
-#Lollipop graph of % of interaction types by gear
-df=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number),
-         Video.net.interaction%>%dplyr::select(Method,Interaction,Number))
-df=pct_routine(df, Method, Interaction)
-ggplot(df)+
-  geom_linerange(aes(x = Interaction, ymin = 0, ymax = pct, colour = Method), 
-                 position = position_dodge(width = 1))+
-  geom_point(aes(x = Interaction, y = pct, colour = Method),
-             position = position_dodge(width = 1))+
-  coord_flip()
-ggsave(le.paste("Video/underwater/Interactions_lollipop.tiff"), 
-       width = 12,height = 10,compression = "lzw")
+SP.group.levels=c("Invertebrates","Scalefish","Sharks","Rays","Marine mammals","Seabirds")
+
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group))%>%
+  group_by(Method,Interaction,SP.group)%>%
+  tally(Number)%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)),
+         SP.group=factor(SP.group,levels=SP.group.levels))%>%
+  ggplot(aes(fill=SP.group, y=n, x=Interaction)) + 
+  geom_bar(position="stack", stat="identity")+
+  scale_y_sqrt()+
+  coord_flip() +
+  facet_wrap(~Method,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16),
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+  scale_fill_manual(values=c("forestgreen","orange","firebrick2","firebrick4",
+                             "deepskyblue2","dodgerblue4"))+
+  xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/underwater/Interactions.tiff"),width = 10,height = 8,compression = "lzw")
 
 
-#Mosaic plot
+do.loli=FALSE
+if(do.loli)
+{
+  #Lollipop graph of % of interaction types by gear 
+  df=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number),
+           Video.net.interaction%>%dplyr::select(Method,Interaction,Number))
+  df=pct_routine(df, Method, Interaction)
+  ggplot(df)+
+    geom_linerange(aes(x = Interaction, ymin = 0, ymax = pct, colour = Method), 
+                   position = position_dodge(width = 1))+
+    geom_point(aes(x = Interaction, y = pct, colour = Method),
+               position = position_dodge(width = 1))+
+    coord_flip()
+  ggsave(le.paste("Video/underwater/Interactions_lollipop.tiff"), 
+         width = 12,height = 10,compression = "lzw")
+  
+  
+  #Mosaic plot
   #gillnet
-TAB=table(Video.net.interaction$Interaction)
-lab=c(TAB)
-lab=paste(names(TAB)," (n= ",lab,")",sep='')
-names(lab)=names(TAB)
-
-ggplot(data = Video.net.interaction) +
-  geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
-  labs(x = "",y='', title='Gillnet')+
-  facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
-ggsave(le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"), 
-       width = 12,height = 10,compression = "lzw")
-
+  TAB=table(Video.net.interaction$Interaction)
+  lab=c(TAB)
+  lab=paste(names(TAB)," (n= ",lab,")",sep='')
+  names(lab)=names(TAB)
+  
+  ggplot(data = Video.net.interaction) +
+    geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
+    labs(x = "",y='', title='Gillnet')+
+    facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
+  ggsave(le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"), 
+         width = 12,height = 10,compression = "lzw")
+  
   #longline
-TAB=table(Video.longline.interaction$Interaction)
-lab=c(TAB)
-lab=paste(names(TAB)," (n= ",lab,")",sep='')
-names(lab)=names(TAB)
+  TAB=table(Video.longline.interaction$Interaction)
+  lab=c(TAB)
+  lab=paste(names(TAB)," (n= ",lab,")",sep='')
+  names(lab)=names(TAB)
+  
+  ggplot(data = Video.longline.interaction) +
+    geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
+    labs(x = "",y='', title='Gillnet')+
+    facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
+  ggsave(le.paste("Video/underwater/Interactions_mosaic_longline.tiff"), 
+         width = 12,height = 10,compression = "lzw")
+  
+}
 
-ggplot(data = Video.longline.interaction) +
-  geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
-  labs(x = "",y='', title='Gillnet')+
-  facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
-ggsave(le.paste("Video/underwater/Interactions_mosaic_longline.tiff"), 
-       width = 12,height = 10,compression = "lzw")
 
-
-
+#ACA: pool all TEP data: TEPS, Video.longline.interaction,Video.net.interaction,
+#       Video.subsurface,Video.camera2.deck,Video.camera2.deck_observations,
+#       Video.camera1.deck,Video.camera1.deck_extra.records 
+#     Note that Video.camera1.deck,Video.camera1.deck_extra.records must be manipulated
+# also must define a vector of TEP codes
 
 #---------Analyse PA TEPS ------------
 fn.tep.barplot=function(d,all.gn.shots,all.ll.shots) 
@@ -1580,20 +1649,86 @@ Video.camera2.deck_observations=Video.camera2.deck_observations%>%
                             Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')))
 
   #1. Dropout rates
-these.drop.out.sp=c(37017001,37017003,37018001,37018003,37018023,37019004,
+these.drop.out.sp=c(37017001,37017003,37018001,37018003,37018007,37018023,37019004,
                     37353001,37320004,37384002,37377004,37384039)
+names(these.drop.out.sp)=All.species.names[match(these.drop.out.sp,All.species.names$Code),"COMMON_NAME"]
 Video.camera2.deck%>%
   filter(Code%in%these.drop.out.sp)%>%
   group_by(Code,dropout,Period)%>%
   tally()%>%
   mutate(dropout=factor(dropout),
-         Code=factor(Code),
-         Period=factor(capitalize(Period)))%>%
-  ggplot(aes(fill=dropout, y=n, x=Code)) + 
+         Period=capitalize(Period))%>%
+  left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")%>%
+  mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.drop.out.sp)))%>%
+  ggplot(aes(fill=dropout, y=n, x=COMMON_NAME)) + 
   geom_bar(position="stack", stat="identity")+
-  facet_wrap(~Period,dir='v')+ 
-  theme(axis.text.x = element_text(angle=90, hjust=1))
+  coord_flip() +
+  facet_wrap(~Period,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  scale_fill_manual(values=c("deepskyblue3","firebrick3"))+
+  xlab('')+ylab('Number of events')
+ggsave(le.paste("Video/deck.cameras/Drop.out.events.tiff"),width = 10,height = 8,compression = "lzw")
 
-  #2. Composition around weight or float  #ACA
 
-  #3. Gaffing
+  #2. Gaffing
+Video.camera2.deck%>%
+  filter(Code%in%these.drop.out.sp)%>%
+  mutate(gaffed=case_when(gaffed=='No' ~  'Lost',
+                          is.na(gaffed) ~ 'No',
+                          TRUE ~ gaffed))%>%    
+  group_by(Code,gaffed,Period)%>%
+  tally()%>%
+  mutate(gaffed=factor(gaffed),
+         Period=capitalize(Period))%>%
+  left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")%>%
+  mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.drop.out.sp)))%>%
+  ggplot(aes(fill=gaffed, y=n, x=COMMON_NAME)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  facet_wrap(~Period,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  scale_fill_manual(values=c("firebrick3","deepskyblue3","orange"))+
+  xlab('')+ylab('Number of events')
+ggsave(le.paste("Video/deck.cameras/Gaffing.events.tiff"),width = 10,height = 8,compression = "lzw")
+
+
+  #3. Composition around weight or float 
+p=Video.camera2.deck%>%
+  mutate(water.column=tolower(hook.distance.to.float.weight))%>%
+  filter(!is.na(water.column))%>%
+  group_by(Code,water.column,Period)%>%
+  tally()%>%
+  mutate(water.column=factor(water.column),
+         Period=capitalize(Period))%>%
+  left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")
+
+these.compo.sp=sort(unique(p$Code))
+names(these.compo.sp)=All.species.names[match(these.compo.sp,All.species.names$Code),"COMMON_NAME"]
+
+
+p%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
+  ggplot(aes(fill=water.column, y=n, x=COMMON_NAME)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  facet_wrap(~Period,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  scale_fill_manual(values=c("orange","firebrick2","firebrick4",
+                             "lightblue2","deepskyblue2","dodgerblue4"))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/deck.cameras/Weight_float_species.events.tiff"),width = 10,height = 8,compression = "lzw")
+
