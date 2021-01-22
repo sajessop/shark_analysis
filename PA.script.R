@@ -3,6 +3,8 @@
 #   Observer data:
 #       catch rates by gear, and by gear.hook.combo
 #       catch composition
+#   TEPS. Make sure there are no duplications between TEPS dataframe (i.e. observer data)
+#         and all the cameras
 
 #   Video:
 #       Analyse: TEPS (stand alone paper with GHATF observer data?), catch rates (use Hook.combos); video
@@ -94,6 +96,20 @@ distance.roller.spreader.Anthony=4.3  #in metres
 mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jeff
 
 metres.observed=5 # average metres observed underwater
+
+
+#Define TEPS
+TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
+TEPS_marine.mam=4.1e+07:4.115e+07
+TEPS_seabirds=4.0e+07:4.09e+07
+TEPS.codes=c(TEPS_Shark.rays,TEPS_marine.mam,TEPS_seabirds)
+TEPS.names=data.frame(Name=c('Grey nurse shark','White shark','Smooth stingray','Black stingray',
+                             'Pied cormorant','Australian sea-lion','Humpback whale'),
+                      Code=c(37008001,37010003,37035001,37035002,
+                             40048006,41131005,41112006),
+                      Colr=c("firebrick","firebrick4","darkorange","chocolate",
+                             "chartreuse3","steelblue","deepskyblue2"))
+
 
 #---------Manipulate Species names------------
 suppressWarnings({
@@ -1229,30 +1245,69 @@ le.paste=function(x) paste(HNDL,x,sep='')
 
 SP.group.levels=c("Invertebrates","Scalefish","Sharks","Rays","Marine mammals","Seabirds")
 
-rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group),
-      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group))%>%
+  #number of events
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
+  filter(!Species=='birds feeding at surface')%>%
+  mutate(Number=1,
+         Method=capitalize(Method))%>%
   group_by(Method,Interaction,SP.group)%>%
   tally(Number)%>%
   filter(!is.na(Interaction))%>%
   mutate(Interaction=capitalize(tolower(Interaction)),
          SP.group=factor(SP.group,levels=SP.group.levels))%>%
-  ggplot(aes(fill=SP.group, y=n, x=Interaction)) + 
+  ggplot(aes(fill=Method, y=n, x=Interaction)) + 
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip() + scale_y_sqrt()+
+  facet_wrap(~SP.group,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 18),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf.tiff"),width = 12,height = 8,compression = "lzw")
+
+
+  #number of events for main target species
+these.codes=c(37017001,37017003,37018001,37018003,37018007,37018023,37019004,
+              37353001,37320004,37384002,37377004,37384039)
+dummy=data.frame(Code=these.codes,
+                 Names=All.species.names[match(these.codes,All.species.names$Code),"COMMON_NAME"])
+
+colfunc <- colorRampPalette(c("orange","firebrick1", "yellow"))
+n.col.elasmos=colfunc(length(these.codes[these.codes<37300000]))
+colfunc <- colorRampPalette(c("lightblue1", "dodgerblue4"))
+n.col.teleos=colfunc(length(these.codes[these.codes>37300000]))
+d=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,Code),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,Code))%>%
+  mutate(Number=1,
+         Method=capitalize(Method))%>%
+  filter(Code%in%these.codes)%>%
+  left_join(dummy,by='Code')%>%
+  group_by(Method,Interaction,Names)%>%
+  tally(Number)%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)),
+         Names=factor(Names,levels=dummy%>%arrange(Code)%>%pull(Names)))
+dis.cols=c(n.col.elasmos,n.col.teleos)
+names(dis.cols)=levels(d$Names)
+dis.cols=dis.cols[match(levels(droplevels(d$Names)),names(dis.cols))]
+d%>%
+  ggplot(aes(fill=Names, y=n, x=Interaction)) + 
   geom_bar(position="stack", stat="identity")+
-  scale_y_sqrt()+
   coord_flip() +
   facet_wrap(~Method,dir='h',scales='free_x')+ 
   theme(legend.position = "top",
         strip.text = element_text(size = 20),
         legend.title = element_blank(),
-        legend.text = element_text(size = 16),
+        legend.text = element_text(size = 14),
         axis.text=element_text(size=14),
-        axis.title=element_text(size=16),
-        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
-  scale_fill_manual(values=c("forestgreen","orange","firebrick2","firebrick4",
-                             "deepskyblue2","dodgerblue4"))+
-  xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))
-ggsave(le.paste("Video/underwater/Interactions.tiff"),width = 10,height = 8,compression = "lzw")
-
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=dis.cols)
+ggsave(le.paste("Video/underwater/Interactions_number.events_main.target.tiff"),width = 12,height = 8,compression = "lzw")
 
 do.loli=FALSE
 if(do.loli)
@@ -1301,108 +1356,6 @@ if(do.loli)
 }
 
 
-#ACA: pool all TEP data: TEPS, Video.longline.interaction,Video.net.interaction,
-#       Video.subsurface,Video.camera2.deck,Video.camera2.deck_observations,
-#       Video.camera1.deck,Video.camera1.deck_extra.records 
-#     Note that Video.camera1.deck,Video.camera1.deck_extra.records must be manipulated
-# also must define a vector of TEP codes
-
-#---------Analyse PA TEPS ------------
-fn.tep.barplot=function(d,all.gn.shots,all.ll.shots) 
-{
-  d.nets=d%>%filter(gear.type=="GN")
-  d.ll=d%>%filter(gear.type=="LL")
-  
-  #add 0 record if no TEPS
-    #gillnet
-  no.teps=all.gn.shots[which(!all.gn.shots%in%unique(d.nets$sheet_no))]
-  if(length(no.teps)>0)
-  {
-    add.d=d.nets[1:length(no.teps),]
-    add.d[,]=NA
-    add.d$sheet_no=no.teps
-    d.nets=rbind(d.nets,add.d)
-    Shots=data.frame(sheet_no=sort(unique(d.nets$sheet_no)))
-    Shots$shot=1:nrow(Shots)
-    d.nets=d.nets%>%
-            left_join(Shots,by="sheet_no")
-  }
-    #lonline
-  no.teps=all.ll.shots[which(!all.ll.shots%in%unique(d.ll$sheet_no))]
-  if(length(no.teps)>0)
-  {
-    add.d=d.ll[1:length(no.teps),]
-    add.d[,]=NA
-    add.d$sheet_no=no.teps
-    d.ll=rbind(d.ll,add.d)
-    
-    Shots=data.frame(sheet_no=sort(unique(d.ll$sheet_no)))
-    Shots$shot=1:nrow(Shots)
-    d.ll=d.ll%>%
-      left_join(Shots,by="sheet_no")
-  }
-  
-  #Add species contact group
-  Drop= paste(c("/hooked","/longline"), collapse = "|")
-  d.nets=d.nets%>%
-    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
-           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
-           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
-  
-  Drop= paste(c("entangled/","net/"), collapse = "|")
-  d.ll=d.ll%>%
-    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
-           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
-           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
-
-  
-  #Plot gillnet
-  p1=d.nets%>%
-    group_by(shot,gear.type,con.code.sp)%>%
-    tally()%>%
-    mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
-    ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
-    geom_bar(position="stack", stat="identity")+
-    scale_fill_discrete(na.translate=FALSE)+
-    ylab('')+xlab('')+ labs(fill = "Gillnet")+
-    theme(legend.position="top")+ 
-    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-  
-  
-
-  #Plot longlines
-  p2=d.ll%>%
-    group_by(shot,gear.type,con.code.sp)%>%
-    tally()%>%
-    mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
-    ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
-    geom_bar(position="stack", stat="identity")+
-    scale_fill_discrete(na.translate=FALSE)+
-    ylab('')+xlab('')+ labs(fill = "Longline")+
-    theme(legend.position="top")+ 
-    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
-  
-  
-  #export graphs
-  infographic=grid.arrange(p1,p2, nrow = 2,ncol=1,heights=c(3,3))
-  annotate_figure(infographic,
-                  bottom = text_grob("Shot",size = 20),
-                  left = text_grob("Number of interactions",rot = 90,size = 20))
-  ggsave(le.paste("TEPS/Numbers.interactions.by.gear.tiff"), width = 12,
-         height = 10,compression = "lzw")
-  
-  
-  
-}
-fn.tep.barplot(d=TEPS,
-               all.gn.shots=DATA%>%
-                              filter(method=="GN")%>%
-                              distinct(sheet_no)%>%
-                              pull(sheet_no),
-               all.ll.shots=DATA%>%
-                             filter(method=="LL")%>%
-                             distinct(sheet_no)%>%
-                             pull(sheet_no))
 
 #---------Analyse PA Habitat ------------
 
@@ -1646,7 +1599,8 @@ Video.camera2.deck_observations=Video.camera2.deck_observations%>%
   data.frame%>%
   mutate(Period=tolower(Period),
          SHEET_NO=case_when(Period=='gillnet'~str_remove(word(DPIRD.code,1,sep = "\\/"),'GN'),
-                            Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')))
+                            Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')),
+         Activity=ifelse(grepl("feeding",Video.camera2.deck_observations$comment),paste("feeding from",Period),Activity))
 
   #1. Dropout rates
 these.drop.out.sp=c(37017001,37017003,37018001,37018003,37018007,37018023,37019004,
@@ -1731,4 +1685,241 @@ p%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
                              "lightblue2","deepskyblue2","dodgerblue4"))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
 ggsave(le.paste("Video/deck.cameras/Weight_float_species.events.tiff"),width = 10,height = 8,compression = "lzw")
+
+
+#---------Analyse PA TEPS ------------
+#Observer data
+fn.tep.observer=function(d,all.gn.shots,all.ll.shots) 
+{
+  d.nets=d%>%filter(gear.type=="GN")
+  d.ll=d%>%filter(gear.type=="LL")
+  
+  
+  #Add species contact group
+  Drop= paste(c("diving for and"), collapse = "|")
+  d.nets=d.nets%>%
+    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
+  
+  d.ll=d.ll%>%
+    mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+           con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+           con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
+  
+  rbind(d.nets,d.ll)%>%
+    group_by(gear.type,contact.code.to.complete,common.name)%>%
+    summarise(n=sum(contact.count))%>%
+    mutate(common.name=capitalize(common.name),
+           contact.code.to.complete=capitalize(contact.code.to.complete),
+           gear.type=ifelse(gear.type=="LL",paste("Longline"," (",all.ll.shots, " shots)",sep=''),
+                            ifelse(gear.type=="GN",paste("Gillnet"," (",all.gn.shots, " shots)",sep=''),
+                                   NA)))%>%
+    ggplot(aes(y=n, x=contact.code.to.complete,fill=common.name)) + 
+    geom_bar(position="stack", stat="identity")+
+    coord_flip() + labs(fill = "") +
+    facet_wrap(~gear.type,dir='h',scales='free_x')+ 
+    theme(legend.position = "right",
+          legend.text = element_text(size = 14),
+          strip.text = element_text(size = 14),
+          axis.text=element_text(size=14),
+          axis.title=element_text(size=16))+
+    xlab('')+ylab('Number of individuals')+ 
+    guides(color = guide_legend(nrow = 1))+
+    scale_y_continuous(breaks=1:100)
+}
+fn.tep.observer(d=TEPS,
+                all.gn.shots=length(DATA%>%
+                                      filter(method=="GN")%>%
+                                      distinct(sheet_no)%>%
+                                      pull(sheet_no)),
+                all.ll.shots=length(DATA%>%
+                                      filter(method=="LL")%>%
+                                      distinct(sheet_no)%>%
+                                      pull(sheet_no)))
+ggsave(le.paste("TEPS/Numbers.interactions.by.gear_Observers.tiff"), width = 12,
+       height = 8,compression = "lzw")
+do.inter.for.each.shot=FALSE
+if(do.inter.for.each.shot)
+{
+  fn.tep.barplot=function(d,all.gn.shots,all.ll.shots) 
+  {
+    d.nets=d%>%filter(gear.type=="GN")
+    d.ll=d%>%filter(gear.type=="LL")
+    
+    #add 0 record if no TEPS
+    #gillnet
+    no.teps=all.gn.shots[which(!all.gn.shots%in%unique(d.nets$sheet_no))]
+    if(length(no.teps)>0)
+    {
+      add.d=d.nets[1:length(no.teps),]
+      add.d[,]=NA
+      add.d$sheet_no=no.teps
+      d.nets=rbind(d.nets,add.d)
+      Shots=data.frame(sheet_no=sort(unique(d.nets$sheet_no)))
+      Shots$shot=1:nrow(Shots)
+      d.nets=d.nets%>%
+        left_join(Shots,by="sheet_no")
+    }
+    #lonline
+    no.teps=all.ll.shots[which(!all.ll.shots%in%unique(d.ll$sheet_no))]
+    if(length(no.teps)>0)
+    {
+      add.d=d.ll[1:length(no.teps),]
+      add.d[,]=NA
+      add.d$sheet_no=no.teps
+      d.ll=rbind(d.ll,add.d)
+      
+      Shots=data.frame(sheet_no=sort(unique(d.ll$sheet_no)))
+      Shots$shot=1:nrow(Shots)
+      d.ll=d.ll%>%
+        left_join(Shots,by="sheet_no")
+    }
+    
+    #Add species contact group
+    Drop= paste(c("/hooked","/longline"), collapse = "|")
+    d.nets=d.nets%>%
+      mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+             con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+             con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
+    
+    Drop= paste(c("entangled/","net/"), collapse = "|")
+    d.ll=d.ll%>%
+      mutate(contact.code.to.complete= str_remove_all(contact.code.to.complete, Drop),
+             con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
+             con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
+    
+    
+    #Plot gillnet
+    p1=d.nets%>%
+      group_by(shot,gear.type,con.code.sp)%>%
+      tally()%>%
+      mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
+      ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_discrete(na.translate=FALSE)+
+      ylab('')+xlab('')+ labs(fill = "Gillnet")+
+      theme(legend.position="top")+ 
+      scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+    
+    
+    
+    #Plot longlines
+    p2=d.ll%>%
+      group_by(shot,gear.type,con.code.sp)%>%
+      tally()%>%
+      mutate(n=ifelse(is.na(con.code.sp),0,n),)%>%
+      ggplot(aes(fill=con.code.sp, y=n, x=shot)) + 
+      geom_bar(position="stack", stat="identity")+
+      scale_fill_discrete(na.translate=FALSE)+
+      ylab('')+xlab('')+ labs(fill = "Longline")+
+      theme(legend.position="top")+ 
+      scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+    
+    
+    #export graphs
+    infographic=grid.arrange(p1,p2, nrow = 2,ncol=1,heights=c(3,3))
+    annotate_figure(infographic,
+                    bottom = text_grob("Shot",size = 20),
+                    left = text_grob("Number of interactions",rot = 90,size = 20))
+    ggsave(le.paste("TEPS/Numbers.interactions.by.gear.tiff"), width = 12,
+           height = 10,compression = "lzw")
+    
+    
+    
+  }
+  fn.tep.barplot(d=TEPS,
+                 all.gn.shots=DATA%>%
+                   filter(method=="GN")%>%
+                   distinct(sheet_no)%>%
+                   pull(sheet_no),
+                 all.ll.shots=DATA%>%
+                   filter(method=="LL")%>%
+                   distinct(sheet_no)%>%
+                   pull(sheet_no))
+}
+
+
+#Cameras
+
+#1. Underwater: number of events 
+d=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species,Code),
+        Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species,Code))%>%
+  mutate(Number=1,
+         Method=capitalize(Method))%>%
+  filter(SP.group%in%c("Seabirds","Marine mammals") | Code%in%TEPS_Shark.rays)%>%
+  filter(!Species=='birds feeding at surface')%>%
+  left_join(TEPS.names,by="Code")%>%
+  group_by(Method,Interaction,Name,Colr,Code)%>%
+  tally(Number)%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)))
+a=d%>%data.frame%>%arrange(Code)%>%distinct(Name, Colr)
+dis.cols=a$Colr
+names(dis.cols)=a$Name
+d%>%
+  ggplot(aes(fill=Name, y=n, x=Interaction)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  facet_wrap(~Method,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=dis.cols)
+ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,height = 8,compression = "lzw")
+
+#ACA
+#2. Subsurfance
+#Video.subsurface           #MISSING
+
+
+#3. Deck 1
+#       Video.camera1.deck,Video.camera1.deck_extra.records            #MISSING
+#     Note that Video.camera1.deck,Video.camera1.deck_extra.records must be manipulated
+
+#3. Deck 2
+TEPS_deck.camera2=rbind(Video.camera2.deck_observations%>%
+                            filter(Code%in%TEPS.codes)%>%
+                            dplyr::select(Period,Genus,Species,Code,Activity),
+                        Video.camera2.deck%>%
+                            filter(Code%in%TEPS.codes)%>%
+                            mutate(Activity=ifelse(dropout=='Yes' & gaffed=="No","Drop out",
+                                            ifelse(dropout=='Yes' & gaffed=="Yes","Drop out and gaffed",
+                                            NA)))%>%
+                            dplyr::select(Period,Genus,Species,Code,Activity))%>%
+                  filter(!is.na(Activity))%>%
+                  left_join(TEPS.names,by="Code")%>%
+                  mutate(Number=1,
+                         Period=capitalize(Period),
+                         Activity=capitalize(Activity))%>%
+                  group_by(Period,Activity,Name,Colr,Code)%>%
+                  tally(Number)
+
+a=TEPS_deck.camera2%>%data.frame%>%arrange(Code)%>%distinct(Name, Colr)
+dis.cols=a$Colr
+names(dis.cols)=a$Name
+TEPS_deck.camera2%>%
+  ggplot(aes(fill=Name, y=n, x=Activity)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  facet_wrap(~Period,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=dis.cols)
+ggsave(le.paste("TEPS/Interactions_number.events_deck2.tiff"),width = 12,height = 8,compression = "lzw")
+
+
+
+
+
+#All TEP interactions togther (remove duplcations, e.g. observer vs Deck 1 or 2)
 
