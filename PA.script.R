@@ -5,6 +5,7 @@
 #       catch composition
 #   TEPS. Make sure there are no duplications between TEPS dataframe (i.e. observer data)
 #         and all the cameras
+#         Missing: For all TEP graphs, add number of shots observed (LL and GN)
 
 #   Video:
 #       Analyse: TEPS (stand alone paper with GHATF observer data?), catch rates (use Hook.combos); video
@@ -33,12 +34,12 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #--------- DATA ------------
 
-#Species list
-All.species.names=read.csv("C:/Matias/Data/Species.code.csv")
-
 #Sharks data base
 User="Matias"
 if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R")
+
+#Species list
+All.species.names=read.csv("C:/Matias/Data/Species.code.csv")
 
 
 #PA - TEPS interactions
@@ -1379,8 +1380,11 @@ Video.habitat=Video.habitat%>%
                                              MORPHOLOGY=='Sheet-like/membraneous'~'SLM'))
 
 #Coarse data
+do.barplt=T
+do.mosaic=F
+
 tiff(le.paste("Video/underwater/Habitats_coarse.records.tiff"),width=1400,height=2000,units="px",res=300,compression="lzw")
-par(mfcol=c(3,1),mar=c(1,1,1.75,.1),oma=c(1,6,.1,.75),mgp=c(1,.25,0),cex.axis=1.1)     
+par(mfcol=c(3,1),mar=c(1,1,1,.1),oma=c(1.6,9.5,.1,.75),mgp=c(1,.25,0),cex.axis=1.1)     
 
     #Overall Broad categories
 Hab.cols=c('lightskyblue','red4','seagreen',
@@ -1399,17 +1403,35 @@ Tab.Substrate=sort(with(subset(Video.habitat,BROAD=='Substrate'),table(MORPHOLOG
 barplot(100*Tab.Substrate/sum(Tab.Substrate),horiz = T,col=colfunc(length(Tab.Substrate)),
         las=1,main='',xlim=c(0,100))
 legend('bottomright','Substrate',bty='n',cex=1.5)
-mtext('Percentage',1,cex=1.1,line=1.5)
+if(do.mosaic) mtext('Percentage',1,cex=1.1,line=1.5)
 box()
 
-    #Algae categories
-Tab.Algae=with(subset(Video.habitat,BROAD=='Macroalgae'),table(Algae.morph,TYPE))
-colnames(Tab.Algae)=rep('',ncol(Tab.Algae))
-id=which(rowSums(Tab.Algae)==0)
-if(length(id>0))Tab.Algae=Tab.Algae[-id,]
-mosaicplot(Tab.Algae,main="",ylab='',xlab='',cex.axis=1.2,
-           color=c("brown", "forestgreen", "red"))
-mtext('Macroalgae',1,las=1,line=0.75,cex=1.1)
+#Algae categories
+if(do.barplt)
+{
+  coul=c('brown','green3',"firebrick2")
+  Tab.Algae=with(subset(Video.habitat,BROAD=='Macroalgae' & !is.na(TYPE)),table(MORPHOLOGY,TYPE))
+  data_percentage=t(as.matrix(Tab.Algae))
+  data_percentage=data_percentage[,match(names(sort(colSums(data_percentage))),colnames(data_percentage))]
+  data_percentage <- 100*data_percentage/sum(data_percentage)
+  #data_percentage <- apply(data_percentage, 2, function(x){x*100/sum(x,na.rm=T)})
+  barplot(data_percentage, col=coul, las=1,main='',horiz = T,xlim=c(0,100))
+  legend("bottomright",legend = rownames(data_percentage),cex=1.35,title="Macroalgae",
+         fill = coul,bty='n')
+  box()
+  mtext('Percentage',1,cex=1.1,line=1.4)
+}
+if(do.mosaic)
+{
+  Tab.Algae=with(subset(Video.habitat,BROAD=='Macroalgae'),table(Algae.morph,TYPE))
+  colnames(Tab.Algae)=rep('',ncol(Tab.Algae))
+  id=which(rowSums(Tab.Algae)==0)
+  if(length(id>0))Tab.Algae=Tab.Algae[-id,]
+  mosaicplot(Tab.Algae,main="",ylab='',xlab='',cex.axis=1.2,
+             color=c("brown", "forestgreen", "red"))
+  mtext('Macroalgae',1,las=1,line=0.75,cex=1.1)
+  
+}
 dev.off()
 
 
