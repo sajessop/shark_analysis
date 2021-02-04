@@ -15,6 +15,8 @@
 
 #     use 'explr.dat.entry' to check data entry errors
 
+#MISSING: get number of hours of footage for different cameras form Jack
+
 rm(list=ls(all=TRUE))
 library(tidyverse)
 library(dplyr)
@@ -34,24 +36,25 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 #--------- DATA ------------
 
-#Sharks data base
+#1. Sharks data base
 User="Matias"
 if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R")
 
-#Species list
+
+#2. Species list
 All.species.names=read.csv("C:/Matias/Data/Species.code.csv")
 
 
-#PA - TEPS interactions
+#3. PA - TEPS interactions recorded by Observers
 setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
 TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
-#PA - number of hook combinations used in PA project
+#3. PA - number of hook combinations used in PA project
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
-#PA - underwater video
+#3. PA - underwater video
 setwd('C:/Matias/Parks Australia/2019_project/Data/cameras')
 
   #net
@@ -72,21 +75,23 @@ file.name.habitat="Gillnet_longline habitat.xlsx"
 Video.habitat<- read_excel(file.name.habitat, sheet = "gillnet habitat")
 
 
-#PA - deck camera 1 (points to measuring board)
+#3. PA - deck camera 1 (points to measuring board)
 file.name.habitat.deck="15_01_2020_Deck 1 habitat and fish.xlsx"
 Video.habitat.deck<- read_excel(file.name.habitat.deck, sheet = "Habitat")
 Video.camera1.deck<- read_excel(file.name.habitat.deck, sheet = "Deck 1 fish landed")
 Video.camera1.deck_extra.records<- read_excel(file.name.habitat.deck, sheet = "extra records")
 
 
-#PA - deck camera 2 (points to roller)
+#3. PA - deck camera 2 (points to roller)
 file.name.camera2.deck="20_01_2020_Deck 2.xlsx"
 Video.camera2.deck<- read_excel(file.name.camera2.deck, sheet = "Deck 2")
 Video.camera2.deck_observations<- read_excel(file.name.camera2.deck, sheet = "Other observations")
 
 
-#PA - subsurface camera   MISSING. Add to TEPS analysis
+#3. PA - subsurface camera   MISSING. Add to TEPS analysis
 #Video.subsurface=
+
+
 
 #---------CONTROL SECTION------------
 explr.dat.entry=TRUE
@@ -98,6 +103,12 @@ mesh.deep.Anthony=2                   #in metres        #MISSING: get actual val
 
 metres.observed=5 # average metres observed underwater
 
+
+hours.underwater.ll='xx'  #total number of hours of longline underwater footage   #MISSING: get from Jack
+hours.underwater.gn='xx'  #total number of hours of gillnet underwater footage
+hours.subsurface='xx'  #total number of hours of subsurface footage
+hours.deck2.ll='xx'  #total number of hours of deck camera 2 longline footage
+hours.deck2.gn='xx'  #total number of hours of deck camera 2 gillnet footage
 
 #Define TEPS
 TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
@@ -1055,6 +1066,15 @@ TEPS=TEPS%>%
                             common.name%in%c("australian sealion")~"marine mammals",
                             TRUE~"other stuff"))
 
+#function for integer axis labels
+integer_breaks <- function(n = 5, ...) {
+  fxn <- function(x) {
+    breaks <- floor(pretty(x, n, ...))
+    names(breaks) <- attr(breaks, "labels")
+    breaks
+  }
+  return(fxn)
+}
 
 #---------Build length-length relationships------------     
 #using robust regression to deal with outliers
@@ -1245,11 +1265,13 @@ HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
 le.paste=function(x) paste(HNDL,x,sep='')
 
 SP.group.levels=c("Invertebrates","Scalefish","Sharks","Rays","Marine mammals","Seabirds")
+TEP.groups=c("Marine mammals","Seabirds","Reptiles")
 
   #number of events
 rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
       Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
   filter(!Species=='birds feeding at surface')%>%
+  filter(!SP.group%in%TEP.groups)%>%
   mutate(Number=1,
          Method=capitalize(Method))%>%
   group_by(Method,Interaction,SP.group)%>%
@@ -1557,7 +1579,6 @@ p2=Video.habitat.deck_GN%>%
         plot.title = element_text(size = 20, face = "bold",hjust=-920),
         plot.subtitle = element_text(size = 17,face = "italic",hjust=0.3))
 
-
 #Pie chart of different habitat damage categories
 p3=Video.habitat.deck_GN.no.zeros%>%
   dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader)%>%
@@ -1570,7 +1591,7 @@ p3=Video.habitat.deck_GN.no.zeros%>%
          labelPosition =(ymax + ymin) / 2)%>%
   ggplot(aes(ymax=ymax, ymin=ymin, xmax=4, xmin=3, fill=Species)) +
   geom_rect() +
-  geom_text(x=3.5,aes(y=labelPosition, label=label),size = 6,check_overlap = TRUE)+
+  geom_text(x=3.5,aes(y=labelPosition, label=label,angle = 70),size = 4,check_overlap = TRUE)+
   scale_fill_manual(values=c("deepskyblue2","darkorange1","tomato4","forestgreen",'khaki3'))+ 
   coord_polar(theta="y") + xlim(c(2, 4)) +
   ggtitle(label ="",
@@ -1581,7 +1602,6 @@ p3=Video.habitat.deck_GN.no.zeros%>%
         legend.text = element_text(size = 16),
         plot.title = element_text(size = 20, face = "bold"),
         plot.subtitle = element_text(size = 17,face = "italic",hjust=1))
-
 
 #Histogram of proportion of net damage
 p4=Video.habitat.deck_GN.no.zeros%>%
@@ -1600,8 +1620,6 @@ p4=Video.habitat.deck_GN.no.zeros%>%
               plot.subtitle = element_text(size = 17,face = "italic",hjust=-.15))+
         xlab("Percentage")+
         ylab("Number of frames")
-
-
 
 #export these figures
 ggarrange(p1, p2, p3, p4, ncol = 1, nrow = 4)
@@ -1869,7 +1887,7 @@ d=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.
         Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species,Code))%>%
   mutate(Number=1,
          Method=capitalize(Method))%>%
-  filter(SP.group%in%c("Seabirds","Marine mammals") | Code%in%TEPS_Shark.rays)%>%
+  filter(SP.group%in%TEP.groups | Code%in%TEPS_Shark.rays)%>%
   filter(!Species=='birds feeding at surface')%>%
   left_join(TEPS.names,by="Code")%>%
   group_by(Method,Interaction,Name,Colr,Code)%>%
@@ -1879,11 +1897,15 @@ d=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.
 a=d%>%data.frame%>%arrange(Code)%>%distinct(Name, Colr)
 dis.cols=a$Colr
 names(dis.cols)=a$Name
+d=d%>%
+  mutate(Method.hour=ifelse(Method=='Longline',paste(Method,' ( ',hours.underwater.ll,' video hours)',sep=''),
+                     ifelse(Method=='Gillnet',paste(Method,' ( ',hours.underwater.gn,' video hours)',sep=''),
+                     NA)))  
 d%>%
   ggplot(aes(fill=Name, y=n, x=Interaction)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
-  facet_wrap(~Method,dir='h',scales='free_x')+ 
+  facet_wrap(~Method.hour,dir='h',scales='free_x')+ 
   theme(legend.position = "top",
         strip.text = element_text(size = 20),
         legend.title = element_blank(),
@@ -1891,7 +1913,8 @@ d%>%
         axis.text=element_text(size=14),
         axis.title=element_text(size=16))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
-  scale_fill_manual(values=dis.cols)
+  scale_fill_manual(values=dis.cols)+
+  scale_y_continuous(breaks = integer_breaks())
 ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,height = 8,compression = "lzw")
 
 #ACA
@@ -1903,7 +1926,7 @@ ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,he
 #       Video.camera1.deck,Video.camera1.deck_extra.records            #MISSING
 #     Note that Video.camera1.deck,Video.camera1.deck_extra.records must be manipulated
 
-#3. Deck 2
+#3. Deck 2  #ACA
 TEPS_deck.camera2=rbind(Video.camera2.deck_observations%>%
                             filter(Code%in%TEPS.codes)%>%
                             dplyr::select(Period,Genus,Species,Code,Activity),
@@ -1919,7 +1942,11 @@ TEPS_deck.camera2=rbind(Video.camera2.deck_observations%>%
                          Period=capitalize(Period),
                          Activity=capitalize(Activity))%>%
                   group_by(Period,Activity,Name,Colr,Code)%>%
-                  tally(Number)
+                  tally(Number)%>%
+                  mutate(Method.hour=ifelse(Period=='Longline',paste(Period,' ( ',hours.deck2.ll,' video hours)',sep=''),
+                                     ifelse(Period=='Gillnet',paste(Period,' ( ',hours.deck2.gn,' video hours)',sep=''),
+                                     NA)))  
+
 
 a=TEPS_deck.camera2%>%data.frame%>%arrange(Code)%>%distinct(Name, Colr)
 dis.cols=a$Colr
@@ -1928,7 +1955,7 @@ TEPS_deck.camera2%>%
   ggplot(aes(fill=Name, y=n, x=Activity)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
-  facet_wrap(~Period,dir='h',scales='free_x')+ 
+  facet_wrap(~Method.hour,dir='h',scales='free_x')+ 
   theme(legend.position = "top",
         strip.text = element_text(size = 20),
         legend.title = element_blank(),
@@ -1936,7 +1963,7 @@ TEPS_deck.camera2%>%
         axis.text=element_text(size=14),
         axis.title=element_text(size=16))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
-  scale_fill_manual(values=dis.cols)
+  scale_fill_manual(values=dis.cols)+scale_y_continuous(breaks = integer_breaks())
 ggsave(le.paste("TEPS/Interactions_number.events_deck2.tiff"),width = 12,height = 8,compression = "lzw")
 
 
