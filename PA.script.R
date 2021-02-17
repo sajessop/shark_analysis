@@ -109,11 +109,15 @@ mesh.deep.Anthony=2                   #in metres        #MISSING: get actual val
 metres.observed=5 # average metres observed underwater
 
 
-hours.underwater.ll='xx'  #total number of hours of longline underwater footage   #MISSING: get from Jack
-hours.underwater.gn='xx'  #total number of hours of gillnet underwater footage
-hours.subsurface='xx'  #total number of hours of subsurface footage
-hours.deck2.ll='xx'  #total number of hours of deck camera 2 longline footage
-hours.deck2.gn='xx'  #total number of hours of deck camera 2 gillnet footage
+hours.underwater.ll='172'  #total number of hours of longline underwater footage   #update from Jack
+hours.underwater.gn='571'  #total number of hours of gillnet underwater footage
+hours.subsurface.ll='6.15'  #total number of hours of subsurface footage longline
+hours.subsurface.gn='20'  #total number of hours of subsurface footage gillnet
+hours.deck1.ll='9.25'  #total number of hours of deck camera 1 longline footage
+hours.deck1.gn='22.25'  #total number of hours of deck camera 1 gillnet footage
+hours.deck2.ll='7.45'  #total number of hours of deck camera 2 longline footage
+hours.deck2.gn='17.25'  #total number of hours of deck camera 2 gillnet footage
+
 
 #---------Define TEPS------------
 TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
@@ -1981,7 +1985,10 @@ fn.tep.observer=function(d,all.gn.shots,all.ll.shots,do.LL)
       scale_y_continuous(breaks=1:100)
   }else
   {
-    rbind(d.nets)%>%
+    d.nets%>%
+      mutate(contact.code.to.complete=case_when(contact.code.to.complete=="entangled/hooked" ~ "entangled",
+                                                contact.code.to.complete=="feeding from net/longline" ~ "feeding from net",
+                                                TRUE ~ contact.code.to.complete))%>%
       group_by(gear.type,contact.code.to.complete,common.name)%>%
       summarise(n=sum(contact.count))%>%
       mutate(common.name=capitalize(common.name),
