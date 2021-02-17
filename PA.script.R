@@ -1400,7 +1400,7 @@ Video.habitat=Video.habitat%>%
                 data.frame%>%
                 mutate(SHEET_NO=toupper(opcode),
                        Depth_m=Depth..M.,
-                       BROAD=capitalize(BROAD),
+                       BROAD=capitalize(tolower(BROAD)),
                        MORPHOLOGY=capitalize(MORPHOLOGY),
                        TYPE=capitalize(TYPE),
                        BROAD=case_when(BROAD%in%c('Consolidated','Unconsolidated') ~'Substrate',
@@ -1779,6 +1779,7 @@ d=d%>%
                                Interaction== "Swim past" ~ "Swam past",
                                Interaction== "Swim through" ~ "Swam through",
                                TRUE~Interaction))  
+#gillnet and longline
 d%>%
   mutate(Name=factor(Name,levels=TEPS.names$Name))%>%
   ggplot(aes(fill=Name, y=n, x=Interaction)) + 
@@ -1796,9 +1797,27 @@ d%>%
   scale_y_continuous(breaks = integer_breaks())
 ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,height = 8,compression = "lzw")
 
+#gillnet only
+d%>%
+  filter(Method=="Gillnet")%>%
+  mutate(Name=factor(Name,levels=TEPS.names$Name))%>%
+  ggplot(aes(fill=Name, y=n, x=Interaction)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() + 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 14),
+        axis.text=element_text(size=18),
+        axis.title=element_text(size=20))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=TEPS.cols)+
+  scale_y_continuous(breaks = integer_breaks())
+ggsave(le.paste("TEPS/Interactions_number.events_underwater_gillnet.only.tiff"),width = 12,height = 8,compression = "lzw")
+
 
 # 2.2. subsurface   
-Video.subsurface%>%
+d=Video.subsurface%>%
   filter(Code%in%TEPS.codes)%>%
   left_join(TEPS.names,by="Code")%>%
   mutate(Number=1,
@@ -1815,7 +1834,10 @@ Video.subsurface%>%
   mutate(Method.hour=ifelse(Period=='Longline',paste(Period,' ( ',hours.deck2.ll,' video hours)',sep=''),
                             ifelse(Period=='Gillnet',paste(Period,' ( ',hours.deck2.gn,' video hours)',sep=''),
                                    NA)))%>%
-  mutate(Name=factor(Name,levels=TEPS.names$Name))%>%
+  mutate(Name=factor(Name,levels=TEPS.names$Name))
+
+#gillnet & longline
+d%>%
   ggplot(aes(x=Drop.out.plot, y=n,fill=Name)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
@@ -1829,6 +1851,23 @@ Video.subsurface%>%
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
   scale_fill_manual(values=TEPS.cols)+scale_y_continuous(breaks = integer_breaks())
 ggsave(le.paste("TEPS/Interactions_number.events_subsurface.tiff"),width = 12,height = 8,compression = "lzw")
+
+#gillnet only
+d%>%
+  filter(Period=="Gillnet")%>%
+  ggplot(aes(x=Drop.out.plot, y=n,fill=Name)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=18),
+        axis.title=element_text(size=20))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=TEPS.cols)+scale_y_continuous(breaks = integer_breaks())
+ggsave(le.paste("TEPS/Interactions_number.events_subsurface_gillnet.only.tiff"),width = 12,height = 8,compression = "lzw")
+
 
 
 # 2.3.1 Deck 1  (pointing to deck)                #MISSING
@@ -1858,9 +1897,11 @@ TEPS_deck.camera2=rbind(Video.camera2.deck_observations%>%
          Activity=case_when(Activity%in%c("Feeding from gillnet",
                                           "Feeding from longline")~"Feeding from net/longline",
                             TRUE~Activity))  
+d=TEPS_deck.camera2%>%
+    mutate(Name=factor(Name,levels=TEPS.names$Name))
 
-TEPS_deck.camera2%>%
-  mutate(Name=factor(Name,levels=TEPS.names$Name))%>%
+#gillnet & longline
+d%>%
   ggplot(aes(fill=Name, y=n, x=Activity)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
@@ -1875,10 +1916,28 @@ TEPS_deck.camera2%>%
   scale_fill_manual(values=TEPS.cols)+scale_y_continuous(breaks = integer_breaks())
 ggsave(le.paste("TEPS/Interactions_number.events_deck2.tiff"),width = 12,height = 8,compression = "lzw")
 
+#gillnet only
+d%>%
+  filter(Period=="Gillnet")%>%
+  mutate(Activity=ifelse(Activity=="Feeding from net/longline" & Period=="Gillnet",
+                         "Feeding from net",Activity))%>%
+  ggplot(aes(fill=Name, y=n, x=Activity)) + 
+  geom_bar(position="stack", stat="identity")+
+  coord_flip() +
+  theme(legend.position = "top",
+        strip.text = element_text(size = 20),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        axis.text=element_text(size=18),
+        axis.title=element_text(size=20))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))+
+  scale_fill_manual(values=TEPS.cols)+scale_y_continuous(breaks = integer_breaks())
+ggsave(le.paste("TEPS/Interactions_number.events_deck2_gillnet.only.tiff"),width = 12,height = 8,compression = "lzw")
+
 
 
 #2. Observer data
-fn.tep.observer=function(d,all.gn.shots,all.ll.shots) 
+fn.tep.observer=function(d,all.gn.shots,all.ll.shots,do.LL) 
 {
   d.nets=d%>%filter(gear.type=="GN")
   d.ll=d%>%filter(gear.type=="LL")
@@ -1896,29 +1955,57 @@ fn.tep.observer=function(d,all.gn.shots,all.ll.shots)
            con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
            con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))
   
-  rbind(d.nets,d.ll)%>%
-    group_by(gear.type,contact.code.to.complete,common.name)%>%
-    summarise(n=sum(contact.count))%>%
-    mutate(common.name=capitalize(common.name),
-           contact.code.to.complete=capitalize(contact.code.to.complete),
-           gear.type=ifelse(gear.type=="LL",paste("Longline"," (",all.ll.shots, " shots)",sep=''),
-                            ifelse(gear.type=="GN",paste("Gillnet"," (",all.gn.shots, " shots)",sep=''),
-                                   NA)))%>%
-    mutate(common.name=factor(common.name,levels=TEPS.names$Name))%>%
-    ggplot(aes(y=n, x=contact.code.to.complete,fill=common.name)) + 
-    geom_bar(position="stack", stat="identity")+
-    coord_flip() + labs(fill = "") +
-    facet_wrap(~gear.type,dir='h')+ 
-    theme(legend.position = "top",
-          legend.text = element_text(size = 16),
-          strip.text = element_text(size = 14),
-          axis.text=element_text(size=16),
-          axis.title=element_text(size=20))+
-    xlab('')+ylab('Number of individuals')+ 
-    scale_fill_manual(values=TEPS.cols)+
-    #guides(color = guide_legend(nrow = 1))+
-    scale_y_continuous(breaks=1:100)
+  if(do.LL=="YES")
+  {
+    rbind(d.nets,d.ll)%>%
+      group_by(gear.type,contact.code.to.complete,common.name)%>%
+      summarise(n=sum(contact.count))%>%
+      mutate(common.name=capitalize(common.name),
+             contact.code.to.complete=capitalize(contact.code.to.complete),
+             gear.type=ifelse(gear.type=="LL",paste("Longline"," (",all.ll.shots, " shots)",sep=''),
+                              ifelse(gear.type=="GN",paste("Gillnet"," (",all.gn.shots, " shots)",sep=''),
+                                     NA)))%>%
+      mutate(common.name=factor(common.name,levels=TEPS.names$Name))%>%
+      ggplot(aes(y=n, x=contact.code.to.complete,fill=common.name)) + 
+      geom_bar(position="stack", stat="identity")+
+      coord_flip() + labs(fill = "") +
+      facet_wrap(~gear.type,dir='h')+ 
+      theme(legend.position = "top",
+            legend.text = element_text(size = 16),
+            strip.text = element_text(size = 14),
+            axis.text=element_text(size=16),
+            axis.title=element_text(size=20))+
+      xlab('')+ylab('Number of individuals')+ 
+      scale_fill_manual(values=TEPS.cols)+
+      #guides(color = guide_legend(nrow = 1))+
+      scale_y_continuous(breaks=1:100)
+  }else
+  {
+    rbind(d.nets)%>%
+      group_by(gear.type,contact.code.to.complete,common.name)%>%
+      summarise(n=sum(contact.count))%>%
+      mutate(common.name=capitalize(common.name),
+             contact.code.to.complete=capitalize(contact.code.to.complete),
+             gear.type=ifelse(gear.type=="LL",paste("Longline"," (",all.ll.shots, " shots)",sep=''),
+                              ifelse(gear.type=="GN",paste("Gillnet"," (",all.gn.shots, " shots)",sep=''),
+                                     NA)))%>%
+      mutate(common.name=factor(common.name,levels=TEPS.names$Name))%>%
+      ggplot(aes(y=n, x=contact.code.to.complete,fill=common.name)) + 
+      geom_bar(position="stack", stat="identity")+
+      coord_flip() + labs(fill = "")+ 
+      theme(legend.position = "top",
+            legend.text = element_text(size = 16),
+            strip.text = element_text(size = 14),
+            axis.text=element_text(size=16),
+            axis.title=element_text(size=20))+
+      xlab('')+ylab('Number of individuals')+ 
+      scale_fill_manual(values=TEPS.cols)+
+      #guides(color = guide_legend(nrow = 1))+
+      scale_y_continuous(breaks=1:100)
+  }
+    
 }
+#gillnet & hook
 fn.tep.observer(d=TEPS,
                 all.gn.shots=length(DATA%>%
                                       filter(method=="GN")%>%
@@ -1927,8 +2014,24 @@ fn.tep.observer(d=TEPS,
                 all.ll.shots=length(DATA%>%
                                       filter(method=="LL")%>%
                                       distinct(sheet_no)%>%
-                                      pull(sheet_no)))
+                                      pull(sheet_no)),
+                do.LL="YES")
 ggsave(le.paste("TEPS/Numbers.interactions.by.gear_Observers.tiff"), width = 12,height = 8,compression = "lzw")
+
+#gillnet only
+fn.tep.observer(d=TEPS,
+                all.gn.shots=length(DATA%>%
+                                      filter(method=="GN")%>%
+                                      distinct(sheet_no)%>%
+                                      pull(sheet_no)),
+                all.ll.shots=length(DATA%>%
+                                      filter(method=="LL")%>%
+                                      distinct(sheet_no)%>%
+                                      pull(sheet_no)),
+                do.LL="NO")
+ggsave(le.paste("TEPS/Numbers.interactions.by.gear_Observers_gillnet.only.tiff"), width = 12,height = 8,compression = "lzw")
+
+
 do.inter.for.each.shot=FALSE
 if(do.inter.for.each.shot)
 {
