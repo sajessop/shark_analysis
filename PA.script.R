@@ -118,6 +118,7 @@ hours.deck1.gn='22.25'  #total number of hours of deck camera 1 gillnet footage
 hours.deck2.ll='7.45'  #total number of hours of deck camera 2 longline footage
 hours.deck2.gn='17.25'  #total number of hours of deck camera 2 gillnet footage
 
+No.good.water.column=c('PA0059','PA0061') # data sheets no good for looking at Composition around weight or float
 
 #---------Define TEPS------------
 TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
@@ -1727,20 +1728,18 @@ ggsave(le.paste("Video/deck.cameras/Gaffing.events.tiff"),width = 10,height = 8,
 
 
   #3. Composition around weight or float 
-p=Video.camera2.deck%>%
-  mutate(water.column=tolower(hook.distance.to.float.weight))%>%
-  filter(!is.na(water.column))%>%
-  group_by(Code,water.column,Period)%>%
-  tally()%>%
-  mutate(water.column=factor(water.column),
-         Period=capitalize(Period))%>%
-  left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")
-
+Data_water.column=Video.camera2.deck%>%
+            filter(!SHEET_NO%in%No.good.water.column)%>%
+            mutate(water.column=tolower(hook.distance.to.float.weight))%>%
+            filter(!is.na(water.column))%>%
+            group_by(Code,water.column,Period)%>%
+            tally()%>%
+            mutate(water.column=factor(water.column,levels=c("1w","2w","3w","1f","2f","3f")),
+                   Period=capitalize(Period))%>%
+            left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")
 these.compo.sp=sort(unique(p$Code))
 names(these.compo.sp)=All.species.names[match(these.compo.sp,All.species.names$Code),"COMMON_NAME"]
-
-
-p%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
+Data_water.column%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
   ggplot(aes(fill=water.column, y=n, x=COMMON_NAME)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
@@ -1751,8 +1750,7 @@ p%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
         legend.text = element_text(size = 16),
         axis.text=element_text(size=14),
         axis.title=element_text(size=16))+
-  scale_fill_manual(values=c("orange","firebrick2","firebrick4",
-                             "lightblue2","deepskyblue2","dodgerblue4"))+
+  scale_fill_manual(values=c("orange","firebrick2","firebrick4","lightblue2","deepskyblue2","dodgerblue4"))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
 ggsave(le.paste("Video/deck.cameras/Weight_float_species.events.tiff"),width = 10,height = 8,compression = "lzw")
 
