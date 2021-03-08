@@ -17,6 +17,10 @@
 
 #MISSING: get number of hours of footage for different cameras form Jack
 #         Add Video.subsurface to TEPS analysis
+#         Drop out rates: Overall and for each species By:
+#                         1. number of fish caugth
+#                         2. Km of net or number of hooks
+
 
 rm(list=ls(all=TRUE))
 library(tidyverse)
