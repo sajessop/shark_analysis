@@ -108,7 +108,7 @@ do.len_len=FALSE
 do.Historic=FALSE
 
 distance.roller.spreader.Anthony=4.3  #in metres
-mesh.deep.Anthony=2                   #in metres        #MISSING: get actual value from Jeff
+mesh.deep.Anthony=3.3                   #in metres  (20 meshes of 6.5 inch, source: Jeff Cooke)
 
 metres.observed=5 # average metres observed underwater
 
@@ -1099,10 +1099,10 @@ integer_breaks <- function(n = 5, ...) {
 }
 
 #---------Build length-length relationships------------     
-#using robust regression to deal with outliers
+#using robust regression to deal with outliers   MISSING: plot recorder in different color and fit model with recorder as factor
 if(do.len_len)
 {
-  setwd('C:/Matias/Analyses/Parks Australia/outputs/length_length')
+  setwd('C:/Matias/Analyses/Interdorsal length conversions')
   r2ww <- function(x)
   {
     SSe <- sum(x$w*(x$resid)^2)
@@ -1731,19 +1731,30 @@ Video.camera2.deck%>%
 ggsave(le.paste("Video/deck.cameras/Gaffing.events.tiff"),width = 10,height = 8,compression = "lzw")
 
 
-  #3. Composition around weight or float 
+  #3. Composition around weight or float
+Min.obs.comp.wei.flot=5
 Data_water.column=Video.camera2.deck%>%
             filter(!SHEET_NO%in%No.good.water.column)%>%
             mutate(water.column=tolower(hook.distance.to.float.weight))%>%
-            filter(!is.na(water.column))%>%
+            filter(!is.na(water.column))
+  
+these.compo.sp=Data_water.column%>%
+  group_by(Code)%>%
+  tally()%>%
+  filter(n>=Min.obs.comp.wei.flot)%>%
+  pull(Code)
+
+Data_water.column=Data_water.column%>%
             group_by(Code,water.column,Period)%>%
             tally()%>%
             mutate(water.column=factor(water.column,levels=c("1w","2w","3w","1f","2f","3f")),
                    Period=capitalize(Period))%>%
             left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")
-these.compo.sp=sort(unique(p$Code))
+
 names(these.compo.sp)=All.species.names[match(these.compo.sp,All.species.names$Code),"COMMON_NAME"]
-Data_water.column%>%mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
+Data_water.column%>%
+  filter(Code%in%these.compo.sp)%>%
+  mutate(COMMON_NAME=factor(COMMON_NAME,levels=names(these.compo.sp)))%>%
   ggplot(aes(fill=water.column, y=n, x=COMMON_NAME)) + 
   geom_bar(position="stack", stat="identity")+
   coord_flip() +
