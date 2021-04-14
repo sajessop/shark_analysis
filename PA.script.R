@@ -1203,7 +1203,7 @@ Video.longline.interaction=rbind(Video.longline.interaction,Video.longline.obs)
 
   #some manipulations                       
 Video.net.interaction=Video.net.interaction%>%
-              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                                         Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                                         Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
                                         Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
@@ -1225,7 +1225,7 @@ Video.net.interaction=Video.net.interaction%>%
 
 
 Video.longline.interaction=Video.longline.interaction%>%
-              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                                         Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                                         Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
                                         Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
@@ -1246,7 +1246,7 @@ Video.longline.interaction=Video.longline.interaction%>%
               data.frame
 
 Video.net.maxN=Video.net.maxN%>%
-              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+              mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                                         Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                                         Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
                                         Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
@@ -1264,7 +1264,7 @@ Video.net.maxN=Video.net.maxN%>%
                 data.frame
 
 Video.longline.maxN=Video.longline.maxN%>%
-                mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.7024e7 ~"Sharks",
+                mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                                           Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                                           Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
                                           Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
@@ -1313,6 +1313,28 @@ rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.gr
         axis.title=element_text(size=16))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
 ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf.tiff"),width = 12,height = 8,compression = "lzw")
+
+  #Export data for Abbey
+Abbey.data.chapter.1_species=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group),
+                                   Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group))%>%
+                                mutate(Method=capitalize(Method),
+                                       Interaction=capitalize(tolower(Interaction)))%>%
+                                filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
+                                group_by(sheet_no,Method,Interaction,Code)%>%
+                                summarise(Number=sum(Number))%>%
+                                spread(Code,Number,fill = 0)%>%
+                                data.frame
+Abbey.data.chapter.1_SP.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group),
+                                    Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group))%>%
+                                mutate(Method=capitalize(Method),
+                                       Interaction=capitalize(tolower(Interaction)))%>%
+                                filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
+                                group_by(sheet_no,Method,Interaction,SP.group)%>%
+                                summarise(Number=sum(Number))%>%
+                                spread(SP.group,Number,fill = 0)%>%
+                                data.frame
+write.csv(Abbey.data.chapter.1_species,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_species.csv',row.names = F)
+write.csv(Abbey.data.chapter.1_SP.group,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_SP.group.csv',row.names = F)
 
 
   #number of events for main target species
@@ -1770,6 +1792,73 @@ Data_water.column%>%
 ggsave(le.paste("Video/deck.cameras/Weight_float_species.events.tiff"),width = 10,height = 8,compression = "lzw")
 
 
+
+# analysis of Deck 1 camera VS observers --------------------------------------------------------------------
+
+# Deck 1  (pointing to deck)                      
+Video.camera1=rbind(Video.camera1.deck_extra.records%>%
+                      dplyr::select("DIPRD code",Code,Period,number),
+                    Video.camera1.deck%>%
+                      mutate(Code=ifelse(Genus=="Kyphosus" & Species=="spp",'37361903',Code))%>%
+                      dplyr::select("DIPRD code",Code,Period,number))%>%
+              data.frame%>%
+              mutate(Code=as.numeric(Code),
+                     SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
+                                        Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                        Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                        Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish",
+                                        Code >=4.1e+07 & Code<=4.115e+07 ~"Marine mammals",
+                                        Code >=4.0e+07 & Code<4.1e+07 ~"Seabirds",
+                                        Code >=1.2e7 & Code<3.7e7 ~"Invertebrates",
+                                        Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
+                                        Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
+                                        Code == 10000910 ~"Sponges"),
+                     Period=tolower(Period),
+                     Period=ifelse(Period=='gn','gillnet',
+                                   ifelse(Period=='ll','longline',Period)),
+                     sheet_no=case_when(Period=='gillnet'~str_remove(word(DIPRD.code,1,sep = "\\/"),'GN'),
+                                        Period=='longline'~str_remove(word(DIPRD.code,2,sep = "\\/"),'LL')))%>%
+              left_join(DATA_PA,by='sheet_no')%>%
+              mutate(Data.set="camera")
+
+#Export data for Abbey
+Abbey.data.chapter.2=rbind(Video.camera1%>%
+                             rename(Number=number)%>%
+                             mutate(Method=capitalize(Period))%>%
+                             filter(Code>=3.7e7 & Code<=3.747e7)%>%  #compare only fish and sharks
+                             dplyr::select(sheet_no,Method,Data.set,Code,SP.group,Number),
+                           DATA%>%
+                             filter(sheet_no%in%unique(Video.camera1$sheet_no))%>%
+                             left_join(All.species.names%>%
+                                         dplyr::select(Species,Code),
+                                       by=c('species'='Species'))%>%
+                             filter(Code>=3.7e7 & Code<=3.747e7)%>%     #compare only fish and sharks
+                             mutate(Number=1,
+                                    Data.set='Onboard.observer',
+                                    Method=ifelse(method=="GN","Gillnet",
+                                                  ifelse(method=="LL","Longline",
+                                                         NA)),
+                                    SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
+                                                       Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
+                                                       Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
+                                                       Code >=3.7046e7 & Code<=3.747e7 ~"Scalefish"))%>%
+                             dplyr::select(sheet_no,Method,Data.set,Code,SP.group,Number))
+
+
+Abbey.data.chapter.2_species=Abbey.data.chapter.2%>%
+  group_by(sheet_no,Method,Data.set,Code)%>%
+  summarise(Number=sum(Number))%>%
+  spread(Code,Number,fill = 0)%>%
+  data.frame
+Abbey.data.chapter.2_SP.group=Abbey.data.chapter.2%>%
+  group_by(sheet_no,Method,Data.set,SP.group)%>%
+  summarise(Number=sum(Number))%>%
+  spread(SP.group,Number,fill = 0)%>%
+  data.frame
+write.csv(Abbey.data.chapter.2_species,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_species.csv',row.names = F)
+write.csv(Abbey.data.chapter.2_SP.group,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_SP.group.csv',row.names = F)
+
+
 #---------Analyse PA TEPS ------------
 
 #2. Cameras
@@ -1887,11 +1976,7 @@ ggsave(le.paste("TEPS/Interactions_number.events_subsurface_gillnet.only.tiff"),
 
 
 
-# 2.3.1 Deck 1  (pointing to deck)                #MISSING
-#       Video.camera1.deck,Video.camera1.deck_extra.records            
-#     Note that Video.camera1.deck,Video.camera1.deck_extra.records must be manipulated
-
-# 2.3.2 Deck 2  (pointing to roller)
+# 2.3.1 Deck 2  (pointing to roller)
 TEPS_deck.camera2=rbind(Video.camera2.deck_observations%>%
                           filter(Code%in%TEPS.codes)%>%
                           dplyr::select(Period,Genus,Species,Code,Activity),
