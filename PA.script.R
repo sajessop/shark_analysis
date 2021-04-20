@@ -40,14 +40,16 @@ library(ggpubr)
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
 #--------- DATA ------------
+handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+
 
 #1. Sharks data base
 User="Matias"
-if(User=="Matias") source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R")
+if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
 
 
 #2. Species list
-All.species.names=read.csv("C:/Matias/Data/Species.code.csv")
+All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
 
 
 #3. PA - TEPS interactions recorded by Observers
@@ -60,7 +62,7 @@ Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 2)
 
 
 #3. PA - underwater video
-setwd('C:/Matias/Parks Australia/2019_project/Data/cameras')
+setwd(handl_OneDrive("Parks Australia/2019_project/Data/cameras"))
 
   #net
 file.name.GN="Gillnet_Data_3_11_2020_Clean.xlsx"
@@ -211,7 +213,7 @@ DATA=DATA%>%
 #---------Explore PA observer data------------
 if(explr.dat.entry)
 {
-  setwd('C:/Matias/Analyses/Parks Australia/fix this')
+  setwd(handl_OneDrive("Analyses/Parks Australia/fix this"))
   file.remove(list.files())
   
   No.times=DATA%>%
@@ -259,14 +261,14 @@ if(do.Historic)
   library(grid)
   library(data.table)
   library(plotrix)
-  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Plot.Map.R")
-  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R")
-  source("C:/Matias/Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R")
+  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Plot.Map.R"))
+  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R"))
+  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R"))
   Do.tiff="YES"
   Do.jpeg="NO"
-  hndl="C:/Matias/Analyses/Parks Australia/outputs/Historic_catch_effort"
+  hndl=handl_OneDrive("Analyses/Parks Australia/outputs/Historic_catch_effort")
   
-  setwd('C:/Matias/Analyses/Data_outs')
+  setwd(handl_OneDrive("Analyses/Data_outs"))
   Data.daily.original=fread("Data.daily.original.csv",data.table=FALSE)
   Data.daily=fread("Data.daily.csv",data.table=FALSE)
   Effort.daily=fread("Effort.daily.csv",data.table=FALSE)
@@ -1007,7 +1009,7 @@ if(do.Historic)
     filter(FINYEAR=="2017-18" & METHOD%in%c("GN","LL"))%>%
     group_by(Same.return.SNo,VESSEL,SPECIES)%>%
     summarize(Total.ktch = sum(LIVEWT.c))
-  setwd("C:/Matias/Analyses/Data_outs")
+  setwd(handl_OneDrive("Analyses/Data_outs"))
   PRICES=read.csv("PRICES.csv",stringsAsFactors = F)
   PRICES=PRICES%>%mutate(dolar.per.kg=PRICES[,match('Processor.Weighted.Average.Price',names(PRICES))],
                          dolar.per.kg=as.numeric(gsub("\\$", "", dolar.per.kg)))%>%

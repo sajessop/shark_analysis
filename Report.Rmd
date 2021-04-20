@@ -7,7 +7,7 @@ output:
     toc: yes
 bibliography: library.bib
 knit: (function(inputFile, encoding) {
-  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Matias/Parks Australia/2019_project/Report to Parks Australia") })
+  rmarkdown::render(inputFile, encoding = encoding, output_dir = "C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia") })
 
 ---
 
@@ -32,7 +32,7 @@ This is a paper from Andre [@Punt2019]
 
 <!-- global for setting path to figures -->
 ```{r, echo=FALSE}
-PA.outpus='C:/Matias/Analyses/Parks Australia/outputs'
+PA.outpus='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/Parks Australia/outputs'
 PA.historic=paste(PA.outpus,'Historic_catch_effort',sep='/')
 PA.video.underwater=paste(PA.outpus,'Video/underwater',sep='/')
 ```
