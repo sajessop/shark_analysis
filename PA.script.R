@@ -1104,7 +1104,7 @@ integer_breaks <- function(n = 5, ...) {
 #using robust regression to deal with outliers   MISSING: plot recorder in different color and fit model with recorder as factor
 if(do.len_len)
 {
-  setwd('C:/Matias/Analyses/Interdorsal length conversions')
+  setwd(handl_OneDrive('Analyses/Interdorsal length conversions'))
   r2ww <- function(x)
   {
     SSe <- sum(x$w*(x$resid)^2)
@@ -1202,6 +1202,23 @@ Video.longline.obs=cbind(Video.longline.obs,empty_df)
 Video.longline.obs=Video.longline.obs[,colnames(Video.longline.interaction)]
 Video.longline.interaction=rbind(Video.longline.interaction,Video.longline.obs)
 
+#Tabulate retained or discarded
+Retained.tabl=DATA%>%
+                mutate(species=toupper(species))%>%
+                group_by(species,retainedflag)%>%
+                filter(!is.na(retainedflag))%>%
+                tally()%>%
+                ungroup%>% 
+                group_by(species) %>% 
+                arrange(desc(n)) %>% 
+                slice(1) %>% 
+                ungroup()%>%
+                data.frame%>%
+                left_join(All.species.names,by=c('species'='Species'))%>%
+                dplyr::select(Code,retainedflag)%>%
+                rename(retained=retainedflag)%>%
+                filter(!is.na(Code))
+
 
   #some manipulations                       
 Video.net.interaction=Video.net.interaction%>%
@@ -1225,6 +1242,15 @@ Video.net.interaction=Video.net.interaction%>%
               left_join(DATA_PA,by='sheet_no')%>%
               data.frame
 
+Video.net.interaction=Video.net.interaction%>%
+                        left_join(Retained.tabl,by='Code')%>%
+                        mutate(Retain.group=
+                                 ifelse(retained=='Yes' & SP.group%in% c('Sharks','Rays'),"Retained elasmobranch",
+                                 ifelse(retained=='No' & SP.group%in% c('Sharks','Rays'),"Discarded elasmobranch",
+                                 ifelse(retained=='Yes' & SP.group%in% c('Scalefish'),"Retained scalefish",   
+                                 ifelse(retained=='No' & SP.group%in% c('Scalefish'),"Discarded scalefish",
+                                 NA)))))
+
 
 Video.longline.interaction=Video.longline.interaction%>%
               mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
@@ -1246,6 +1272,17 @@ Video.longline.interaction=Video.longline.interaction%>%
                                            !is.na(Escape2),"Escape",Interaction))%>%
               left_join(DATA_PA,by='sheet_no')%>%
               data.frame
+
+Video.longline.interaction=Video.longline.interaction%>%
+              left_join(Retained.tabl,by='Code')%>%
+                mutate(Retain.group=
+                       ifelse(retained=='Yes' & SP.group%in% c('Sharks','Rays'),"Retained elasmobranch",
+                       ifelse(retained=='No' & SP.group%in% c('Sharks','Rays'),"Discarded elasmobranch",
+                       ifelse(retained=='Yes' & SP.group%in% c('Scalefish'),"Retained scalefish",   
+                       ifelse(retained=='No' & SP.group%in% c('Scalefish'),"Discarded scalefish",
+                       NA)))))
+
+
 
 Video.net.maxN=Video.net.maxN%>%
               mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
@@ -1285,13 +1322,15 @@ Video.longline.maxN=Video.longline.maxN%>%
 
 
 #---------General tables and plots of PA underwater Video ------------ 
-HNDL='C:/Matias/Analyses/Parks Australia/outputs/'
+HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
 le.paste=function(x) paste(HNDL,x,sep='')
 
 SP.group.levels=c("Invertebrates","Scalefish","Sharks","Rays","Marine mammals","Seabirds")
 TEP.groups=c("Marine mammals","Seabirds","Reptiles")
 
-  #number of events
+  #1. number of events 
+
+    #1.1. by gear and species group
 rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
       Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
   filter(!Species=='birds feeding at surface')%>%
@@ -1314,9 +1353,94 @@ rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.gr
         axis.text=element_text(size=14),
         axis.title=element_text(size=16))+
   xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf_by.group.tiff"),width = 12,height = 8,compression = "lzw")
+
+    #1.2. by gear
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
+  filter(!Species=='birds feeding at surface')%>%
+  filter(!SP.group%in%TEP.groups)%>%
+  mutate(Number=1,
+         Method=capitalize(Method))%>%
+  group_by(Method,Interaction)%>%
+  tally(Number)%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)))%>%
+  ggplot(aes(fill=Method, y=n, x=Interaction)) + 
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip() + scale_y_sqrt()+
+  facet_wrap(~Method,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 18),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
 ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf.tiff"),width = 12,height = 8,compression = "lzw")
 
+
+
+  #2. Number of individuals
+
+    #2.1. by gear and species group
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
+  filter(!Species=='birds feeding at surface')%>%
+  filter(!SP.group%in%TEP.groups)%>%
+  mutate(Method=capitalize(Method))%>%
+  group_by(Method,Interaction,SP.group)%>%
+  summarise(n=sum(Number))%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)),
+         SP.group=factor(SP.group,levels=SP.group.levels))%>%
+  ggplot(aes(fill=Method, y=n, x=Interaction)) + 
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip() + scale_y_sqrt()+
+  facet_wrap(~SP.group,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 18),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/underwater/Interactions_number.individuals_sqrt.transf_by.group.tiff"),width = 12,height = 8,compression = "lzw")
+
+
+    #2.2. by gear
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+      Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
+  filter(!Species=='birds feeding at surface')%>%
+  filter(!SP.group%in%TEP.groups)%>%
+  mutate(Method=capitalize(Method))%>%
+  group_by(Method,Interaction)%>%
+  summarise(n=sum(Number))%>%
+  filter(!is.na(Interaction))%>%
+  mutate(Interaction=capitalize(tolower(Interaction)))%>%
+  ggplot(aes(fill=Method, y=n, x=Interaction)) + 
+  geom_bar(position="dodge", stat="identity")+
+  coord_flip() + scale_y_sqrt()+
+  facet_wrap(~Method,dir='h',scales='free_x')+ 
+  theme(legend.position = "top",
+        strip.text = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 18),
+        axis.text=element_text(size=14),
+        axis.title=element_text(size=16))+
+  xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))
+ggsave(le.paste("Video/underwater/Interactions_number.individuals_sqrt.transf.tiff"),width = 12,height = 8,compression = "lzw")
+
+
+
   #Export data for Abbey
+add.effort=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Camera),
+                 Video.net.interaction%>%dplyr::select(sheet_no,Method,Camera))%>%
+                mutate(Method=capitalize(Method))%>%
+                group_by(sheet_no,Method,Camera)%>%
+                summarise(n=n())%>%
+                group_by(sheet_no,Method)%>%
+                summarise(n.cameras=n())
 Abbey.data.chapter.1_species=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group),
                                    Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group))%>%
                                 mutate(Method=capitalize(Method),
@@ -1325,7 +1449,10 @@ Abbey.data.chapter.1_species=rbind(Video.longline.interaction%>%dplyr::select(sh
                                 group_by(sheet_no,Method,Interaction,Code)%>%
                                 summarise(Number=sum(Number))%>%
                                 spread(Code,Number,fill = 0)%>%
-                                data.frame
+                                data.frame%>%
+                                left_join(add.effort,by=c('sheet_no','Method'))
+
+  
 Abbey.data.chapter.1_SP.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group),
                                     Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group))%>%
                                 mutate(Method=capitalize(Method),
@@ -1334,9 +1461,25 @@ Abbey.data.chapter.1_SP.group=rbind(Video.longline.interaction%>%dplyr::select(s
                                 group_by(sheet_no,Method,Interaction,SP.group)%>%
                                 summarise(Number=sum(Number))%>%
                                 spread(SP.group,Number,fill = 0)%>%
-                                data.frame
-write.csv(Abbey.data.chapter.1_species,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_species.csv',row.names = F)
-write.csv(Abbey.data.chapter.1_SP.group,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_SP.group.csv',row.names = F)
+                                data.frame%>%
+                                left_join(add.effort,by=c('sheet_no','Method'))
+
+
+Abbey.data.chapter.1_Retain.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group),
+                                        Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group))%>%
+                                  mutate(Method=capitalize(Method),
+                                         Interaction=capitalize(tolower(Interaction)))%>%
+                                  group_by(sheet_no,Method,Interaction,Retain.group)%>%
+                                  summarise(Number=sum(Number))%>%
+                                  filter(!is.na(Retain.group))%>%
+                                  spread(Retain.group,Number,fill = 0)%>%
+                                  data.frame%>%
+                                  left_join(add.effort,by=c('sheet_no','Method'))
+
+
+write.csv(Abbey.data.chapter.1_species,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_species.csv'),row.names = F)
+write.csv(Abbey.data.chapter.1_SP.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_SP.group.csv'),row.names = F)
+write.csv(Abbey.data.chapter.1_Retain.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_Retain.group.csv'),row.names = F)
 
 
   #number of events for main target species
@@ -1847,18 +1990,114 @@ Abbey.data.chapter.2=rbind(Video.camera1%>%
                              dplyr::select(sheet_no,Method,Data.set,Code,SP.group,Number))
 
 
+add.effort=DATA%>%
+            filter(sheet_no%in%unique(Abbey.data.chapter.2$sheet_no))%>%
+            mutate(Effort=ifelse(method=="GN",soak.time*net_length,
+                                 ifelse(method=="LL",soak.time*n.hooks,
+                                        NA)))%>%
+            group_by(sheet_no,method)%>%
+            summarise(Effort=max(Effort))%>%
+            mutate(Method=ifelse(method=="GN","Gillnet",
+                                 ifelse(method=="LL","Longline",
+                                        NA)))%>%
+            rename(Fishing.effort=Effort)%>%
+            dplyr::select(-method)
+
+
 Abbey.data.chapter.2_species=Abbey.data.chapter.2%>%
-  group_by(sheet_no,Method,Data.set,Code)%>%
-  summarise(Number=sum(Number))%>%
-  spread(Code,Number,fill = 0)%>%
-  data.frame
+            group_by(sheet_no,Method,Data.set,Code)%>%
+            summarise(Number=sum(Number))%>%
+            spread(Code,Number,fill = 0)%>%
+            data.frame%>%
+            left_join(add.effort,by=c('sheet_no','Method'))
+
+
+
 Abbey.data.chapter.2_SP.group=Abbey.data.chapter.2%>%
-  group_by(sheet_no,Method,Data.set,SP.group)%>%
+              group_by(sheet_no,Method,Data.set,SP.group)%>%
+              summarise(Number=sum(Number))%>%
+              spread(SP.group,Number,fill = 0)%>%
+              data.frame%>%
+              left_join(add.effort,by=c('sheet_no','Method'))
+
+
+Abbey.data.chapter.2_Retain.group=Abbey.data.chapter.2%>%
+  left_join(Retained.tabl,by='Code')%>%
+  mutate(Retain.group=
+           ifelse(retained=='Yes' & SP.group%in% c('Sharks','Rays'),"Retained elasmobranch",
+           ifelse(retained=='No' & SP.group%in% c('Sharks','Rays'),"Discarded elasmobranch",
+           ifelse(retained=='Yes' & SP.group%in% c('Scalefish'),"Retained scalefish",   
+           ifelse(retained=='No' & SP.group%in% c('Scalefish'),"Discarded scalefish",
+           NA)))))%>%
+  group_by(sheet_no,Method,Data.set,Retain.group)%>%
   summarise(Number=sum(Number))%>%
-  spread(SP.group,Number,fill = 0)%>%
-  data.frame
-write.csv(Abbey.data.chapter.2_species,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_species.csv',row.names = F)
-write.csv(Abbey.data.chapter.2_SP.group,'C:/Matias/Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_SP.group.csv',row.names = F)
+  filter(!is.na(Retain.group))%>%
+  spread(Retain.group,Number,fill = 0)%>%
+  data.frame%>%
+  left_join(add.effort,by=c('sheet_no','Method'))
+
+write.csv(Abbey.data.chapter.2_species,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_species.csv'),row.names = F)
+write.csv(Abbey.data.chapter.2_SP.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_SP.group.csv'),row.names = F)
+write.csv(Abbey.data.chapter.2_Retain.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_Retain.group.csv'),row.names = F)
+
+
+#---------Analyse Abbey ------------
+
+fn.get.top.1=function(d,N)
+{
+  d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Interaction,-n.cameras))
+  out=names(d[d>N])
+}
+fn.explr.Abbey.1=function(d,vars)
+{
+  d1=d[,vars]/d$Eff
+  d1%>%
+    mutate(sheet_no=d$sheet_no,
+           Method=d$Method,
+           Interaction=d$Interaction)%>%
+    gather("Species","cpue",-sheet_no,-Method,-Interaction)%>%
+    filter(cpue>0)%>%
+    mutate(log.cpue=log(cpue))%>%
+    ggplot(aes(x=Method, y=log.cpue, fill=Interaction)) + 
+    geom_boxplot()+
+    facet_wrap(~Species, scale="free")
+}
+
+fn.get.top.2=function(d,N)
+{
+  d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Data.set,-Fishing.effort))
+  out=names(d[d>N])
+}
+fn.explr.Abbey.2=function(d,vars)
+{
+  d1=d[,vars]/d$Eff
+  d1%>%
+    mutate(sheet_no=d$sheet_no,
+           Method=d$Method,
+           Data.set=d$Data.set)%>%
+    gather("Species","cpue",-sheet_no,-Method,-Data.set)%>%
+    filter(cpue>0)%>%
+    mutate(log.cpue=log(cpue))%>%
+    ggplot(aes(x=Method, y=log.cpue, fill=Data.set)) + 
+    geom_boxplot()+
+    facet_wrap(~Species, scale="free")
+}
+pdf(file=handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Exploraty.pdf'))
+
+fn.explr.Abbey.1(d=Abbey.data.chapter.1_species%>%rename(Eff=n.cameras),
+                 vars=fn.get.top.1(d=Abbey.data.chapter.1_species,N=250))
+
+fn.explr.Abbey.1(d=Abbey.data.chapter.1_SP.group%>%rename(Eff=n.cameras),
+                 vars=fn.get.top.1(d=Abbey.data.chapter.1_SP.group,N=30))
+
+
+fn.explr.Abbey.2(d=Abbey.data.chapter.2_species%>%rename(Eff=Fishing.effort),
+                 vars=fn.get.top.2(d=Abbey.data.chapter.2_species,N=100))
+
+fn.explr.Abbey.2(d=Abbey.data.chapter.2_SP.group%>%rename(Eff=Fishing.effort),
+                 vars=fn.get.top.2(d=Abbey.data.chapter.2_SP.group,N=30))
+
+dev.off()
 
 
 #---------Analyse PA TEPS ------------
