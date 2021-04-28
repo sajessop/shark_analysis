@@ -40,8 +40,7 @@ library(ggpubr)
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
 #--------- DATA ------------
-handl_OneDrive=function(x)paste('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
-
+if(!exists('handl_OneDrive')) source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
 
 #1. Sharks data base
 User="Matias"
@@ -1104,7 +1103,7 @@ integer_breaks <- function(n = 5, ...) {
 #using robust regression to deal with outliers   MISSING: plot recorder in different color and fit model with recorder as factor
 if(do.len_len)
 {
-  setwd(handl_OneDrive('Analyses/Interdorsal length conversions'))
+  setwd(handl_OneDrive('Analyses/Length conversions/Interdorsal length conversions'))
   r2ww <- function(x)
   {
     SSe <- sum(x$w*(x$resid)^2)
