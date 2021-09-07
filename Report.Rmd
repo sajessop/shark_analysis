@@ -1,7 +1,7 @@
 ---
-title: "Long term sustainable use of demersal gillnet and demersal longline in Western Australia's temperate Shark Fishery, A Western Australian Government & WAFIC project"
-author: "Matias Braccini"
-date: "13/01/2021"
+title: "Long term sustainable use of demersal gillnet and demersal longline in Western Australia's temperate Shark Fishery, a Western Australian Government & WAFIC project"
+author: "Matias Braccini, Jack Parker, Maddison Watt, Nick Blay & Clinton Syers"
+date: "13/08/2021"
 output:
   word_document:  
     toc: yes
@@ -19,6 +19,27 @@ knitr::opts_chunk$set(fig.width = 10,fig.height = 10,
                         echo = TRUE, warning=FALSE,message=FALSE)
 
 library(tidyverse)
+library(readxl)
+format_cells <- function(df, rows ,cols, value = c("italics", "bold", "strikethrough"))
+  {
+  # select the correct markup
+  # one * for italics, two ** for bold
+  map <- setNames(c("*", "**", "~~"), c("italics", "bold", "strikethrough"))
+  markup <- map[value]  
+  
+  for (r in rows){
+    for(c in cols){
+      
+      # Make sure values are not factors
+      df[[c]] <- as.character( df[[c]])
+      
+      # Update formatting
+      df[r, c] <- paste0(markup, df[r, c], markup)
+    }
+  }
+  
+  return(df)
+}
 ```
 
 <!-- global for setting path to figures -->
@@ -27,53 +48,94 @@ PA.outpus='C:/Users/myb/OneDrive - Department of Primary Industries and Regional
 PA.historic=paste(PA.outpus,'Historic_catch_effort',sep='/')
 PA.Observer=paste(PA.outpus,'Observer',sep='/')
 PA.TEPS=paste(PA.outpus,'TEPS',sep='/')
+PA.cam.obs=paste(PA.outpus,'Camera_v_Observer',sep='/')
+PA.cam2.obs=paste(PA.outpus,'Camera2_v_Observer',sep='/')
+PA.selectivity=paste(PA.outpus,'Selectivity_LL',sep='/')
 PA.video=paste(PA.outpus,'Video',sep='/')
 PA.video.underwater=paste(PA.video,'underwater',sep='/')
 PA.video.deck.cameras=paste(PA.video,'deck.cameras',sep='/')
+PA.socio.econ=paste(PA.outpus,'Socio-economics',sep='/')
+PA.socio.econ.ques='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Data/socio-economics'
+
 Main.species=c("Dusky shark","Gummy shark","Sandbar shark","Whiskery shark",
                "Blue groper","Pink snapper","Queen snapper","West Australian dhufish")
 ```
 
+# Executive summary
 
-## Introduction
-Some text
-How to insert references: this is a paper from Andre [@Punt2019]
-
-## Methods
-
-### Review of available commercial catch and effort data
+# Introduction
+The Temperate Demersal Gillnet and Demersal Longline Managed Fisheries (TDGDLF) comprise of the West Coast Demersal Gillnet and Demersal Longline (Interim) Managed Fishery (WCDGDLF), which operates between 26° and 33° S, and the Southern Demersal Gillnet and Demersal Longline Managed Fishery (SDGDLF), which operates from 33° S to the WA/SA border. Fishers in the TDGDLF employ mostly demersal gillnets to target mainly sharks with scalefish being a byproduct. Demersal longline is also permitted but is not widely used. 
+Whilst gillnets are used worldwide to catch a range of species and are considered size selective, they do not necessarily discriminate among species, catching target and non-target species and as such have been labelled indiscriminate ‘walls of death’ (e.g. The West Australian, 26 September 2012). Additionally, sectors of the public and many environmental non-governmental organisations (eNGO) consider the incidental catch of charismatic species (e.g. marine birds, mammals and turtles) unacceptable, even when the sustanability risks imposed to those populations may be negligible. A recent example of this was the support gained by the eNGO sector to implement gillnet exclusion zones around Australian sea lion colonies (ASL Zones) in the TDGDLF.
+The introduction of ASL Zones and Commonwealth Marine Park closures in mid-2018 has excluded areas to demersal gillnets, consequently significantly reducing the area traditionally fished by operators in the TDGDLF. This is especially evident in zone 2 of the SDGDLF and the WCDGDLF. In response to this, a working group consisting of the Department of Primary Industries and Regional Development (DPIRD), the Western Australian Fishing Industry Council (WAFIC) and the Southern Seafood Producers Association (SSPA) received funding from Parks Australia as part of the Commonwealth Marine Parks Grants Assistance Program. The objective of the current project is to address key issues and questions relating to the use of gillnet and longlines by TDGDLF fishers. Specifically, a better understanding is required on changes in fishing efficiency (required for allowing unbiased stock assessments), catch composition (sharks and scalefish), and impacts on habitat and Endangered Threatened and Protected (ETPs) species from the use of gillnets or longlines. Also, social and economic considerations must be understood. This will be achieved collectively via two Phases to the Project: 1) Phase one involved a desktop study for reviewing what is currently known about the fishing methods used in the TDGDLF; 2) Phase two involved data collection through a fishing survey to compare the catch composition, catch rates, and habitat impacts of demersal gillnets and longlines using both onboard observer (OM) and electronic (EM) monitoring using a range of different camera systems.
 
 
-Missing: from Licence data, report who has licence/units, how many units, who’s transferring units by year, etc. Describe the dynamics.
+# Methods
 
-### Fishing survey
-#### Sampling gear
-Here describe gillnet and longline sampling
+## Phase one - Review of available commercial catch and effort data
+
+### Data collection
+A desktop study was done to review available information on the gear used in the TDGDLF with a focus on the catch composition of demersal gillnet and demersal longline, the selectivity of demersal gillnet and demersal longline, interactions between demersal gillnet and demersal longline and ETP species, habitat or broader ecosystem impacts with demersal gillnet and demersal longline, and historical change or evolution in use of demersal gillnet and demersal longlines. Data were obtained from the literature and DPIRD's catch and effort systems. Only daily logbooks (catch and effort records reported since 2006-07) were considered given the higher spatial and species reporting resolution compared to the period 1975-76 to 2005-06 when catch and effort records were aggregated at a coarser level. 
+
+### Data analyses
+Data manipulation and analysis was done using the statistical package R [@RDevelopmentCoreTeam2014]. Differences in catch composition between demersal gillnets and longlines were tested with multivariate statistics using the package *vegan*. Non-metric multidimensional scaling (nMDS) on proportional data and Bray-Curtis dissimilarities was used to collapse the multivariate species composition into two dimensions. Adonis was used to test for significant differences between fishing method and zone, fitted as a combined term method-zone. Similarity Percentage (SIMPER) Analysis was used to determine the contribution of each species to the dissimilarity between fishing zones and gears. For the multivariate analysis, Zone 1 was excluded due to the very low number of longline records.
+For the main commercial shark and scalefish species, catch rates were standardized using generalized linear models (GLMs). The models had catch rate as response variable (kg per 1000 m hour or 1000 hook hours for gillnets and longlines, respectively) and fishing zone and vessel as terms for the gillnet model, and fishing zone, vessel, hook type and hook size as terms for the longline model. A Tweedie distribution with a log link was used considering the relatively high proportion of records with zero catch.
+
+## Phase two - Fishing survey
+### Commercial fishing vessel chartering and onboard observer program
+Three TDGDLF gillnet fishing vessels were chartered to simultaneously fish with demersal gillnets and demersal longlines. Vessels were selected based **on a tender process XXX (Maddie/Clint to specify vessel selection and SLA)**. **Here describe how longline was set and hauled using the net winch or dedicated winch in case of Anthony (Jack to do)**
+Sampling follow standard commercial fishing operations with skippers allowed to determine when and where to set the gear. The gillnet was supplied by each fisher and consisted of the same gear configuration used in TDGDLF standard commercial operations (i.e. monofilament webbing with a mesh size of 6.5 inches) as per described in [@McAuley2003a] and [@McAuley2007a], but with a length of up to 3000 m. The longline was ~1,500 m long and comprised of ~240 hooks of different size (10/0, 12/0 and 14/0) and shape (tuna circle hooks and Ezi-baiter) attached to the main line (**X** cm diameter) via ~60 cm metal (**X** cm diameter) or monofilament (**X** cm diameter) snoods. Approximately 20 of each snood type—hook type—hook size combinations were deployed in each gear deployment. Each hook was manually baited with squid, octopus, mullet, whiting, herring or pilchards. Approximately 10 snoods were clipped to the main line between each weight and pressure float which allowed sampling close to the bottom and into the water column (Figure 1). Gillnets were deployed for between 0.7 and 23.4 hours (mean = 12.2 hours) and longlines were deployed for 0.8 and 20.8 hours (mean = 10.9 hours).
+A tori line was used to minimize the seabird interactions during longline deployments. 
 
 ```{r, echo=FALSE}
 path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia/longline configuration.jpg'
 ```
-![Figure X. Scientific longline configuration](`r path`){width=800px}
+![Figure 1. Scientific longline configuration. The notation '1w', '1f','2w', '2f', etc corresponds to the relative position of a snood from a weight or pressure float. ](`r path`){width=800px}
 
-#### Image collection
-##### Underwater cameras
-Mono Gillnet, longline underwater video (GLUVs) were developed for this unique study. The GLUVs comprised one Sony FRD-x3000 action camera, mounted in an underwater housing. These housings were then attached to an aluminium bracket with shark clips to allow the cameras to be attached to different types of fishing gear. The GLUVs were made neutrally buoyant so they did not compromise the way the fishing gear would normally sit in the water. 10 GLUVs cameras that were attached to gillnets were angles at 45° to observe down the gillnet. Eight Cameras that were attached to the long line were positions to observe straight along the longline and were not angled. Each camera was attached to the fishing gear as it was deployed and recorded for the whole deployment of the fishing gear, averaging 4-6 hours on longlines and 6-8 on Gillnets. Cameras were randomly positioned but were separated by at least 50M.
+Two to three scientific observers were onboard each vessel and collected data on GPS location, depth, date, time and catch composition for each observed shot, which were conducted in the West and South Coasts (Figure 2) between July 2020 and August 2021 in depths of **X-Y** m. Each individual caught was identified to the highest taxonomic resolution possible, measured (fork length for sharks, disc width for southern eagle rays and total length for scalefish) and recorded as retained or discarded by the fisher. Sharks and rays were also sexed and, for the main commercial shark species, vertebrae were collected from the anterior part of the trunk for future ageing analyses and construction of catch age compositions. Discarded individuals were assigned a release condition classed as 0 (dead), 1 (individual swam off strongly and did not remain at the surface), 2 (individual swam off moderately strongly and typically swam at the surface for a period), or 3 (individual swam off in poor condition or did not appear to swim) [@MatiasBraccini2019].
 
-##### Deck cameras
-Two Sony FRD-x3000 action cameras were mounted in different locations around the different fishing vessels.  One camera was positioned at the measuring station. This camera allowed the identification of all fish that were caught and brought onboard the fishing vessels. The cameras also allowed the comparison of what was recorded by researchers out in the field, to what was able to be recorded on the cameras and analyses back on land. Finally, this position allowed the cameras to observe the amount of habitat caught in the fishing gear and brought on fishing vessels and allowed the quantification of habitat impact of the longlines and Gillnets.
-A second deck camera was positioned above the retrieval roller of the vessel. One important area of research into the efficiency of fishing gear is the drop out rate and recovery of fish from the gillnet/longline. This angle allowed the researchers to record the number of animals that dropped out of the fishing gear when it is being retrieved and if the crew are able to recover it before it is lost entirely. This camera also allowed a closer view of how the sharks were caught in the net, weather they were caught by the gills or if they were tangled and bagged up. A last important function of this camera view was the counting of longline hooks. An important aspect of longlining that this project set out to untangle is where scale fish ad sharks were more likely to be caught on the longline weather height in the water column or closer to the sea floor. To determine this this camera could count if the hook the animal was caught on was closer the Weight (closer to the sea floor) or the pressure float (higher in the water column).
+```{r, echo=FALSE}
+path=paste(PA.outpus,'Map site area.tiff',sep='/')
+```
+![Figure 2. Map of study area](`r path`){width=800px}
+
+#### Data analyses
+A similar approach to Phase 1 analyses was used to test the effects of fishing gear and zone in the catch composition. 
+For the most commonly-caught species, the size distributions obtained from gillnet and longline sampling were compared using a Kolmogorov–Smirnov D test and by estimating the area overlap of the kernel densities using the package *overlapping*. In addition, a GLM model was constructed with size as response variable and fishing zone and gear as model terms. A normal distribution was assumed. For longline-caught fish, a model was also constructed to test the effect of hook size, hook type and snood type on mean size. A GLM with a binomial distribution was used to test for differences between gillnets and longlines in the probability of retaining an individual. 
+To measure the congruence between EM and OM, the catch composition (number of individuals per species) reported by onboard observers was compared to that obtained from the analysis of video footage collected by deck camera 1 (see below). Following [@Emery2019], a GLM was constructed where the response variable was the count of individuals from EM and predictors were the count of individuals from OM and fishing gear. The OM coefficient and the intercept are expected to follow a 1:1 relationship (slope of 1 and intercept of 0).  Differences in reporting by individual species were determined by calculating the percentage difference between OM and EM. This was calculated as the difference between the number of individuals of a given species reported by EM and by OM divided by the number of individuals of that species with the greatest number.
+Hook size selectivity for circular and Ezi-Baiter hooks was estimated from longline-caught fish using the SELECT (share each length’s catch total) method developed by [@Millar1997] available through the package *gillnetfunctions*. The SELECT method considers normal, gamma or lognormal distributions so the ‘best curve’ was determined based on the deviance explained. Only species with at least 30 size observations per hook size were considered for this analysis.    
+
+
+### Image collection
+#### Underwater cameras
+Mono gillnet, longline underwater video (GLUVs) were developed for this unique study. The GLUVs comprised one Sony FRD-x3000 action camera, mounted in an underwater housing. These housings were attached to an aluminium bracket with shark clips. This allowed the camera housing to be attached to the gillnet and longline mainline (Figure 3). The GLUVs were made neutrally buoyant so they did not compromise the way the fishing gear would normally sit in the water column. 10 GLUVs  were attached to the gillnets with a 45°angle to observe down the gillnet. Eight GLUVs were attached to the longline; these cameras were positioned to observe straight along the longline so they were not angled. Each camera was attached to the fishing gear as it was deployed and recorded for the whole deployment period, mostly ranging between 4-6 hours for longlines and 6-8 for gillnets. Cameras were randomly positioned but were separated by at least 50m. GLUVs were only deployed during the day.
 
 ```{r, echo=FALSE}
 path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia/Figure deck cameras.jpg'
 ```
-![Figure X. View from deck cameras. View of the first deck camera above the measuring station (left pane) and view of the second deck camera above the retrieval roller (right pane)](`r path`){width=800px}
+![Figure 3. View from the underwater cameras. MISSING (add one gillnet, one longline)](`r path`){width=800px}
 
-##### Subsurface camera
+#### Deck cameras
+Two Sony FRD-x3000 action cameras were mounted in two different locations around the deck of the fishing vessels (Figure 4). Deck camera 1 was positioned above the wheelhouse pointing towards the deck where fish were measured and processed. This camera allowed the identification of all fish that were caught and brought onboard the fishing vessels. This camera allowed the comparison of what was recorded by the onboard observers and the video footage recorded by the camera and later analyzed in the lab. This camera also allowed quantifying the amount of habitat caught in the fishing gear and brought onto fishing vessels as a relative measure of habitat impact by longlines and gillnets. 
+Deck camera 2 was positioned above the retrieval roller of the vessel. This camera allowed recording the number of individuals that dropped out of the fishing gear during retrieval and if a crew member was able to recover the drop outs with a gaff before being lost. This camera also quantifying the position of longline-caught fish relative to a weight (i.e. caught closer to the sea floor) or pressure float (i.e. caught higher in the water column) as a way of inferring the relative position of that caught fish in the water column.
 
-#### Image analyses
-##### Underwater cameras
-All video footage recorded on the vessels and the commercial fishing gear were downloaded onto external hard drives. The software ‘EventMeasure (Stereo)’ [@Seager2014] was then used in order analyse the video footage. Video images of the GLUVs were reviewed for both the maximum number of individuals of each species observed (MaxN) and for the interactions of fish with the two different fishing gear types.  Fish, sharks, and rays were identified down to the lowest taxonomic group possible by observers. To avoid repeatedly counting individual fish that continuously re-entering the cameras fields of view, the maximum number of individuals of the same species that appeared in the one frame at the same time (MaxN) was used to measure the relative abundance. MaxN allows for a conservative estimate of relative abundance. One limitation of video analysis with GLUVs was that occasionally it was not possible to identify species due to impaired visibility due to lighting or depth or a restricted field of view of the cameras. To mediate this, cameras were deployed when weather was good and visibility was above 3m, however if individual species could not be identified, species were grouped to Genus for maxN (These Genus include ADD IN LATER….)
-Interactions with fishing gear were quantified based a several criteria (Table X). In the Event Measure program observers would categorise the interactions an animal had with the fishing gear. Example reference videos were made in order to standardise classification of individuals interactions. Finally, if a fish interacted by being caught on the fishing gear, the observer would time how long it was caught in the gear. This will allow us to understand the escape ration of animals that get caught by the fishing gear and their survival rates. If the fish is caught and landed then the time is still taken on how long it is in the net, to allow us to disentangle the effective soak times of the different fishing gear.
+```{r, echo=FALSE}
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia/Figure deck cameras.jpg'
+```
+![Figure 4. View from deck cameras. View of deck camera 1, pointing towards the deck (left pane) and view of deck camera 2, located above the retrieval roller (right pane)](`r path`){width=800px}
+
+#### Subsurface camera
+**SPECS DESCRIPTION MISSING (Jack)** (Figure 5).
+
+```{r, echo=FALSE}
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia/Figure deck cameras.jpg'
+```
+![Figure 5. View from the subsurface camera. MISSING ](`r path`){width=800px}
+
+
+### Image analyses
+#### Underwater cameras
+All video footage was downloaded onto external hard drives and analysed back in the lab using the software ‘EventMeasure (Stereo)’ [@Seager2014]. Video images from the GLUVs were reviewed for both the maximum number of individuals of each species observed (MaxN) and for the type of interactions between fish and the two fishing gears. Al observed individuals were identified to the lowest taxonomic level. To avoid repeatedly counting individual fish that continuously re-entered the cameras fields of view, the maximum number of individuals of the same species that appeared in the one frame at the same time (MaxN) was used as a measure of relative abundance. MaxN allows for a conservative estimate of relative abundance. One limitation of video analysis with GLUVs was that occasionally it was not possible to identify species due to impaired visibility due to lighting or depth or a restricted field of view of the cameras. If individual species could not be determined, species were grouped to Genus or Family level.
+Interactions with fishing gear were quantified as per described in Table 1 and recorded in Event Measure. Example reference videos were made in order to standardise classification of the interaction types (Figure 6). Finally, if a fish interacted by being caught on the fishing gear, the observer would time how long it was caught in the gear. This will allow us to understand the escape ration of animals that get caught by the fishing gear and their survival rates. If the fish is caught and landed then the time is still taken on how long it is in the net, to allow us to disentangle the effective soak times of the different fishing gear.
 
 ```{r echo=FALSE}
 Tab=data.frame(Interaction=c('Swim Past','Swim through',
@@ -81,169 +143,151 @@ Tab=data.frame(Interaction=c('Swim Past','Swim through',
                              'Avoid','Caught-Gilled',
                              'Caught-bagged','Escape',
                              'Feeding','Predated on',
-                             'Bait feeding','Caught while predated on'),
-               Description=c('Fish seen swimming past net, no interaction','Fish swims through mesh',
-                             'Fish attracted to net','Fish bounces off net',
-                             'Fish actively avoids net','Fish gets caught in mesh',
-                             'Fish gets caught in mesh','Fish escapes from net',
-                             'Fish seen feeding on caught fish','Fish is seen as prey',
-                             'Fish feeds on Long line bait but is not caught',
+                             'Bait feeding','Caught while predating'),
+               Description=c('Fish seen swimming past the fishing gear, no interaction','Fish swims through mesh',
+                             'Fish attracted to fishing gear','Fish bounces off net',
+                             'Fish actively avoids fishing gear','Fish gets gilled or wedged in mesh',
+                             'Fish gets wrapped in net','Fish escapes from net',
+                             'Fish seen feeding on caught fish','Fish is predated upon',
+                             'Fish feeds on longline bait but is not caught',
                              'Fish gets caught while predating on other fish'))
-knitr::kable(Tab,caption="Table X. Interactions")
+knitr::kable(Tab,caption="Table 1. Interactions")
 ```
-Information on benthic habitat structure and composition was assessed using the Transect Measure software. As each camera stayed stationary, one image on each camera along the gillnet and longline, was taken and analysed. To determine the benthic cover a virtual quadrat was placed over the seafloor that was visible in the image. Individually defining the quadrant this way allowed for the quadrats to be adaptive as every camera could have a different view and some should only be able to see a relatively small section of benthic habitat if it was tangled in the fishing gear during deployment. Within each quadrat 20 random points were overlayed over the benthic cover. Each point was categorised using the CATAMI guide [@Althaus2013]. Benthic cover was first classified into the following broad categories (LIST OF WHAT THEY WERE). These where then further broken down into finer categories of their morphological form (LIST OF THEM), health (LIST THEM) and condition (list them).
+
+```{r, echo=FALSE}
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Report to Parks Australia/Figure deck cameras.jpg'
+```
+![Figure 6. Interaction types observed by the underwater cameras. MISSING ](`r path`){width=800px}
 
 
-##### Deck cameras
-Deck camera footage was analysed in Event Measure and analysed differently depending on the cameras position. For the camera in position one, above the measuring station, fish, sharks and rays were identified down to the lowest taxonomic group possible by video observers. Fish were identified once they were positioned on the measuring take to better compare the catch composition recorded by researchers on the boat to those recorded by the video observer. Video observers also noted the condition of the fish brought on board, weather it was alive or dead, and if the fish was retained or released.
-To quantify the habitat damage of the fishing gear the camera in position one was used to quantify the percentage of the net that had habitat caught in it. The fishing gear was watched as it passed from the retrieval roller to the net roller and this distance was calculated for each vessel. Habitat was broken down into several variables which were Reef Structure, Sponge and Coral. These were then quantified into by percentage cover. Seagrasses, Macroalgae and Ecklonia radiata were also quantified, however due to current, and swell, small amounts seagrasses and macro algae could be caught in the nets that are suspended in the water column. As the aim was to determine damage small amounts of algae and seagrasses were ignored as it was unknown if their presence was actually damage. Seagrasses, Macroalgae and Ecklonia radiata were quantified in 5% intervals ignoring anything less than 10%.
-For the deck camera that was in position two above the retrieval roller species were again identified to the lowest taxonomic number. When the gillnet was being retrieved how the fish were caught in the net was noted. Depending on how the net mesh was positioned around the fish it was categorised as either gilled, which meant that the net mesh had caught the fish around the gills, or if the fish was bagged, which meant that it had become tangled in the meshes. When the Longline was being retrieved, the position of the fish caught to either the floats or weights were recorded to determine any patterns on if the line caught more fish higher or lower in the water column. Between each float and weight (Depicted in Figure Matias image) hooks were counted, if the fish was caught within 3 hooks of a wight or float it was recorded. Lastly dropout was recoded for both gillnet and longline. If a fish dropped out of the net or longline this was recorded, as well as if the fish was recovered after it dropped out by the crew, via a gaff.
+Information on benthic habitat structure and composition was collected using the Transect Measure software. As each camera stayed stationary, only one image per camera needed to be analysed. To determine benthic cover a virtual quadrat was placed over the seafloor that was visible in the image. Individually defining the quadrant this way allowed for the quadrats to be adaptive as every camera could have a different view and some should only be able to see a relatively small section of benthic habitat if it was tangled in the fishing gear during deployment. Within each quadrat 20 random points were overlayed over the benthic cover. Each point was categorised using the CATAMI guide [@Althaus2013]. Benthic cover was first classified into the following broad categories (**LIST OF WHAT THEY WERE ...MISSING, Jack to do**). These where then further broken down into finer categories based on their morphological form (**LIST OF THEM...MISSING, Jack to do**), health (**LIST THEM...MISSING, Jack to do**) and condition (**list them...MISSING, Jack to do**) (Table 2).
 
-##### Subsurface camera
-The video footage under the boat was used to identify species to the lowest taxonomic classification when possible.  Dropout was recorded to determine the amount of fish that were lost before the fishing gear was brought onto the boat. If the captured fish dropped out of the gear its retrieval by the crew was noted, as well as the fishes’ condition to determine the survival rate of captured fish on the fishing gear. For condition it was noted if the fish was health, alive and swum off or if it was dead.
+Table 2. Benthic cover classification based on morphology, health and condition (**MISSING, Jack to do**)
 
 
+#### Deck cameras
+Deck camera footage was analysed in Event Measure and according to camera position. For deck camera 1, all individuals were identified to the lowest taxonomic level. Fish were identified once they were positioned on the measuring table to better compare the catch composition recorded by onboard observed with those recorded by the video observer. Video observers also noted the condition of each individual brought on board, whether it was alive or dead, retained or released and for gillnets, whether it was gilled (i.e. the net mesh had caught the fish around the gills) or bagged (i.e. the fish had become tangled in the net). To quantify relative habitat damage by gillnets the percentage of the net that had habitat caught in it. The fishing gear was watched as it passed from the retrieval roller to the net roller and this distance was calculated for each vessel. **THIS NEEDS BETTER EXPLAINATION (Jack to do)**. Habitat was classified into several categories: Reef Structure, Sponge and Coral, which were quantified into percentage cover. Seagrasses, Macroalgae and *Ecklonia radiata* were also quantified, however due to current, and swell, seagrass and macro algae could be caught in the nets while suspended in the water column. As the aim was to determine damage small amounts of algae and seagrasses were ignored as it was unknown if their presence was actually damage. Seagrasses, Macroalgae and *Ecklonia radiata* were quantified in 5% intervals starting from 10% and coverages less than 10%.
+For deck camera 2, individuals were also identified to the lowest taxonomic level. When the longline was retrieved, the position of fish caught in relation to the closest pressure float or weight was recorded to calculate the relative position of the caught-fish in the water column. Fish caught more than 3 hooks from a pressure float or weight (Figure 1) were not recorded. Finally, if a fish dropped out of a gillnet or longline was also recorded, as well as if the fish was recovered by a crew member with a gaff immediately after dropping out.
+
+#### Subsurface camera
+For the subsurface camera individuals were identified to the lowest taxonomic level and dropouts were recorded to determine the amount of individuals lost before the fishing gear was brought onto the boat. If the captured individuals dropped out of the gear its retrieval by the crew was noted, as well as the individual’s condition (to determine the survival rate of captured fish on the fishing gear (dead, i.e. the individual swam off or alive, i.e. the individual sank). 
 
 #### Data analyses
-For the most commonly-caught species, the size distribution obtained from gillnet and longline sampling were compared using a Kolmogorov–Smirnov D test and by estimating the area overlap of the kernel densities using the package overlapping.
+The multivariate statistics described in Phase were applied to compare the interactions type derived from underwater cameras by taxonomic group (sharks, rays, scalefish, invertebrates). For the most commonly-caught species, a GLM with a binomial distribution was used to test for differences between gillnets and longlines in the probability of dropout and of capture near a weight or pressure float (longline-caught fish only).
 
+### Satellite tagging
+Port Jackson sharks, *Heterodontus portusjacksoni*, are by far the most-commonly discarded elasmobranch in the TDGDLF [@McAuley2003a]. This species is very robust and has very low at-deck post-capture mortality when caught in demersal gillnets [@Braccini2012]. Indirect methods suggest a very high delayed post-release survival (PRS). However, these findings have not been validated through direct method suchs tagging. Hence, to provide a quantitative validation of the survival of Port Jackson sharks upon release from demersal gillnets, 6 randomly chosen individuals caught in demersal gillnets were fitted with survivorship pop-up archival transmitting (sPAT) tags (Model MK10, Wildlife Computers Inc., Figure 7) tethered to a nylon intramuscular anchor inserted at the base of the dorsal fin. The tags are designed to record depth, temperature and light information, which was archived at 24-hour intervals for the entire deployment period, and ten-minute intervals for the last five days of deployment. 
 
-
-## Results
 ```{r, echo=FALSE}
-path=paste(PA.outpus,'Map site area.tiff',sep='/')
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Data/Port Jackson shark - Tagging.jpg'
 ```
-![Figure X. Map of study area](`r path`){width=800px}
+![Figure 7. Deployment of sPAT tags on Port Jackson sharks.](`r path`){width=800px}
 
-### Review of historical commercial catch and effort data
+The tags were programmed to detached and transmit data to the ARGOS satellite system after a 30 day deployment. Initially, the default settings were maintained (i.e. activate once the individual swam below 10 meters in depth and release before the 30-day specified period if the individual remained at a constant depth (±2m) for 24 hours, which is assumed to indicate mortality). The first tag deployed (early in the morning) prematurely detached within 1 day. Given the sluggish nature of this species, and their tendency to rest during the day, it was deemed reasonable to modify the default settings to activate once the individual swam below 5 meters in depth and release before the specified period if the individual remained at a constant depth (±2m) for 48 hours. In addition, blood samples (5 ml) from XX individuals were taken from the caudal vein (Figure 8) and whole-blood lactate (a stress indicator) levels were measured with a handheld Lactate Pro 2 analyser (Arkray LT-1730).
 
-##### Catch composition by fishing method
-only daily shown due to species id issues, no scalefish catch until 1989, etc
+```{r, echo=FALSE}
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Parks Australia/2019_project/Data/Port Jackson shark - Blood sampling.jpg'
+```
+![Figure 8. Collection of blood from Port Jackson sharks.](`r path`){width=800px}
+
+
+### Socio-economic survey
+A survey of TDGDLF vessel owners, skippers and fish processors was undertaken to understand the economic and social contribution of the TDGDLF to the WA community. The survey aimed to estimate what the combined benefit is to the local economy from TDGDLF operators. Information was also collected to compare the economic performance of demersal gillnet and demersal longlines. 
+The socio-economic questionnaires (Tables A.8.1 and A.8.2) were designed in collaboration with socio-economists from the University of Western Australia following [@Pascoe2016].
+A total of **XX** stake-holders were identified from **XX**. Initially, an e-mail was sent to each stake-holder followed by phone call inviting them take part of the survey. The importance of the participating in the survey was explained and a face to face meeting was arranged. **MISSING, to do Maddie**
+
+Network analysis was used to visualize the destination of TDGDLF catch. **Here add calculations of GVP, etc. MISSING, explain calculations**
+
+
+# Results
+
+## Review of historical commercial catch and effort data
+
+#### Catch composition by fishing method
+The overall catch composition by method and zone is shown in figure 9. Gillnets contributed with the highest proportion of the total landed catch particularly in Zone 1, where only a small fraction of the catch was attributed to longlines. The most commoly-caught species in the west coast was sandbar shark, followed by dusky, spinner and whiskery sharks for gillnets and pink snapper followed by West Australian dhufish for longlines. When three vessels known to historically target scalefish were removed, the importance of pink snapper and West Australian dhufish in the longline catch declined considerably (Figure 10). The most commoly-caught species in Zone 1 was dusky shark, followed by whiskery, gummy and spinner sharks for gillnets and wobbegongs for longlines. The most commoly-caught species in Zone 2 was gummy shark, followed by whiskery, dusky and copper sharks for gillnets and gummy shark, followed by skates and rays and pink snapper for longlines.
+
 ```{r, echo=FALSE}
 path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_Daily.tiff',sep='/')
 ```
-![Figure X. Cumulative reported catch composition in daily logbooks by fishing method and zone.](`r path`){width=600px}
+![Figure 9. Cumulative reported catch composition in daily logbooks by fishing method and zone.](`r path`){width=600px}
 ```{r, echo=FALSE}
 path=paste(PA.historic,'Catch_composition/Overall_GN_LL_by zone_without.3.vessels.accounting for 95 percent.catch_Daily.tiff',sep='/')
 ```
-![Figure X. Cumulative reported catch composition in daily logbooks by fishing method and zone excluding three vessels targeting snapper.](`r path`){width=600px}
+![Figure 10. Cumulative reported catch composition in daily logbooks by fishing method and zone excluding three vessels targeting snapper.](`r path`){width=600px}
 
-Interpreting multivariate analysis in vegan
-The R-square value is the important statistic for interpreting Adonis as it gives you the effect size. For example an R-squared of 0.44 means that 44% of the variation in distances is explained by the grouping being tested. The p value tells you whether or not this result was likely a result of chance. A p value of 0.05 means that there is a 5% chance that you detected a difference between groups (however large or small) when indeed there was none (the null hypothesis). As James said above, increasing your sample size tends to reduce p values. For example I have had a student recently come up with a significant difference (p<0.001) between groups with an R-squared of only 0.08 (8% of the variation).
-You really should partner your Adonis analysis with an ordination or classification, here any divisions between groups will be visually apparent. Also you can undertake a SIMPER analysis to identify species (variables) that discriminate between groups. If you do have a strong difference then there should be a few species that are different between groups, if there is little difference then you won't find strong discriminatory species (variables).
+There were clear differences in species composition among zones and fishing method (Figure 11) with the nMDS showing a clear separation between the West coast and Zone 2.  
 
-All daily records
 ```{r, echo=FALSE}
 path=paste(PA.historic,'Catch_composition/MDS_daily.tiff',sep='/')
 ```
-![Figure X. MDS daily.](`r path`){width=600px}
+![Figure 11. MDS daily.](`r path`){width=600px}
 
-
+The term method-zone explained 60% of the variation in the dissimilarity distances (Table 3), with all method-zone pairs showing significant differences (Table 4). The species characterising the main differences among method-zones are shown in Figure 12. There was a predominance of sandbar shark for gillnet-west and of pink snapper for longline-west. There was a predominance of gummy shark for gillnet-zone 2 and although gummy shark was also predominant for longline-zone 2, gurnards and pink snapper were also relatively important.
 ```{r,echo=FALSE}
 Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily')
+knitr::kable(Tab,caption='Table 3. Summary statistics for the Permanova analysis of catch composition.')
 
 Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily_pairwise.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily pairwise comparisons')
+knitr::kable(Tab,caption='Table 4. Pairwise comparisons for the Permanova analysis of catch composition.')
 ```
 
 ```{r, echo=FALSE}
 path=paste(PA.historic,'Catch_composition/Simper_daily.tiff',sep='/')
 ```
-![Figure X. Simper daily.](`r path`){width=600px}
+![Figure 12. Bar plot shown the average proportional contribution to the catch composition by method and zone. Only the species explaining 85% of cumsum are shown.](`r path`){width=600px}
 
 ```{r,echo=FALSE}
 Tab=read.csv(paste(PA.historic,'Catch_composition/Simper_daily.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Simper daily species explaining 85% cum sum')
+knitr::kable(Tab,caption='Table 5. Summary statistics for the Simper analysis of catch composition showing the species sd, standard deviation of contribution; ratio, ratio of dissimilarity to standard deviation of contribution; aVa and aVb, average abundance in each group; cumsum, ordered cumulative percentage contribution. Only the species explaining 85% of cumsum are shown.')
 ```
 
+#### Catch rates for the main commercial species by fishing method
 
-Daily records without 3 vessels targeting pink snapper
+The distribution of catch rates by method and zone for the main commercial species is shown Figure 13.
 ```{r, echo=FALSE}
-path=paste(PA.historic,'Catch_composition/MDS_daily_no.snapper.targeting.vessels.tiff',sep='/')
+path=paste(PA.historic,'catch_rates/Catch rates by method and zone for main species_daily_y_sqrt.tiff',sep='/')
 ```
-![Figure X. MDS daily without records from vessels targeting pink snapper.](`r path`){width=600px}
+![Figure 13. Boxplot showing the distribution of catch rates by fishing method and zone for the main commercial species derived from daily logbook records, including 0 catch records. To display the full range of observations, the x-axis was square-root transformed.](`r path`){width=600px}
 
-
-```{r,echo=FALSE}
-Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily_no.snapper.targeting.vessels.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily without records from vessels targeting pink snapper')
-
-Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily_no.snapper.targeting.vessels_pairwise.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily pairwise comparisons without records from vessels targeting pink snapper')
-```
-
-```{r, echo=FALSE}
-path=paste(PA.historic,'Catch_composition/Simper_daily_no.snapper.targeting.vessels.tiff',sep='/')
-```
-![Figure X. Simper daily without records from vessels targeting pink snapper.](`r path`){width=600px}
-
-```{r,echo=FALSE}
-Tab=read.csv(paste(PA.historic,'Catch_composition/Simper_daily_no.snapper.targeting.vessels.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Simper daily species explaining 85% cum sum without records from vessels targeting pink snapper')
-```
-
-
-Daily records only from same block, month and year
-```{r, echo=FALSE}
-path=paste(PA.historic,'Catch_composition/MDS_daily_same.blk.mn.yr.tiff',sep='/')
-```
-![Figure X. MDS daily from same block, month and year.](`r path`){width=600px}
-
-
-```{r,echo=FALSE}
-Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily_same.blk.mn.yr.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily from same block, month and year')
-
-Tab=read.csv(paste(PA.historic,'Catch_composition/Permanova_daily_same.blk.mn.yr_pairwise.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Permanova daily pairwise comparisons from same block, month and year')
-```
-
-```{r, echo=FALSE}
-path=paste(PA.historic,'Catch_composition/Simper_daily_same.blk.mn.yr.tiff',sep='/')
-```
-![Figure X. Simper daily.](`r path`){width=600px}
-
-```{r,echo=FALSE}
-Tab=read.csv(paste(PA.historic,'Catch_composition/Simper_daily_same.blk.mn.yr.csv',sep='/'))
-knitr::kable(Tab,caption='Table X. Simper daily species explaining 85% cum sum from same block, month and year')
-```
-
-
-##### Catch rates for the main commercial species by fishing method
-
-```{r, echo=FALSE}
-path=paste(PA.historic,'catch_rates/Catch rates by method and zone for main species_daily.tiff',sep='/')
-```
-![Figure X. Boxplot showing the distribution of catch rates by fishing method and zone for the main commercial species derived from daily logbook records.](`r path`){width=600px}
-
-```{r, echo=FALSE}
-path=paste(PA.historic,'catch_rates/Standardized_Catch rates_Method.zone_daily.tiff',sep='/')
-```
-![Figure X. Standardised catch rates by fishing method and zone for the main commercial species derived from daily logbook records.](`r path`){width=600px}
+For gillnet-caught individuals, gummy shark (Tables A.1.3), whiskery shark (Table A.1.5), blue groper (Table A.1.9) and queen snapper (Table A.1.13) catch rates were significantly higher in Zone 2 than in the West coast whereas sandbar shark (Table A.1.6) and West Australian dhufish (Table.1.15) catch rates were significantly higher in the West coast than in Zone 2.
+**ACA: pull out actual mean catch rate values for GN and LL (see page 13 Knuckey for gummy shark). Same for survey**
+For longline-caught individuals, dusky shark (Table A.1.2) catch rates were significantly lower for Tuna-circle hooks (Figure 14). For gummy shark (Table A.1.4), catch rates were significantly higher in Zone 2 than in the West coast. For whiskery shark (Table A.1.6) and pink snapper (Table A.1.12), catch rates were significantly higher for Tuna-circle hooks (Figure 14). For sandbar shark (Table A.1.8) and West Australian dhufish (Table.1.16), catch rates significantly decreased with hook size (Figure 15). Finally for pink snapper (Table A.1.12) and West Australian dhufish (Table.1.16), catch rates were significantly lower in Zone 2 than in the West coast.  
 
 ```{r, echo=FALSE}
 path=paste(PA.historic,'catch_rates/Standardized_Catch rates_hooktype_daily.tiff',sep='/')
 ```
-![Figure X. Standardised catch rates showing the efect of hook type.](`r path`){width=600px}
+![Figure 14. Estimated relative standardized (±95% CI) catch rates showing the efect of hook type. Each series has been normalised to a mean score of 1.](`r path`){width=600px}
 
 ```{r, echo=FALSE}
 path=paste(PA.historic,'catch_rates/Standardized_Catch rates_hooksize_daily.tiff',sep='/')
 ```
-![Figure X. Standardised catch rates showing the efect of hook size.](`r path`){width=600px}
+![Figure 15. Estimated relative standardized (±95% CI) catch rates showing the efect of hook size. Each series has been normalised to a mean score of 1.](`r path`){width=600px}
+
+##### Temporal changes in the number of departure ports
+The number of departure ports in 1988-89, corresponding to the historic peak in effort and in 2019-20 is shown in Figure 16. There was an overall significant decrease in the number of departure ports and number of operating vessels through time (Figure 17).
+```{r, echo=FALSE}
+path=paste(PA.historic,'/Map_ports.tiff',sep='/')
+```
+![Figure 16. Map showing the proportion of trips by departure port for monthly returns (at its peak) and daily logbooks (current year).](`r path`){width=600px}
+
+```{r, echo=FALSE}
+path=paste(PA.historic,'/Annual number of ports and vessel by zone.tiff',sep='/')
+```
+![Figure 17. Annual number of departure ports and vessels by zone with a linear trend line.](`r path`){width=600px}
 
 
-##### Temporal changes in the use of demersal gillnet and longline
+#### Temporal changes in the use of demersal gillnet and longline
+The annual number of vessels using demersal gillnet and longline **DEJE ACA** (Figure 18).
 ```{r, echo=FALSE}
 path=paste(PA.historic,'/Annual number of vessels by method.tiff',sep='/')
 ```
-![Figure X. Annual number of vessels using demersal gillnet or demersal longline.](`r path`){width=600px}
+![Figure 18. Annual number of vessels and average annual catch per vessel by zone and fishing method.](`r path`){width=600px}
 ```{r, echo=FALSE}
 path=paste(PA.historic,'/Annual fishing days by method.tiff',sep='/')
 ```
-![Figure X. Annual number of fishing days for demersal gillnet or demersal longline.](`r path`){width=600px}
+![Figure 19. Total (upper pane) and average (±SD, lower pane) annual number of fishing days by zone and fishing method.](`r path`){width=600px}
 
-##### Type, size and number of hooks used
+#### Type, size and number of hooks used
 ```{r, echo=FALSE}
 path=paste(PA.historic,'longline only/longline.hook size_daily only.tiff',sep='/')
 ```
@@ -260,7 +304,7 @@ path=paste(PA.historic,'longline only/longline.number of hooks_daily only.tiff',
 ![Figure X. Distribution of the number of hooks used in longlines reported in daily logbooks.](`r path`){width=600px}
 
 
-##### Soak time by fishing method
+#### Soak time by fishing method
 ```{r, echo=FALSE}
 path=paste(PA.historic,'longline only/longline_gillnet.soak times_daily only.tiff',sep='/')
 ```
@@ -268,274 +312,694 @@ path=paste(PA.historic,'longline only/longline_gillnet.soak times_daily only.tif
 
 
 
-### Fishing survey
+## Fishing survey
 
-##### Observed catch composition by fishing method
+A total of **XX** fishing days (**XX** gillnet and **YY** longline shots) were done in the West coast (**X** fishing days) and Zones 1 (**X** fishing days) and 2 (**X** fishing days) of the South Coast.
+
+**Four successful charter trips were conducted in SESSF waters across South Australia to trial the use of automatic longlines to target Gummy Shark (Table 4). Three trips took place during late spring / summer (November 2011 – January 2012), and the final trip was in June 2012. A total of 94 sets were observed, comprising about 150,000 hooks.**
+
+#### Observed catch composition
+**See page 20 Knuckey, report % by weight and number of retained VS discarded. E.g., 56-88% by weight of retained catch was gummy shark. Report landed vs discarded species**
+```{r,echo=FALSE}
+Tab=read.csv(paste(PA.Observer,'Observed.number.species.by.gear.csv',sep='/'))%>%
+  format_cells(1:nrow(Tab), 2, "italics")
+knitr::kable(Tab,
+             col.names = c("Common name",
+                           "Scientific name",
+                           "Gillnet",
+                           "Longline",
+                           "Total"),
+             caption='Table X. Observed number of species by fishing gear.')
+
+
+Tab=read.csv(paste(PA.Observer,'Observed.number.species.by.longline.config.csv',sep='/'))%>%
+  format_cells(1:nrow(Tab), 2, "italics")
+
+knitr::kable(Tab,
+             col.names = c("Common name",
+                           "Scientific name",colnames(Tab)[3:ncol(Tab)]),
+             caption='Table X. Observed number of species by longline configuration.')
+```
+
+
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_GN_LL_overall.tiff',sep='/')
+path=paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_overall.tiff',sep='/')
 ```
 ![Figure X. Cumulative observed catch composition by fishing method.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_by_LL.configuration.tiff',sep='/')
+path=paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_by.zone.tiff',sep='/')
+```
+![Figure X. Cumulative observed catch composition by fishing method and zone.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'catch_comp/Catch.comp_by_LL.configuration.tiff',sep='/')
 ```
 ![Figure X. Cumulative observed catch composition by snood configuration.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_GN_LL_MDS.tiff',sep='/')
+path=paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_MDS.tiff',sep='/')
 ```
 ![Figure X. MDS.](`r path`){width=600px}
 
 
 ```{r,echo=FALSE}
-Tab=read.csv(paste(PA.Observer,'Catch.comp_GN_LL_Permanova.csv',sep='/'))
+Tab=read.csv(paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_Permanova.csv',sep='/'))
 knitr::kable(Tab,caption='Table X. Permanova')
 
-Tab=read.csv(paste(PA.Observer,'Catch.comp_GN_LL_Permanova_pairwise.csv',sep='/'))
+Tab=read.csv(paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_Permanova_pairwise.csv',sep='/'))
 knitr::kable(Tab,caption='Table X. Permanova pairwise comparisons')
 ```
 
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_GN_LL_Simper.tiff',sep='/')
+path=paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_Simper.tiff',sep='/')
 ```
 ![Figure X. Simper.](`r path`){width=600px}
 
 ```{r,echo=FALSE}
-Tab=read.csv(paste(PA.Observer,'Catch.comp_GN_LL_Simper.csv',sep='/'))
+Tab=read.csv(paste(PA.Observer,'catch_comp/Catch.comp_GN_LL_Simper.csv',sep='/'))
 knitr::kable(Tab,caption='Table X. Simper species explaining 85% cum sum')
 ```
 
-##### Observed number of individuals and species retained and discarded
-```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_GN_LLretained_discarded.tiff',sep='/')
-```
-![Figure X. Observed percentage of retained and discarded individuals by fishing method.](`r path`){width=800px,height=800px}
-
-```{r, echo=FALSE}
-path=paste(PA.Observer,'Catch.comp_GN_LLretained_discarded_species.tiff',sep='/')
-```
-![Figure X. Observed percentage of retained and discarded species by fishing method.](`r path`){width=800px,height=800px}
-
-```{r,echo=FALSE}
- Tab=read.csv(paste(PA.Observer,'Retained_species_table.csv',sep='/'))
- Tab[is.na(Tab)] <- " "
-knitr::kable(Tab,
-              col.names = c("Species",
-                            "Retained",
-                            "Discarded",
-                            "Discarded Median size (cm)",
-                            "Discarded Size range (cm)"),
-              caption='Table X. Number of retained and discarded individuals by species. Also shown is the median size range for discarded individuals')
-
-```
-
- 
-
-##### Observed number of individuals caught by snood configuration
+#### Observed number of individuals caught by snood configuration
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'Barplot Longline configurations.tiff',sep='/')
 ```
 ![Figure X. Observed number of individuals caught by snood configuration.](`r path`){width=800px,height=800px}
 
 
-##### Observed number of hooks lost
+#### Hook baiting and percentage losts 
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Lost hooks.tiff',sep='/')
+path=paste(PA.Observer,'Hook baiting and lost.tiff',sep='/')
 ```
-![Figure X. Observed number of hooks lots by fishing session.](`r path`){width=800px,height=800px}
+![Figure X. Observed percentage of lost hook upon retrieval (top pane), hook deployment efficiency, calculated as the difference between the number of hooks baited and the number deployed (mid pane), and hook baiting time (lower pane) by fishing session. In the top pane, the number of deployed hooks is shown above each column. The blue line in the lower pane indicates the average baiting time. ](`r path`){width=800px,height=800px}
 
 
-##### Observed Catch rates for the main commercial species by fishing method
+#### Observed Catch rates for the main commercial and most-commonly discarded species
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'CPUE.main.sp_GN_LL.tiff',sep='/')
+path=paste(PA.Observer,'catch_rates/CPUE.main.sp_GN_LL_y_sqrt.tiff',sep='/')
 ```
-![Figure X. Boxplot showing the distribution of catch rates by fishing method for the main commercial species.](`r path`){width=800px,height=800px}
-
-
-##### Observed size distribution for the main commercial species by fishing method
-```{r, echo=FALSE}
-path=paste(PA.Observer,'Size.density.dist.main.sp_GN_LL.tiff',sep='/')
-```
-![Figure X. Size density distribution by fishing method for the main commercial species.](`r path`){width=800px,height=800px}
+![Figure X. Boxplot showing the distribution of catch rates by fishing method and zone for the main commercial species, including 0 catch records. Also shown is the mean and SE (in green). To display the full range of observations, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
 
 
 ```{r, echo=FALSE}
-path=paste(PA.Observer,'Size.density.dist.overlap_GN_LL.tiff',sep='/')
+path=paste(PA.Observer,'catch_rates/CPUE.main.sp_LL.configuration_y_sqrt.tiff',sep='/')
 ```
-![Figure X. Overlap in the size density distribution for the most commonly-caught species by the two gears.](`r path`){width=800px,height=800px}
+![Figure X. Boxplot showing the distribution of catch rates by snood configuration for the main commercial species with sample sizes>20, including 0 catch records. Also shown is the mean and SE (in green). To display the full range of observations, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
+
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'catch_rates/CPUE.main.sp.discarded_GN_LL_y_sqrt.tiff',sep='/')
+```
+![Figure X. Boxplot showing the distribution of catch rates by fishing method and zone for the most-commonly discarded species, including 0 catch records. Also shown is the mean and SE (in green). To display the full range of observations, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'catch_rates/CPUE.main.sp.discarded_LL.configuration_y_sqrt.tiff',sep='/')
+```
+![Figure X. Boxplot showing the distribution of catch rates by snood configuration for the most-commonly discarded species with sample sizes>20, including 0 catch records. Also shown is the mean and SE (in green). To display the full range of observations, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
+
+
+
+#### Observed size distribution for the most commonly-caught species by fishing method
+**See page 13 Knuckey**
+```{r, echo=FALSE}
+path=paste(PA.Observer,'size/Size.density.dist.overlap_GN_LL.tiff',sep='/')
+```
+![Figure X. Overlap in size density distribution.](`r path`){width=800px,height=800px}
 
 ```{r,echo=FALSE}
- Tab=read.csv(paste(PA.Observer,'Size.Kolmo_Smirnov.csv',sep='/'))
+ Tab=read.csv(paste(PA.Observer,'size/Size.Kolmo_Smirnov.csv',sep='/'))
  Tab[is.na(Tab)] <- " "
 knitr::kable(Tab,
               col.names = c("Species",
                             "D Statistic",
                             "P value"),
-              caption='Table X. Kolmogorov-Smirnov test for comparing size frequency distributions for the most commonly-caught species by the two gears')
+              caption='Table X. Kolmogorov-Smirnov test for the comparison of size frequency distributions.')
+
+```
+
+Here Table Appendix 2 on significant effects of zone and ll config
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'size/Standardized_Size_Method.tiff',sep='/')
+```
+![Figure X. Estimated relative standardized (±95% CI) mean size by fishing method. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'size/Standardized_Size_Hook.size.tiff',sep='/')
+```
+![Figure X. Estimated relative standardized (±95% CI) mean size by hook size. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'size/Standardized_Size_Hook.type.tiff',sep='/')
+```
+![Figure X. Estimated relative standardized (±95% CI) mean size by hook type. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'size/Standardized_Size_Snood.type.tiff',sep='/')
+```
+![Figure X. Estimated relative standardized (±95% CI) mean size by snood type. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+
+
+#### Hook size selectivity
+```{r, echo=FALSE}
+path=paste(PA.selectivity,'Relative selectivity.tiff',sep='/')
+```
+![Figure X. Relative selectivity curves by species and hook type for the most commonly-caught species.](`r path`){width=800px,height=800px}
+
+
+#### Observed number of individuals and species retained and discarded
+```{r, echo=FALSE}
+path=paste(PA.Observer,'retained/GN_LLretained_discarded_individuals.tiff',sep='/')
+```
+![Figure X. Observed percentage of retained and discarded individuals (top pane) and released condition (bottom pane) for discarded individuals by fishing method.](`r path`){width=800px,height=800px}
+
+Here Table Appendix 3 on significant effects of method and ?
+
+```{r, echo=FALSE}
+path=paste(PA.Observer,'retained/Standardized_retained_method.tiff',sep='/')
+```
+![Figure X. Probability of retaining an individuals by fishing method.](`r path`){width=800px,height=800px}
+
+```{r,echo=FALSE}
+ Tab=read.csv(paste(PA.Observer,'retained/Retained_species_table_GN.csv',sep='/'))
+ Tab[is.na(Tab)] <- " "
+knitr::kable(Tab,
+              col.names = c("Species","Retained","Discarded","Unknown",
+                            "Discarded Size range (cm)",
+                            "Rel. Cond. 0","Rel. Cond. 1","Rel. Cond. 2","Rel. Cond. 3"),
+              caption='Table X. Number of retained and discarded individuals for species caught by gillnets. Also shown is the size range and released condition (as a percentage) for discarded individuals.')
+
+ Tab=read.csv(paste(PA.Observer,'retained/Retained_species_table_LL.csv',sep='/'))
+ Tab[is.na(Tab)] <- " "
+knitr::kable(Tab,
+              col.names = c("Species","Retained","Discarded","Unknown",
+                            "Discarded Size range (cm)",
+                            "Rel. Cond. 0","Rel. Cond. 1","Rel. Cond. 2","Rel. Cond. 3"),
+              caption='Table X. Number of retained and discarded individuals for species caught by longlines Also shown is the size range and released condition  (as a percentage) for discarded individuals.')
 
 ```
 
 
-##### Retained and non-retained species
+
+#### Meshed and bagged individuals
+```{r,echo=FALSE}
+Tab=read.csv(paste(PA.video.deck.cameras,'Tab.gilled.bagged.csv',sep='/'))
+knitr::kable(Tab,caption='Table X. Number of individuals gilled and bagged')
+```
+
+
+#### Drop outs, gaffing and position in water column
+A total of YY hours of deck (XX gillnet and YY longline deployments) and ZZ hours of subsurface (XX gillnet and YY longline deployments) camera footage were collected.
+```{r, echo=FALSE}
+Tab=read.csv(paste(PA.video.deck.cameras,'Drop.out.events_table.csv',sep='/'))
+Tab=Tab%>%mutate_all(~ replace_na(.x, ""))
+knitr::kable(Tab,
+             col.names = c("Common name",
+                           "Retained gillnet","Drop out  gillnet","Drop out percent  gillnet",
+                           "Retained longline","Drop out longline","Drop out percent longline"),
+             caption='Number of drop out events observed from deck camera 2 by fishing method and species.')
+```
+
+
+
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Drop.out.events.tiff',sep='/')
 ```
-![Figure X. Observed drop outs by deck camera located above the roller.](`r path`){width=800px,height=800px}
+![Figure X. Number of drop out events observed from deck camera 2 and the subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
+
+Here Table Appendix 4 on significant effects of
 
 ```{r, echo=FALSE}
-path=paste(PA.video.deck.cameras,'Gaffing.events.tiff',sep='/')
+path=paste(PA.video.deck.cameras,'Drop.out.events_predictions_deckcam2.tiff',sep='/')
 ```
-![Figure X. Observed gaffing by deck camera located above the roller.](`r path`){width=800px,height=800px}
+![Figure X. Estimated drop out probability (±95% CI) derived from deck camera 2.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.video.deck.cameras,'Drop.out.events_fate_subsurface.tiff',sep='/')
+```
+![Figure X. Fate of drop outs observed from the subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.video.deck.cameras,'Drop.out.events_gaffing_subsurface.tiff',sep='/')
+```
+![Figure X. Gaffing of drop outs observed from the subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
+
+
+```{r, echo=FALSE}
+path=paste(PA.video.deck.cameras,'Gaffing.events_deck.tiff',sep='/')
+```
+![Figure X. Gaffing of drop outs observed from the deck camera 2. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Weight_float_species.events.tiff',sep='/')
 ```
-![Figure X. Derived position in water column from deck camera located pointing towards the deck.](`r path`){width=800px,height=800px}
+![Figure X. Position in water column derived from deck camera 1. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
-
+Here Table Appendix 5 on significant effects of
 ```{r, echo=FALSE}
-path=paste(PA.video.underwater,'Interactions_number.events_sqrt.transf.tiff',sep='/')
+path=paste(PA.video.deck.cameras,'Weight_float_species_predictions.tiff',sep='/')
 ```
-![Figure X. Observed interaction events by underwater cameras. For display purposes, the number of events were square-root transformed.](`r path`){width=800px,height=800px}
+![Figure X. Estimated probability (±95% CI) of longline-capture near a weight derived from  deck camera 1.](`r path`){width=800px,height=800px}
 
-```{r, echo=FALSE}
-path=paste(PA.video.underwater,'Interactions_number.events_main.target.tiff',sep='/')
-```
-![Figure X. Observed interaction events by underwater cameras for the main commercial species.](`r path`){width=800px,height=800px}
 
-```{r, echo=FALSE}
-path=paste(PA.video.underwater,'Interactions_number.events_sqrt.transf_by.group.tiff',sep='/')
-```
-![Figure X. Observed interaction events by underwater cameras by taxonomic group.](`r path`){width=800px,height=800px}
+#### Underwater cameras
+A total of **XX** hours of underwater (**XX** gillnet and **YY** longline deployments) camera footage were collected.
 
-```{r, echo=FALSE}
-path=paste(PA.video.underwater,'Interactions_number.individuals_sqrt.transf.tiff',sep='/')
-```
-![Figure X. Observed number of interactions by underwater cameras.](`r path`){width=800px,height=800px}
+Here refer to Appendix 6
 
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Interactions_number.individuals_sqrt.transf_by.group.tiff',sep='/')
 ```
-![Figure X. Observed number of interactions by underwater cameras by taxonomic group.](`r path`){width=800px,height=800px}
-
-
-##### Endangered, threatened and protected species
-```{r, echo=FALSE}
-path=paste(PA.TEPS,'Interactions_number.events_deck2.tiff',sep='/')
-```
-![Figure X. Observed interactions by deck camera located above the roller.](`r path`){width=800px,height=800px}
+![Figure X. Number of interactions observed from underwater cameras by taxonomic group. For display purposes, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.TEPS,'Interactions_number.events_subsurface.tiff',sep='/')
+path=paste(PA.video.underwater,'Interactions_number.individuals_main.target.tiff',sep='/')
 ```
-![Figure X. Observed interactions by subsurface camera.](`r path`){width=800px,height=800px}
+![Figure X. Number of interactions observed from underwater cameras for the main commercial species only.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.TEPS,'Numbers.interactions.by.gear_Observers.tiff',sep='/')
+path=paste(PA.video.underwater,'interactions_MDS.tiff',sep='/')
 ```
-![Figure X. Observed interactions by observers.](`r path`){width=800px,height=800px}
+![Figure X. Interactions MDS.](`r path`){width=800px,height=800px}
+
+
+
+#### Comparsion of observer and deck camera 1
+```{r, echo=FALSE}
+path=paste(PA.cam.obs,'Barplot.tiff',sep='/')
+```
+![Figure X. Comparison of the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.TEPS,'Interactions_number.events_underwater.tiff',sep='/')
+path=paste(PA.cam.obs,'raw.tiff',sep='/')
 ```
-![Figure X. Observed interactions by underwater cameras.](`r path`){width=800px,height=800px}
+![Figure X. Comparison of the number of individuals of each species recorded by onboard observers and deck camera 1. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
+
+Here Table Appendix A.7.1 to A.7.3 on significant effects of
+```{r, echo=FALSE}
+path=paste(PA.cam.obs,'GLM_preds.tiff',sep='/')
+```
+![Figure X. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 1.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.cam.obs,'Percentage.difference_com.tiff',sep='/')
+```
+![Figure X. Mean percentage (with standard error) difference in individual commercial species reported by observers and camera 1 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and viceversa.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.cam.obs,'Percentage.difference_disc.tiff',sep='/')
+```
+![Figure X. Mean percentage (with standard error) difference in individual discarded species reported by observers and camera 1 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and viceversa.](`r path`){width=800px,height=800px}
 
 
-##### Habitat information
+```{r, echo=FALSE}
+path=paste(PA.cam.obs,'MDS.tiff',sep='/')
+```
+![Figure X. MDS comparing the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
+
+```{r,echo=FALSE}
+Tab=read.csv(paste(PA.cam.obs,'Permanova_GN.csv',sep='/'))
+knitr::kable(Tab,caption='Table X. Permanova.Gillnets')
+
+Tab=read.csv(paste(PA.cam.obs,'Permanova_LL.csv',sep='/'))
+knitr::kable(Tab,caption='Table X. Permanova.Longlines')
+```
+
+
+#### Comparsion of observer and deck camera 2
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'Barplot.tiff',sep='/')
+```
+![Figure X. Comparison of the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'raw.tiff',sep='/')
+```
+![Figure X. Comparison of the number of individuals of each species recorded by onboard observers and deck camera 2. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
+
+Here Table Appendix A.7.4 to A.7.6 on significant effects of
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'GLM_preds.tiff',sep='/')
+```
+![Figure X. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 2.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'Percentage.difference_com.tiff',sep='/')
+```
+![Figure X. Mean percentage (with standard error) difference in individual commercial species reported by observers and camera 2 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and viceversa.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'Percentage.difference_disc.tiff',sep='/')
+```
+![Figure X. Mean percentage (with standard error) difference in individual discarded species reported by observers and camera 2 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and viceversa.](`r path`){width=800px,height=800px}
+
+
+```{r, echo=FALSE}
+path=paste(PA.cam2.obs,'MDS.tiff',sep='/')
+```
+![Figure X. MDS comparing the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
+
+```{r,echo=FALSE}
+Tab=read.csv(paste(PA.cam2.obs,'Permanova_GN.csv',sep='/'))
+knitr::kable(Tab,caption='Table X. Permanova.Gillnets camera 2')
+
+Tab=read.csv(paste(PA.cam2.obs,'Permanova_LL.csv',sep='/'))
+knitr::kable(Tab,caption='Table X. Permanova.Longlines camera 2')
+```
+
+
+#### Endangered, Threatened and Protected species
+
+```{r, echo=FALSE}
+path=paste(PA.TEPS,'Interactions.tiff',sep='/')
+```
+![Figure X. Interactions with ETP species recorded by the range of different cameras used and the onboard observers.](`r path`){width=800px,height=800px}
+
+
+#### Habitats
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Habitats_coarse.records.tiff',sep='/')
 ```
-![Figure X. Observed overall habitat types from underwater cameras set on demersal gillnets.](`r path`){width=800px,height=800px}
+![Figure X. Habitat types observed by the underwater cameras set on demersal gillnets and longlines.](`r path`){width=800px,height=800px}
 
 ```{r, echo=FALSE}
-path=paste(PA.video,'Habitat.interactions.tiff',sep='/')
+path=paste(PA.video.deck.cameras,'Habitat.interactions.tiff',sep='/')
 ```
-![Figure X. Observed gear-habitat interactions.](`r path`){width=800px,height=800px}
+![Figure X. Observed gillnet habitat-damage by deck camera 1.](`r path`){width=800px,height=800px}
+
+#### Satellite tagging
+```{r, echo=FALSE}
+path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/Satellite_tagging/Outputs/Port Jackson/Fine.scale_depth.tiff'
+```
+![Figure X. Depth profile for satellite tagged Port Jackson sharks.](`r path`){width=800px,height=800px}
 
 
-## Discussion
-Notes from Steering Committee presentation:
-3:1 ratio seems to be ok (shift in scalefish catch when moving away from 3:1 ratio)
-Conclusion: inshore in West Coast, not achievable to use LL due to high catches of snapper; consider moving offshore to deeper waters; untapped resource, not fishable with nets
+#### Socio-economic survey
+**Reasons why results for economic comparison LL vs GN should be use cautiously: page 55 Knuckey**
+**Here refer to Appendix 8 **
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Question_body.parts.tiff',sep='/')
+```
+![Figure X. Sharks parts sold by fishers and processors.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Question_price.per.kg.tiff',sep='/')
+```
+![Figure X. Average price (±SD) per kg of trunks (sharks) or whole body (scalefish) or fillets (processors).](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Question_Costs.tiff',sep='/')
+```
+![Figure X. Breakdown of the average percentage of total annual costs (±SD).](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Question_Expenditure_location.tiff',sep='/')
+```
+![Figure X. Breakdown of the average percentage of total annual costs (±SD) spent within local government area.](`r path`){width=800px,height=800px}
 
 
-## Acknowledgements
-This research would not have been possible without the invaluable assistance of several DPIRD staff, Curtin University students and professional fishers, in particular Jack Parker, Abbey Shuttleworth, Daniela Waltrick, David Oberstein, Nick Breheny, Alissa Tate, Cameron Desfosses, Dion Boddington, Peter Coulson, Fabian Trinnie, Craig Skepper, Taylor Grosse, Oliver Jewel, Jeff and Anthony Cooke, Nils Stokie, Steve McWhirter and crew of fishing vessels Tracey Lea, Elizabeth Maria II and Viking Legend. This research was funded by Parks Australia (Grant 4-BH9DL76).
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'network/Fisher_catch.jpeg',sep='/')
+```
+![Figure X. Social network analysis showing the destination of landed catch.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'network/Processor_catch.jpeg',sep='/')
+```
+![Figure X. Social network showing the destination of processed catch.](`r path`){width=800px,height=800px}
 
 
-## References
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Map_contributions.tiff',sep='/')
+```
+![Figure X. Economic and social contribution.](`r path`){width=800px,height=800px}
+
+
+# Discussion
+**Notes from Steering Committee presentation:**
+**3:1 ratio seems to be ok (shift in scalefish catch when moving away from 3:1 ratio)**
+**Conclusion: inshore in West Coast, not achievable to use LL due to high catches of snapper; consider moving offshore to deeper waters; untapped resource, not fishable with nets**
+
+
+# Acknowledgements
+This research would not have been possible without the invaluable assistance of several DPIRD staff, Curtin University students and professional fishers, in particular Abbey Shuttleworth, Daniela Waltrick, David Oberstein, Nick Breheny, Alissa Tate, Cameron Desfosses, Dion Boddington, Peter Coulson, Fabian Trinnie, Craig Skepper, Taylor Grosse, Oliver Jewel, Jeff and Anthony Cooke, Nils Stokie, Steve McWhirter and crew of fishing vessels Tracey Lea, Elizabeth Maria II and Viking Legend. This research was funded by Parks Australia (Grant 4-BH9DL76).
+
+
+# References
 
 <div id="refs"></div>
 
 
-## Appendix 1
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught dusky shark."}
+# Appendix 1. ANOVA tables for the GLM models fitted to the catch and effort data reported in daily logbooks testing the effects of zone and longline configuration
+```{r, echo=FALSE,fig.cap="Table A.1.1. Summary statistics for gillnet-caught dusky shark."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Dusky shark.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught dusky shark"}
+```{r, echo=FALSE,fig.cap="Table A.1.2. Summary statistics for longline-caught dusky shark"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Dusky shark.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught gummy shark."}
+```{r, echo=FALSE,fig.cap="Table A.1.3. Summary statistics for gillnet-caught gummy shark."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Gummy shark.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught gummy shark"}
+```{r, echo=FALSE,fig.cap="Table A.1.4. Summary statistics for longline-caught gummy shark"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Gummy shark.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught whiskery shark."}
+```{r, echo=FALSE,fig.cap="Table A.1.5. Summary statistics for gillnet-caught whiskery shark."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Whiskery shark.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught whiskery shark"}
+```{r, echo=FALSE,fig.cap="Table A.1.6. Summary statistics for longline-caught whiskery shark"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Whiskery shark.LL.png',sep='/'))
 ```
 
-
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught sandbar shark."}
+```{r, echo=FALSE,fig.cap="Table A.1.7. Summary statistics for gillnet-caught sandbar shark."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Sandbar shark.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught sandbar shark"}
+```{r, echo=FALSE,fig.cap="Table A.1.8. Summary statistics for longline-caught sandbar shark"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Sandbar shark.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught blue groper."}
+```{r, echo=FALSE,fig.cap="Table A.1.9. Summary statistics for gillnet-caught blue groper."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Blue groper.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught blue groper"}
+```{r, echo=FALSE,fig.cap="Table A.1.10. Summary statistics for longline-caught blue groper"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Blue groper.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught pink snapper."}
+```{r, echo=FALSE,fig.cap="Table A.1.11. Summary statistics for gillnet-caught pink snapper."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Pink snapper.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught pink snapper"}
+```{r, echo=FALSE,fig.cap="Table A.1.12. Summary statistics for longline-caught pink snapper"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Pink snapper.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught queen snapper."}
+```{r, echo=FALSE,fig.cap="Table A.1.13. Summary statistics for gillnet-caught queen snapper."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Queen snapper.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught queen snapper"}
+```{r, echo=FALSE,fig.cap="Table A.1.14. Summary statistics for longline-caught queen snapper"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/Queen snapper.LL.png',sep='/'))
 ```
 
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for gillnet-caught West Australian dhufish."}
+```{r, echo=FALSE,fig.cap="Table A.1.15. Summary statistics for gillnet-caught West Australian dhufish."}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/West Australian dhufish.GN.png',sep='/'))
 ```
 
-```{r, echo=FALSE,fig.cap="Figure A.X. Summary statistics for the GAM model fitted to the catch and effort data reported in daily logbooks for longline-caught West Australian dhufish"}
+```{r, echo=FALSE,fig.cap="Table A.1.16. Summary statistics for longline-caught West Australian dhufish"}
 knitr::include_graphics(path = paste(PA.historic,'catch_rates/GAM_Anova/West Australian dhufish.LL.png',sep='/'))
 ```
+
+# Appendix 2. ANOVA tables for the GLM models fitted to the observed size data
+```{r, echo=FALSE,fig.cap="Table A.2.1. Summary statistics for dusky shark testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Dusky shark.png',sep='/'))
+```
+
+```{r, echo=FALSE,fig.cap="Table A.2.2. Summary statistics for dusky shark testing the effect of longline configuration and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_longine.config_Dusky shark.png',sep='/'))
+```
+
+
+```{r, echo=FALSE,fig.cap="Table A.2.3. Summary statistics for gummy shark testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Gummy shark.png',sep='/'))
+```
+
+```{r, echo=FALSE,fig.cap="Table A.2.4. Summary statistics for gummy shark testing the effect of longline configuration and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_longine.config_Gummy shark.png',sep='/'))
+```
+
+
+```{r, echo=FALSE,fig.cap="Table A.2.5. Summary statistics for sandbar shark testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Sandbar shark.png',sep='/'))
+```
+
+```{r, echo=FALSE,fig.cap="Table A.2.6. Summary statistics for Port Jackson testing the effect of longline configuration and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_longine.config_Port Jackson.png',sep='/'))
+```
+
+```{r, echo=FALSE,fig.cap="Table A.2.7. Summary statistics for Port Jackson testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Port Jackson.png',sep='/'))
+```
+
+
+```{r, echo=FALSE,fig.cap="Table A.2.8. Summary statistics for West Australian dhufish testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_West Australian dhufish.png',sep='/'))
+```
+
+
+```{r, echo=FALSE,fig.cap="Table A.2.9. Summary statistics for pink snapper testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Pink snapper.png',sep='/'))
+```
+
+```{r, echo=FALSE,fig.cap="Table A.2.10. Summary statistics for pink snapper testing the effect of longline configuration and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_longine.config_Pink snapper.png',sep='/'))
+```
+
+
+```{r, echo=FALSE,fig.cap="Table A.2.11. Summary statistics for nannygai testing the effect of method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'size/ANOVA_Method_Nannygai.png',sep='/'))
+```
+
+
+# Appendix 3. ANOVA tables for the GLM models fitted to the observed proportion of retained and discarded individuals
+```{r, echo=FALSE,fig.cap="Table A.3.1. Summary statistics for the effect of fishing method and zone."}
+knitr::include_graphics(path = paste(PA.Observer,'retained/ANOVA_Method.png',sep='/'))
+```
+# Appendix 4. ANOVA tables for the GLM models fitted to the drop outs observed from deck camera 2
+```{r, echo=FALSE,fig.cap="Table A.4.1. Summary statistics for gillnets."}
+knitr::include_graphics(path = paste(PA.video.deck.cameras,'anovas/drop_outs_GN.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.4.2. Summary statistics for longlines"}
+knitr::include_graphics(path = paste(PA.video.deck.cameras,'anovas/drop_outs_LL.png',sep='/'))
+```
+
+# Appendix 5. ANOVA tables for the GLM models fitted to the observed position in the water column from the deck camera above the wheelhouse
+```{r, echo=FALSE,fig.cap="Table A.5.1. Summary statistics."}
+knitr::include_graphics(path = paste(PA.video.deck.cameras,'anovas/Weight_float_species.png',sep='/'))
+```
+
+# Appendix 6. Observed interactions by underwater cameras
+```{r,echo=FALSE}
+Tab<- read.csv(paste(PA.video.underwater,"Table_number.interactions.by.species.csv",sep='/'))
+knitr::kable(Tab,caption='Table A.6.1. Number of observed interactions by species.')
+
+Tab<- read.csv(paste(PA.video.underwater,"interactions_Permanova.GN.csv",sep='/'))
+knitr::kable(Tab,caption='Table A.6.2. Permanova gillnet.')
+
+Tab<- read.csv(paste(PA.video.underwater,"interactions_Permanova_pairwise.GN.csv",sep='/'))
+knitr::kable(Tab,caption='Table A.6.3. Permanova gillnet. Pairwise comparisons')
+
+Tab<- read.csv(paste(PA.video.underwater,"interactions_Permanova.LL.csv",sep='/'))
+knitr::kable(Tab,caption='Table A.6.4. Permanova longline')
+
+Tab<- read.csv(paste(PA.video.underwater,"interactions_Permanova_pairwise.LL.csv",sep='/'))
+knitr::kable(Tab,caption='Table A.6.5. Permanova longline. Pairwise comparisons')
+
+```
+
+# Appendix 7. ANOVA tables for the GLM models fitted to the reported number of individuals of each species identified by observers and deck cameras 1 and 2
+```{r, echo=FALSE,fig.cap="Table A.7.1. Summary statistics. All species camera 1"}
+knitr::include_graphics(path = paste(PA.cam.obs,'GLM_mod_all.species.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.6.2. Summary statistics. Commercial species camera 1"}
+knitr::include_graphics(path = paste(PA.cam.obs,'GLM_mod_commercial.species.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.7.3. Summary statistics. Discarded species camera 1"}
+knitr::include_graphics(path = paste(PA.cam.obs,'GLM_mod_discarded.species.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.7.1. Summary statistics. All species camera 2"}
+knitr::include_graphics(path = paste(PA.cam2.obs,'GLM_mod_all.species.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.6.2. Summary statistics. Commercial species camera 2"}
+knitr::include_graphics(path = paste(PA.cam2.obs,'GLM_mod_commercial.species.png',sep='/'))
+```
+```{r, echo=FALSE,fig.cap="Table A.7.3. Summary statistics. Discarded species camera 2"}
+knitr::include_graphics(path = paste(PA.cam2.obs,'GLM_mod_discarded.species.png',sep='/'))
+```
+
+
+# Appendix 8. Socio-economic questionnaire
+## Questionnaires
+```{r,echo=FALSE}
+Tab<- read_excel(paste(PA.socio.econ.ques,"Questionnaire_fisher.xlsx",sep='/'), sheet = "metadata")
+knitr::kable(Tab, caption='Table A.8.1. Fisher questionnaire.')
+
+Tab<- read_excel(paste(PA.socio.econ.ques,"Questionnaire_processor.xlsx",sep='/'), sheet = "metadata")
+knitr::kable(Tab, caption='Table A.8.2. Processor questionnaire.')
+
+```
+## Distribution of responses
+### Fishers
+```{r, echo=FALSE}
+dummy='Responses_fishers'
+path=paste(PA.socio.econ,paste(dummy,'Ownership_Employment_Demographics.tiff',sep="_"),sep='/')
+```
+![Figure A.8.1. Ownership, employment and demographics.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_fishers'
+path=paste(PA.socio.econ,paste(dummy,'Catch.tiff',sep="_"),sep='/')
+```
+![Figure A.8.2. Catch.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_fishers'
+path=paste(PA.socio.econ,paste(dummy,'Costs_Other.tiff',sep="_"),sep='/')
+```
+![Figure A.8.3. Costs.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_fishers'
+path=paste(PA.socio.econ,paste(dummy,'Revenue.tiff',sep="_"),sep='/')
+```
+![Figure A.8.4. Revenue.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_fishers'
+path=paste(PA.socio.econ,paste(dummy,'Bus. Exp. location.tiff',sep="_"),sep='/')
+```
+![Figure A.8.5. Business expenditure within local government area.](`r path`){width=800px,height=800px}
+
+### Processors
+```{r, echo=FALSE}
+dummy='Responses_processors'
+path=paste(PA.socio.econ,paste(dummy,'Ownership_Employment_Demographics.tiff',sep="_"),sep='/')
+```
+![Figure A.8.6. Ownership, employment and demographics.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_processors'
+path=paste(PA.socio.econ,paste(dummy,'Catch.tiff',sep="_"),sep='/')
+```
+![Figure A.8.7. Catch.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_processors'
+path=paste(PA.socio.econ,paste(dummy,'Costs_Other.tiff',sep="_"),sep='/')
+```
+![Figure A.8.8. Costs.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_processors'
+path=paste(PA.socio.econ,paste(dummy,'Revenue.tiff',sep="_"),sep='/')
+```
+![Figure A.8.9. Revenue.](`r path`){width=800px,height=800px}
+
+```{r, echo=FALSE}
+dummy='Responses_processors'
+path=paste(PA.socio.econ,paste(dummy,'Bus. Exp. location.tiff',sep="_"),sep='/')
+```
+![Figure A.8.10. Business expenditure within local government area.](`r path`){width=800px,height=800px}
+
