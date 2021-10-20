@@ -3,13 +3,18 @@
 # use 'explr.dat.entry' to check data entry errors
 
 # to do: 
-#   TEPS. Make sure there are no duplications between TEPS dataframe and DATA in #---------Analyse PA TEPS ------------
+#   TEPS. Make sure there is no duplication between TEPS dataframe and DATA in #---------Analyse PA TEPS ------------
 #   get number of hours of footage for different cameras from Jack
 #   get field of view deck camera 1 Tim Goodall  for habitat recons from Jack
 #   re run all (including mapping) once all data entered and verified. update which species to consider
 #   Analyse PA socio-economic survey 
-#   Analyse PA economics of Longline vs Gillnet: finish cost and profig
-#   catch rates: consider testing fisher effect (Nils is less experienced)
+#   Analyse PA economics of Longline vs Gillnet: finish cost and profit
+#   Review calculations with Jack '#4. Rates of depredation, bait loss and drop outs'
+#   Update the value of Scalefish.to.fillet
+#   Update Annual.cost.gear.rep_LL with Markus survey, it should be higher than gillnets due to hook loss
+#   TDGDLF_processors=6 in Report.Rmd. REplace with real value form Christie
+
+#   Once all data entered and validated, copy to C drive from M drive
 rm(list=ls(all=TRUE))
 library(tidyverse)
 library(dplyr)
@@ -40,6 +45,10 @@ library(sf)
 library(ggpmisc)
 library(forecast)
 library(performance)
+library(ggforce)
+library(scales)
+library(igraph)
+library(janitor)
 
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
@@ -62,8 +71,9 @@ setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Projec
 TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
-#4. PA - number of hook combinations used in PA project
+#4. PA - number of hook combinations used and lost in PA project
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
+Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
 
 
 #5. PA - underwater video
@@ -121,6 +131,25 @@ Additional.questions.metadata<- read_excel("Additional questions.xlsx", sheet = 
 Port.loc=read.csv(handl_OneDrive('Analyses/Parks Australia/outputs/Historic_catch_effort/Ports.csv'))
 
 
+#11. Fin proportion of livewt
+Shark.Fin.Price.List=read.csv(handl_OneDrive("Data/Catch and Effort/Shark Fin Price List.csv")) #provided by Rory to Eva Lai
+
+
+#12. Prices
+PRICES_abares=read.csv(handl_OneDrive("Analyses/Data_outs/PRICES.csv")) 
+Shark.price.list=read.csv(handl_OneDrive("Analyses/Labelling/Outputs/Shark.price.list.csv")) 
+
+
+PRICES=read.csv(handl_OneDrive("Analyses/Data_outs/PRICES.csv"),stringsAsFactors = F)%>%
+        mutate(dolar.per.kg=PRICES[,match('Processor.Weighted.Average.Price',names(PRICES))],
+                            dolar.per.kg=as.numeric(gsub("\\$", "", dolar.per.kg)))%>%
+        mutate(SPECIES=as.numeric(ASA.Species.Code))
+
+
+#13. Total number of vessel in TDGDLF
+TDGDLF.vessels=read.csv(handl_OneDrive('Analyses/Catch and effort/State of fisheries/2018-19/1.4.Number.of.vessels.csv'))
+
+
 source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R"))
 Do.tiff="YES"
 Do.jpeg="NO"
@@ -142,8 +171,8 @@ distance.roller.spreader.Nils=4  #in metres
 
 #mesh.deep.Anthony=3.3                   #in metres  (20 meshes of 6.5 inch, source: Jeff Cooke)
 
-metres.observed=5 # average metres observed underwater
-
+metres.observed=5 # average metres observed by underwater cameras
+hooks.observed=2   #average number of hooks observed by underwater cameras
 
 hours.underwater.ll='172'  #total number of hours of longline underwater footage   #update from Jack
 hours.underwater.gn='571'  #total number of hours of gillnet underwater footage
@@ -214,26 +243,71 @@ Shark.palette=c("firebrick4","red",'yellow')
 Teleost.palette=c('steelblue','deepskyblue','royalblue4')
 
 
-cpue.scaler=1000  #display cpue as km gn hour / 1000 hook hour
-
+#cpue.scaler=1000  #display cpue as km gn hour / 1000 hook hour
+cpue.scaler=1
 
 Min.N.drop.out=10         #minimum sample size for drop out analyses
 Min.N.gaff=10              #minimum sample size for gaffing
 Min.obs.comp.wei.flot=5   #minimum sample size for comp around weight and floats
+Minobs.per=5              #minimum smaple size for percentage diff OM vs EM
+
+
+#Socio-economics
+  #Source: Rogers 2017 (summary and page 51)
+#note: Rogers 2017 calculated value chain multipliers (from beach to end use) to estimate 
+#      Final Sale Return of Domestic GVP (FSRDGVP) at final point of sale and consumption. 
+#      The multipliers integrate processing costs, packaging,
+#      storage, distribution, profits and end retail costs. The difference between  
+#      traditional GVP and FSRDGVP is the value enhancement along the supply chain
+FSRDGVP.multipliers=data.frame(
+  Species=c('Gummy shark','Dusky shark','Whiskery shark','Bronze whaler','Sandbar shark',
+            'Blue groper','Pink snapper','Hapuku','Bight redfish'),
+  Multiplier=c(6.5,6.3,7.9,6.3,6.3,
+               3.5,3.5,3.8,3.3)) #Table 1 Appendix 2 for Rogers 2017
+Proc.fillet.retail.ton=20000     #processor retail price for the original tonne of trunks
+Prop.fillet.sold.fish.chip=0.865   #Processor's proportion sold to fish & chip and retail
+Prop.fillet.sold.proc.retail=0.135
+Trunk.wastage=data.frame(     #calculations based on 1000 kg of trunks
+    Species='Gummy shark',
+    Trunk.to.fillet=700/1000,
+    Trunk.to.belly.flat=60/1000)
+Scalefish.to.fillet=0.35      #scalefish recovery rate from whole to fillet         #MISSING
+
+fillet.weight=150     #fillet weight in grams
+
+Trunk.multiplier=data.frame(      #All columns are in $ per kg
+        Species='Gummy shark',
+        Trunk.sold.as.fillet_wholesale=11550/700,             # $ per kg
+        Trunk.sold.as.belly.flat_wholesale=360/60,            # $ per kg
+        Trunk.sold.as.fillet_retail=Proc.fillet.retail.ton/700,                # $ per kg
+        Trunk.sold.as.belly.flat_retail=(Proc.fillet.retail.ton/11550)*360/60, # $ per kg
+        Trunk.sold.as.fillet_fish_chip=(700*12*1000/150),     #$ per tonne caught
+        Trunk.sold.as.belly.flat_fish_chip=(60*12*1000/150))%>%  #$ per tonne caught
+  mutate(Price.per.ton.to.fisher=8.5*1000,            #$ for a tonne of trunks
+         Multiplier.fish.chip=(Trunk.sold.as.fillet_fish_chip+Trunk.sold.as.belly.flat_fish_chip)/Price.per.ton.to.fisher,
+         Multiplier.proc.retail=Proc.fillet.retail.ton/Price.per.ton.to.fisher,
+         Multiplier.overall=weighted.mean(x=c(Multiplier.fish.chip,Multiplier.proc.retail),
+                                          w=c(Prop.fillet.sold.fish.chip,Prop.fillet.sold.proc.retail)))   
+
+Scalefish.price.list=data.frame(Species=c('Pink snapper',
+                                          'Hapuku','Blue groper','West Australian dhufish','Nannygai'),
+                                Price.per.fillet=c(mean(c(9,12,13.5,12,18.9,15,8.5,10.3)),
+                                                   20,18,24.9,21))
+Other.scalefish.price.multiplier=min(FSRDGVP.multipliers$Multiplier[6:9])
 
 #---------Define TEPS------------
 TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
 TEPS_marine.mam=4.1e+07:4.115e+07
 TEPS_seabirds=4.0e+07:4.09e+07
 TEPS.codes=c(TEPS_Shark.rays,TEPS_marine.mam,TEPS_seabirds)
-TEPS.names=data.frame(Name=c('Grey nurse shark','White shark','Smooth stingray','Black stingray',
-                             'Pied cormorant','Seabird','Pacific gull',
+TEPS.names=data.frame(Name=c('Grey nurse shark','White shark','Smooth stingray','Black stingray','Oversized dusky shark',
+                             'Pied cormorant','Seabird','Pacific gull','Yellow-nosed albatross','Brown skua',
                              'Australian sea-lion','Humpback whale'),
-                      Code=c(37008001,37010003,37035001,37035002,
-                             40048006,40000000,40128014,
+                      Code=c(37008001,37010003,37035001,37035002,37018003,
+                             40048006,40000000,40128014,40040003,40128908,
                              41131005,41112006),
-                      Colr=c("brown1","firebrick4","darkorange","chocolate3",
-                             "chartreuse3","forestgreen","darkolivegreen3",
+                      Colr=c("brown1","firebrick4","darkorange","chocolate3",'darksalmon',
+                             "chartreuse3","forestgreen","darkolivegreen3",'darkseagreen4','darkgreen',
                              "steelblue","deepskyblue2"))
 TEPS.cols=TEPS.names$Colr
 names(TEPS.cols)=TEPS.names$Name
@@ -280,7 +354,16 @@ write.csv(Lactate.for.Taylor,handl_OneDrive('Students/2020_Taylor Grosse/data.fo
 # names(Observer.LL.data.historic)=tolower(names(Observer.LL.data.historic))
 
 DATA=DATA[grep("PA", DATA$SHEET_NO), ]%>%
-      filter(year>=2020)%>%
+      filter(year>=2020)
+Tab.vert.samp=DATA%>%
+  filter(VERT_SAMPL=='Yes' & !is.na(COMMON_NAME))%>%
+  group_by(COMMON_NAME)%>%
+  tally()%>%
+  data.frame%>%
+  arrange(-n)
+write.csv(Tab.vert.samp,handl_OneDrive('Analyses/Parks Australia/outputs/Vetebrae_samples.csv'),row.names=F)
+
+DATA=DATA%>%
   dplyr::rename(IDL=TrunkL,
                 Rel.cond="RELEASE CONDITION")%>%
           mutate(COMMENTS=ifelse(is.na(COMMENTS),'',COMMENTS),
@@ -319,6 +402,74 @@ DATA=DATA%>%
            method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='No' ~soak.time * Eb12.M,
            method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='No' ~soak.time * Eb14.M,
            TRUE~NA_real_))
+
+#replace NA number of hook combos with mean by trip by hook combo
+DATA=DATA%>%
+  arrange(date)%>%
+  mutate(diff_days=difftime(date,lag(date,n=1),units="days"),
+         diff_days=ifelse(is.na(diff_days),0,diff_days),
+         delta_days=ifelse(diff_days>1,1,0),
+         trip=1+cumsum(delta_days))%>%
+  dplyr::select(-c(diff_days,delta_days))%>%
+  group_by(trip)%>%
+  mutate(C10.W.infered=ifelse(is.na(C10.W),round(mean(C10.W,na.rm=T)),C10.W),
+         C12.W.infered= ifelse(is.na(C12.W),round(mean(C12.W,na.rm=T)),C12.W), 
+         C14.W.infered= ifelse(is.na(C14.W),round(mean(C14.W,na.rm=T)),C14.W),
+         C10.M.infered= ifelse(is.na(C10.M),round(mean(C10.M,na.rm=T)),C10.M),
+         C12.M.infered= ifelse(is.na(C12.M),round(mean(C12.M,na.rm=T)),C12.M),
+         C14.M.infered= ifelse(is.na(C14.M),round(mean(C14.M,na.rm=T)),C14.M),
+         Eb10.W.infered= ifelse(is.na(Eb10.W),round(mean(Eb10.W,na.rm=T)),Eb10.W),
+         Eb12.W.infered= ifelse(is.na(Eb12.W),round(mean(Eb12.W,na.rm=T)),Eb12.W), 
+         Eb14.W.infered= ifelse(is.na(Eb14.W),round(mean(Eb14.W,na.rm=T)),Eb14.W),
+         Eb10.M.infered= ifelse(is.na(Eb10.M),round(mean(Eb10.M,na.rm=T)),Eb10.M),
+         Eb12.M.infered= ifelse(is.na(Eb12.M),round(mean(Eb12.M,na.rm=T)),Eb12.M), 
+         Eb14.M.infered= ifelse(is.na(Eb14.M),round(mean(Eb14.M,na.rm=T)),Eb14.M))%>%
+  ungroup()%>%
+  mutate(Sum=ifelse(method=='LL',C10.W.infered+C12.W.infered+C14.W.infered+Eb10.W.infered+Eb12.W.infered+Eb14.W.infered+
+                      C10.M.infered+C12.M.infered+C14.M.infered+Eb10.M.infered+Eb12.M.infered+Eb14.M.infered,
+                    NA),
+         C10.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C10.W.infered/Sum), C10.W.infered),
+         C12.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C12.W.infered/Sum), C12.W.infered),
+         C14.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C14.W.infered/Sum), C14.W.infered),
+         Eb10.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb10.W.infered/Sum), Eb10.W.infered),
+         Eb12.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb12.W.infered/Sum), Eb12.W.infered),
+         Eb14.W.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb14.W.infered/Sum), Eb14.W.infered),
+         C10.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C10.M.infered/Sum), C10.M.infered),
+         C12.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C12.M.infered/Sum), C12.M.infered),
+         C14.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*C14.M.infered/Sum), C14.M.infered),
+         Eb10.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb10.M.infered/Sum), Eb10.M.infered),
+         Eb12.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb12.M.infered/Sum), Eb12.M.infered),
+         Eb14.M.infered=ifelse(!n.hooks==Sum,floor(n.hooks*Eb14.M.infered/Sum), Eb14.M.infered))%>%
+  mutate(Effort.hook.combo.infered=case_when(
+    method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='Yes' ~soak.time * C10.W.infered,
+    method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='Yes' ~soak.time * C12.W.infered,
+    method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='Yes' ~soak.time * C14.W.infered,
+    method=="LL" & hooktype=='circular' & hooksize==10 & wiretrace=='No' ~soak.time * C10.M.infered,
+    method=="LL" & hooktype=='circular' & hooksize==12 & wiretrace=='No' ~soak.time * C12.M.infered,
+    method=="LL" & hooktype=='circular' & hooksize==14 & wiretrace=='No' ~soak.time * C14.M.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='Yes' ~soak.time * Eb10.W.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='Yes' ~soak.time * Eb12.W.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='Yes' ~soak.time * Eb14.W.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==10 & wiretrace=='No' ~soak.time * Eb10.M.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==12 & wiretrace=='No' ~soak.time * Eb12.M.infered,
+    method=="LL" & hooktype=='Ezb' & hooksize==14 & wiretrace=='No' ~soak.time * Eb14.M.infered,
+    TRUE~NA_real_))%>%
+  mutate(
+    Effort.wire.infered=case_when(
+      method=="LL" & wiretrace=='Yes'~ soak.time * (C10.W.infered+C12.W.infered+C14.W.infered+Eb10.W.infered+Eb12.W.infered+Eb14.W.infered),
+      method=="LL" & wiretrace=='No'~ soak.time * (C10.M.infered+C12.M.infered+C14.M.infered+Eb10.M.infered+Eb12.M.infered+Eb14.M.infered),
+      TRUE~NA_real_),
+    Effort.hooksize.infered=case_when(
+      method=="LL" & hooksize==10~ soak.time * (C10.W.infered+C10.M.infered+Eb10.W.infered+Eb10.M.infered),
+      method=="LL" & hooksize==12~ soak.time * (C12.W.infered+C12.M.infered+Eb12.W.infered+Eb12.M.infered),
+      method=="LL" & hooksize==14~ soak.time * (C14.W.infered+C14.M.infered+Eb14.W.infered+Eb14.M.infered),
+      TRUE~NA_real_),
+    Effort.hooktype.infered=case_when(
+      method=="LL" & hooktype=='circular'~ soak.time * (C10.W.infered+C12.W.infered+C14.W.infered+C10.M.infered+C12.M.infered+C14.M.infered),
+      method=="LL" & hooktype=='Ezb'~soak.time * (Eb10.W.infered+Eb12.W.infered+Eb14.W.infered+Eb10.M.infered+Eb12.M.infered+Eb14.M.infered),
+      TRUE~NA_real_)
+  )
+
 
 DATA=DATA%>%
         mutate(n.hooks=ifelse(method=='LL' & is.na(n.hooks) & !is.na(hooks.baited),
@@ -426,8 +577,35 @@ if(explr.dat.entry)
   aa=subset(Sites,sheet_no%in%c("PA0003","PA0100","PA0128","PA0047"))
   text(aa$mid.long,aa$mid.lat,aa$sheet_no,pos=4,col="black",font=2,srt=-35)
   dev.off()
+  
+  #no soak time or net length
+  no.soak=DATA%>%filter(is.na(soak.time))%>%distinct(sheet_no)
+  if(nrow(no.soak)>0) write.csv(no.soak,'No_soak_time.csv',row.names = F)
+
+  no.netlen=DATA%>%filter(method=="GN")%>%filter(is.na(net_length))%>%distinct(sheet_no)
+  if(nrow(no.netlen)>0) write.csv(no.netlen,'No_net_length.csv',row.names = F)
+  
+  #no number of hook combos
+  no.n.huk.com=Hook.combos%>%dplyr::select(sheet_no,C10.W,C12.W,C14.W,
+                                           Eb10.W,Eb12.W,Eb14.W,
+                                           C10.M,C12.M,C14.M,
+                                           Eb10.M,Eb12.M,Eb14.M)
+  no.n.huk.com$Total.hooks=rowSums(no.n.huk.com[,-1])
+  no.n.huk.com=no.n.huk.com%>%filter(is.na(Total.hooks))%>%pull(sheet_no)
+    
+  a=unique(DATA%>%filter(method=="LL")%>%pull(sheet_no))
+  not.in.huk.combo=a[which(!a%in%Hook.combos$sheet_no)]
+  if(length(not.in.huk.combo)>0) no.n.huk.com=sort(c(no.n.huk.com,not.in.huk.combo)) 
+  write.csv(no.n.huk.com,"no.number.of.hook.combinations_in_Hook_count_xlsx.csv",row.names = F)
 }
 
+
+
+# ---------Fishing days by zone and method  -------------------------------
+Fishing.days.by.zone.method=DATA%>%
+                              distinct(date,zone,method)%>%
+                              group_by(zone,method)%>%
+                              tally()
 
 # ---------Functions: Multivariate stats  -------------------------------
 multivariate.fn=function(d,Terms,Def.sp.term,Transf,Show.term,Group,hndl,
@@ -695,7 +873,7 @@ pred.fun.continuous=function(d,mod,PRED,Formula)
   }
   return(NewD)  
 }
-fn.barplot.cpue=function(d,YLAB,XLAB,cex,Rotate=NULL,Relative,NROW=2)
+fn.barplot.cpue=function(d,YLAB,XLAB,cex,Rotate=NULL,Relative,NROW=2,Y_sqrt=NULL,RETURN=TRUE)
 {
   if(Relative=="Yes")d=d%>%
       group_by(facet)%>%
@@ -711,7 +889,14 @@ fn.barplot.cpue=function(d,YLAB,XLAB,cex,Rotate=NULL,Relative,NROW=2)
     theme(legend.position='none')+
     ylab(YLAB)+xlab(XLAB)
   if(!is.null(Rotate)) p=p+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-  print(p)
+  if(!is.null(Y_sqrt)) p=p+scale_y_sqrt()
+  if(isFALSE(RETURN))return(p)
+  if(RETURN)
+  {
+    print(p)
+    return(d%>%dplyr::select(species,x,y))
+  }
+    
 }
 fn.continuous.cpue=function(d,YLAB,XLAB,cex,Relative)
 {
@@ -730,6 +915,12 @@ fn.continuous.cpue=function(d,YLAB,XLAB,cex,Relative)
           legend.title=element_blank())+
     ylab(YLAB)+xlab(XLAB)
   print(p)
+}
+MeanSE <- function(x)
+{
+  v <- c(mean(x) - sd(x)/sqrt(length(x)), mean(x), mean(x) + sd(x)/sqrt(length(x)))
+  names(v) <- c("ymin", "middle", "ymax")
+  v
 }
 #---------Functions: mapping ------------  
 plt.map=function(D,Title,Scaler)
@@ -767,7 +958,7 @@ HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
 le.paste=function(x) paste(HNDL,x,sep='')
 if(do.Historic)  
 {
-  do.monthly=FALSE  #incomplete info for teleost, species id issues, etc so drop
+  do.monthly=TRUE  
   library(fields)
   library(gridExtra)
   library(grid)
@@ -1130,7 +1321,6 @@ if(do.Historic)
                            TRUE~SNAME),
            SNAME=capitalize(SNAME)) 
 
-
   Data.daily=Data.daily%>%
         filter(LAT<=TDGDLF.lat.range[1] & LAT >=TDGDLF.lat.range[2] & METHOD%in%c("GN","LL") &
                  Estuary=="NO")%>%
@@ -1193,7 +1383,177 @@ if(do.Historic)
     mutate(Landing.Port=capitalize(tolower(Landing.Port)))
   
   
+  #Export annual average catch by species for last 5 years for economic valuation
+  Lst.5yrs=2018
+  #Lst.5yrs=as.numeric(substr(max(Data.daily$FINYEAR),1,4))  #not using 2019-20 as catch was much lower due to COVID
+  Lst.5yrs=rev(seq(Lst.5yrs,(Lst.5yrs-4),-1))
+  Lst.5yrs=paste(Lst.5yrs,substr(Lst.5yrs+1,3,4),sep='-')
+  Avrg.ktch=Data.daily%>%
+    filter(FINYEAR%in%Lst.5yrs)%>%
+    group_by(SPECIES,FINYEAR)%>%
+    summarise(Tot=sum(LANDWT,na.rm=T))%>%
+    group_by(SPECIES)%>%
+    summarise(Tot=mean(Tot,na.rm=T))%>%
+    ungroup()
+  Shark.Fin.prop=Shark.Fin.Price.List%>%    #Add fins weight
+    rename(Percent="ï..Percent")%>%
+    mutate(Prop.livewt=Percent/100)%>%
+    dplyr::select(Prop.livewt,species)
+  Avrg.prop.fin.Prop.livewt=mean(Shark.Fin.prop%>%
+                                   filter(Prop.livewt>0)%>%
+                                   filter(!species==22998)%>%
+                                   pull(Prop.livewt))
+  Avrg.ktch.fins=sum(Data.daily%>%
+                       filter(FINYEAR%in%Lst.5yrs & SPECIES<=35000)%>%
+                       group_by(SPECIES,FINYEAR)%>%
+                       summarise(Tot=sum(LIVEWT))%>%
+                       group_by(SPECIES)%>%
+                       summarise(Tot=mean(Tot))%>%
+                       ungroup()%>%
+                       left_join(Shark.Fin.prop,by=c('SPECIES'='species'))%>%
+                       mutate(Prop.livewt=ifelse(is.na(Prop.livewt),Avrg.prop.fin.Prop.livewt,Prop.livewt),
+                              Fin.weight=Tot*Prop.livewt)%>%
+                       pull(Fin.weight))
+  Avrg.ktch=rbind(Avrg.ktch,data.frame(SPECIES=22998,Tot=Avrg.ktch.fins))
+  write.csv(Avrg.ktch,handl_OneDrive('Analyses/Parks Australia/outputs/Socio-economics/Avrg.ktch.csv'),row.names=F)  
 
+  #Export average annual catch by boat
+  Total.ktch.per.boat=Data.daily.original%>%
+    filter(FINYEAR%in%Lst.5yrs & !BoatName%in%c("n/a",""))%>%
+    mutate(BoatName=tolower(BoatName),
+           BoatName=case_when(BoatName%in%c("barbarosa ll")~"barbarosa ii",
+                              BoatName%in%c("catch fillet release")~"catch fillet & release",
+                              BoatName%in%c("chivers regal 11")~"chivers regal 2",
+                              BoatName%in%c("doreen","dorren")~"dorreen",
+                              BoatName%in%c("elizabeht maria 11","elizabeth maria 11","elizabith maria 11")~"elizabeth maria ii",
+                              BoatName%in%c("falcon 11","falcon ll")~"falcon ii",
+                              BoatName%in%c("fish tales")~"fishtales",
+                              BoatName%in%c("giuliano 2")~"giuliano ii",
+                              BoatName%in%c("carado")~"corado",
+                              BoatName%in%c("kabralee 11","kalbarri lass ii")~"kabralee ii",
+                              BoatName%in%c("lone hand")~"lonehand",
+                              BoatName%in%c("maniki 2")~"maniki ii",
+                              BoatName%in%c("planjak 11")~"planjak ii",
+                              BoatName%in%c("sea venture 11")~"sea venture ii",
+                              BoatName%in%c("st. gerard m","st gerard")~"st gerard m",
+                              BoatName%in%c("steve mayree d")~"steve-mayree d",
+                              BoatName%in%c("sveti-nikola")~"sveti nikola",
+                              BoatName%in%c("karina","karina 4")~"karina 5",
+                              BoatName%in%c("tara-marie")~"tara marie",
+                              BoatName%in%c("tracey-lea")~"tracey lea",
+                              TRUE~BoatName))%>%
+    group_by(BoatName,FINYEAR)%>%
+    summarise(Tot=sum(landwt,na.rm=T))%>%
+    group_by(BoatName)%>%
+    summarise(Tot=mean(Tot,na.rm=T))%>%
+    ungroup()
+  write.csv(Total.ktch.per.boat,handl_OneDrive('Analyses/Parks Australia/outputs/Socio-economics/Total.ktch.per.boat.csv'),row.names=F)  
+  
+  
+  #Export number of returns lodged by operator by year
+  Operators=Data.daily.original%>%
+    distinct(TSNo,.keep_all=T)%>%
+    mutate(MastersName=tolower(MastersName),
+           MastersName=case_when(MastersName%in%c("brian & jason  scimone","brian / jason scimone",
+                                                  "jason & brian scimone","jason / brian scimone")~"brian & jason scimone",
+                                 MastersName%in%c("brian gregory scimone","scimone, brian gregory")~"brian scimone",
+                                 MastersName%in%c('chris henderson','henderson, christian william')~"c. henderson",
+                                 MastersName%in%c("mansted, storm",' storm mansted',"anthony david mansted")~"anthony mansted",
+                                 MastersName=="charles brown"~"c.d.brown",
+                                 MastersName=="glen brodie"~"g. brodie",
+                                 MastersName=="peter hughes & william ronald reay"~"hughes, peter",
+                                 MastersName=="anthony cooke"~"cooke, anthony",
+                                 MastersName%in%c("jeffrey cooke","jeffrey frank cooke")~"cooke, jeffrey",
+                                 MastersName%in%c("soulos, emanuel nicholas",
+                                                  "emanuel nicholas soulos")~"emanuel soulos",
+                                 MastersName=="glen brodi"~"glen brodie",
+                                 MastersName=="robinson, mark"~"mark robinson",
+                                 MastersName%in%c("jayson lyndsay  / scott farrant",
+                                                  "jayson lindsay / scott farrant",
+                                                  "jayson lindsay & scott farrant",
+                                                  "lindsay, jayson / scott farrant",
+                                                  "scott  farrant")~ "scott farrant",
+                                 MastersName=="jeremy frances sanders"~"jf sanders",
+                                 MastersName%in%c("n e soulos",'n.e soulos',"n.e.soulas","n.e.soulos","ne soulos")~"n.e. soulos",
+                                 MastersName=="phil  toumazos"~"phil toumazos",
+                                 grepl('triantafyllou',MastersName)~"n. triantafyllou",
+                                 grepl('joy',MastersName)~"andrew joy",
+                                 grepl('black',MastersName)~"c. black",
+                                 grepl('sharp',MastersName)~"greg sharp",
+                                 grepl('hawkins',MastersName)~"d. hawkins",
+                                 grepl('campbell',MastersName)~"g. campbell",
+                                 grepl('dunn',MastersName)~"s. dunn",
+                                 grepl('dyer',MastersName)~" p. dyer",
+                                 grepl('sell',MastersName)~"g.e. sell",
+                                 grepl('thornton',MastersName)~"j. thornton",
+                                 grepl('goodall',MastersName)~"t. goodall",
+                                 grepl('madgen',MastersName)~"d. madgen",
+                                 grepl('whetstone',MastersName)~"g. whetstone",
+                                 grepl('brodie',MastersName)~"g. brodie",
+                                 grepl('robb',MastersName)~"j. robb",
+                                 grepl('richardson',MastersName)~"john richardson",
+                                 grepl('rowbottom',MastersName)~"john rowbottom",
+                                 grepl('tonkin',MastersName)~"m. tonkin",
+                                 grepl('karaterpos',MastersName)~"m. karaterpos",
+                                 grepl('branderhorst',MastersName)~"m. branderhorst",
+                                 grepl('bubb',MastersName)~"m.r. bubb",
+                                 grepl('matthews',MastersName)~"l. matthews",
+                                 grepl('mcwhirter',MastersName)~"s. mcwhirter",
+                                 grepl('murch',MastersName)~"p. murch",
+                                 grepl('steele',MastersName)~"a. steele",
+                                 grepl('parker',MastersName)~"r. parker",
+                                 grepl('warrilow',MastersName)~"p. warrilow",
+                                 grepl('bradley',MastersName)~"r. bradley",
+                                 grepl('farrant',MastersName)~"s. farrant",
+                                 grepl('bryant',MastersName)~"s. bryant",
+                                 grepl('smythe',MastersName)~"j.l. smythe",
+                                 grepl('buckeridge',MastersName)~"s. buckeridge",
+                                 grepl('tindall',MastersName)~"j. tindall",
+                                 grepl('farrant',MastersName)~"s. farrant",
+                                 grepl('mason',MastersName)~"t. mason",
+                                 grepl('goodall',MastersName)~"t. goodall",
+                                 TRUE~MastersName),
+           BoatName=tolower(BoatName),
+           BoatName=case_when(BoatName%in%c("barbarosa ll")~"barbarosa ii",
+                              BoatName%in%c("catch fillet release")~"catch fillet & release",
+                              BoatName%in%c("chivers regal 11")~"chivers regal 2",
+                              BoatName%in%c("doreen","dorren")~"dorreen",
+                              BoatName%in%c("elizabeht maria 11","elizabeth maria 11","elizabith maria 11")~"elizabeth maria ii",
+                              BoatName%in%c("falcon 11","falcon ll")~"falcon ii",
+                              BoatName%in%c("fish tales")~"fishtales",
+                              BoatName%in%c("giuliano 2")~"giuliano ii",
+                              BoatName%in%c("carado")~"corado",
+                              BoatName%in%c("kabralee 11","kalbarri lass ii")~"kabralee ii",
+                              BoatName%in%c("lone hand")~"lonehand",
+                              BoatName%in%c("maniki 2")~"maniki ii",
+                              BoatName%in%c("planjak 11")~"planjak ii",
+                              BoatName%in%c("sea venture 11")~"sea venture ii",
+                              BoatName%in%c("st. gerard m","st gerard")~"st gerard m",
+                              BoatName%in%c("steve mayree d")~"steve-mayree d",
+                              BoatName%in%c("sveti-nikola")~"sveti nikola",
+                              BoatName%in%c("karina","karina 4")~"karina 5",
+                              BoatName%in%c("tara-marie")~"tara marie",
+                              BoatName%in%c("tracey-lea")~"tracey lea",
+                              TRUE~BoatName))
+  Tab_Op_boats=Operators%>%
+    group_by(FINYEAR,MastersName,BoatName)%>%
+    tally()%>%
+    spread(FINYEAR,n,fill=0)
+  write.csv(Tab_Op_boats,handl_OneDrive('Analyses/Parks Australia/outputs/Socio-economics/annual.returns_by_operator.and.boat.csv'),row.names=F)  
+  
+  Tab_Op=Operators%>%
+    group_by(FINYEAR,MastersName)%>%
+    tally()%>%
+    spread(FINYEAR,n,fill=0)
+  Total.operators=Tab_Op%>%
+    mutate_if(is.numeric, ~1 * (. > 0))
+  XXX=Tab_Op[1,]%>%
+    mutate(MastersName="Total.number.operators")
+  XXX=cbind(MastersName="Total.number.operators",t(colSums(Total.operators[,-1])))
+  write.csv(rbind(Tab_Op,XXX),handl_OneDrive('Analyses/Parks Australia/outputs/Socio-economics/annual.returns_by_operator.csv'),row.names=F)  
+  
+  
+ 
   #1. Vessel dynamics
     #1.1. Landing port dynamics at its peak and currently
   Data.monthly=Data.monthly%>%
@@ -1508,7 +1868,7 @@ if(do.Historic)
 
   #3. Catch composition GN and LL
     #3.1. Overall (show 20 top species, aggregate the rest)
-  fn.br.plt=function(dd,TOP,yMx,CX.nm,Xmax=0.65)
+  fn.br.plt=function(dd,TOP,yMx,CX.nm)
   {
     dd=dd%>%
       mutate(Prop=Total/sum(dd$Total))%>%
@@ -1522,15 +1882,18 @@ if(do.Historic)
       summarise(Prop=sum(Prop))%>%
       data.frame%>%
       arrange(Prop)
+    Xmax=round(max(dd$Prop),2)+0.05
     with(dd,barplot(Prop,horiz = T,col=colr,names.arg=new.sp,cex.names=CX.nm,las=1,xlim=c(0,Xmax)))
     box()
   }
-  fn.ktch.comp=function(ktch,what,Min.overlap)
+  Max.fn=function(d) round(max(d%>%mutate(Prop=Total/sum(d$Total))%>%pull(Prop)),2)+0.05
+  fn.ktch.comp=function(ktch,what,Min.overlap) 
   {
      
     #Overall comparison GN vs LL
     dat=ktch%>%group_by(METHOD,SPECIES,SNAME)%>%
       summarise(Total = sum(LIVEWT.c))
+    #Xmax<<-Max.fn(dat)
     fn.fig(paste(hndl,"/Catch_composition/Overall_GN_LL_overall",what,sep=""),2400,1600)
     par(mfcol=c(1,2),mar=c(2,10.5,1,.1),oma=c(1,.1,.5,.3),mgp=c(1.5,.5,0),cex.axis=.9)
     fn.br.plt(dd=dat%>%filter(METHOD=='GN'),TOP=20,yMx=1,CX.nm=1)
@@ -1543,6 +1906,7 @@ if(do.Historic)
     #By zone comparison GN vs LL
     dat=ktch%>%group_by(METHOD,zone,SPECIES,SNAME)%>%
       summarise(Total = sum(LIVEWT.c))
+    #Xmax<<-Max.fn(dat)
     CX.NM=.7
     Top=15
     fn.fig(paste(hndl,"/Catch_composition/Overall_GN_LL_by zone",what,sep=""),2400,1600)
@@ -1594,6 +1958,7 @@ if(do.Historic)
         summarise(Total = sum(LIVEWT.c))
       CX.NM=.7
       Top=15
+      #Xmax<<-Max.fn(dat)
       fn.fig(paste(hndl,"/Catch_composition/Overall_GN_LL_by zone_without.3.vessels.accounting for 95 percent.catch",what,sep=""),2400,1600)
       par(mfcol=c(3,2),mar=c(2,7,.1,.1),oma=c(1.1,.1,1.1,.3),mgp=c(1.5,.5,0))
       #GN
@@ -1638,7 +2003,7 @@ if(do.Historic)
     dat=dat%>%filter(dummy%in%same.recs)
     
     unIk=sort(unique(dat$dummy))
-    
+    #Xmax<<-Max.fn(dat)
     Top=10
     CX.NM=.7*4/length(unIk)
     fn.fig(paste(hndl,"/Catch_composition/Overall_GN_LL_same_blk_yr_mn",what,sep=""),2400,1600)
@@ -1646,7 +2011,7 @@ if(do.Historic)
     #GN    
     for(u in 1:length(unIk))
     {
-      fn.br.plt(dd=dat%>%filter(METHOD=='GN' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM,Xmax=0.8)
+      fn.br.plt(dd=dat%>%filter(METHOD=='GN' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM)
       if(u==1)mtext("Gillnet",3,cex=1)
       legend('bottomright',paste(unIk[u]," (",round(sum(subset(dat,METHOD=='GN'& dummy==unIk[u])$Total)/1000,1),
                               " tonnes)",sep=""),bty='n',cex=.8)
@@ -1654,7 +2019,7 @@ if(do.Historic)
     #LL
     for(u in 1:length(unIk))
     {
-      fn.br.plt(dd=dat%>%filter(METHOD=='LL' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM,Xmax=0.8)
+      fn.br.plt(dd=dat%>%filter(METHOD=='LL' & dummy==unIk[u]),TOP=Top,yMx=1,CX.nm=CX.NM)
       if(u==1)mtext("Longline",3,cex=1)
       legend('bottomright',paste(unIk[u]," (",round(sum(subset(dat,METHOD=='LL'& dummy==unIk[u])$Total)/1000,1),
                               " tonnes)",sep=""),bty='n',cex=.8)
@@ -1666,22 +2031,29 @@ if(do.Historic)
                 same.BLK.MONTH.FINYEAR=unIk))
   }
       #daily
-  out.daily=fn.ktch.comp(ktch=Data.daily%>%filter(METHOD%in%c('GN',"LL"))%>%
-                  dplyr::select(Same.return.SNo,VESSEL,FINYEAR,METHOD,zone,block10,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
-               what="_Daily",
-               Min.overlap=10)
+  out.daily=fn.ktch.comp(ktch=Data.daily%>%
+                                filter(METHOD%in%c('GN',"LL"))%>%
+                                dplyr::select(Same.return.SNo,VESSEL,FINYEAR,METHOD,zone,block10,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
+                          what="_Daily",
+                          Min.overlap=10)
       #monthly
-  if(do.monthly) out.monthly=fn.ktch.comp(ktch=Data.monthly%>%filter(METHOD%in%c('GN',"LL"))%>%
-                    dplyr::select(Same.return,VESSEL,FINYEAR,METHOD,zone,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
-                           what="_Monthly",
-                           Min.overlap=18)
+  Scalefish.years=unique(Data.monthly%>%filter(SPECIES>35000)%>%pull(FINYEAR)) #use only year since scalefish were reported to make it comparable
+  if(do.monthly)
+  {
+    out.monthly=fn.ktch.comp(ktch=Data.monthly%>%
+                               filter(METHOD%in%c('GN',"LL") & YEAR<=2005 & FINYEAR%in%Scalefish.years)%>%
+                               dplyr::select(Same.return,VESSEL,FINYEAR,METHOD,zone,BLOCKX,SPECIES,SNAME,LIVEWT.c,MONTH),
+                             what="_Monthly",
+                             Min.overlap=18)
+  }
+
               
     #3.2. Multivariate stats
       #Monthly
   if(do.monthly)
   {
     system.time({
-      Out.multi_monthly=multivariate.fn(d=Data.monthly%>%filter(YEAR<=2005 & !zone=='Zone1'),
+      Out.multi_monthly=multivariate.fn(d=Data.monthly%>%filter(YEAR<=2005 & FINYEAR%in%Scalefish.years),
                                         Terms=c('method.zone','finyear'),
                                         Def.sp.term=c('method','species'),
                                         Transf='proportion',
@@ -1692,6 +2064,24 @@ if(do.Historic)
                                         Simper.title="/Catch_composition/Simper_monthly",
                                         Permanova.title="/Catch_composition/Permanova_monthly")
     })
+    
+    #comparable records
+    system.time({
+      Out.multi_daily_comparable.records=multivariate.fn(d=Data.monthly%>%
+                                                           mutate(BLK={if("block10" %in% names(.)) block10 else BLOCKX},
+                                                                  dummy=paste(BLK,MONTH,FINYEAR))%>%
+                                                           filter(!zone=='Zone1' &
+                                                                    dummy%in%out.monthly$same.BLK.MONTH.FINYEAR),
+                                                         Terms=c('method.zone','finyear','month'),
+                                                         Def.sp.term=c('method','species'),
+                                                         Transf='proportion',
+                                                         Show.term='method.zone',
+                                                         Group='Top20',
+                                                         hndl,
+                                                         MDS.title="/Catch_composition/MDS_monthly_same.blk.mn.yr",
+                                                         Simper.title="/Catch_composition/Simper_monthly_same.blk.mn.yr",
+                                                         Permanova.title="/Catch_composition/Permanova_monthly_same.blk.mn.yr")
+    }) 
   }
 
       #Daily
@@ -1730,25 +2120,23 @@ if(do.Historic)
   }
   
       #Daily comparable records
-  if(do.this)
-  {
-    system.time({
-      Out.multi_daily_comparable.records=multivariate.fn(d=Data.daily%>%
-                                                           mutate(BLK={if("block10" %in% names(.)) block10 else BLOCKX},
-                                                                  dummy=paste(BLK,MONTH,FINYEAR))%>%
-                                                           filter(!zone=='Zone1' &
-                                                                    dummy%in%out.daily$same.BLK.MONTH.FINYEAR),
-                                                         Terms=c('method.zone','finyear','month'),
-                                                         Def.sp.term=c('method','species'),
-                                                         Transf='proportion',
-                                                         Show.term='method.zone',
-                                                         Group='Top20',
-                                                         hndl,
-                                                         MDS.title="/Catch_composition/MDS_daily_same.blk.mn.yr",
-                                                         Simper.title="/Catch_composition/Simper_daily_same.blk.mn.yr",
-                                                         Permanova.title="/Catch_composition/Permanova_daily_same.blk.mn.yr")
-    }) 
-  }
+  system.time({
+    Out.multi_daily_comparable.records=multivariate.fn(d=Data.daily%>%
+                                                         mutate(BLK={if("block10" %in% names(.)) block10 else BLOCKX},
+                                                                dummy=paste(BLK,MONTH,FINYEAR))%>%
+                                                         filter(!zone=='Zone1' &
+                                                                  dummy%in%out.daily$same.BLK.MONTH.FINYEAR),
+                                                       Terms=c('method.zone','finyear','month'),
+                                                       Def.sp.term=c('method','species'),
+                                                       Transf='proportion',
+                                                       Show.term='method.zone',
+                                                       Group='Top20',
+                                                       hndl,
+                                                       MDS.title="/Catch_composition/MDS_daily_same.blk.mn.yr",
+                                                       Simper.title="/Catch_composition/Simper_daily_same.blk.mn.yr",
+                                                       Permanova.title="/Catch_composition/Permanova_daily_same.blk.mn.yr")
+  }) 
+
   
   
   #4. Hook characteristics (longline only)
@@ -1880,15 +2268,17 @@ if(do.Historic)
     
     p=d3%>%
       ggplot(aes(x=method.zone, y=cpue1)) + 
-      geom_boxplot(outlier.size = 0.1,aes(fill=colr))+ 
+      geom_boxplot(outlier.size = 0.1,aes(fill=colr),alpha=.4)+ 
       coord_flip()+
       #coord_flip(ylim = c(0, upper))+
       facet_wrap(~SNAME,scales='free',nrow=4)+
       scale_fill_manual(values=c(firebrick="firebrick",steelblue="steelblue"))+
-      ylab("Catch rate per session (kg per 1000 m hour / 1000 hook hour)")+xlab("")+ 
+      ylab(paste("Catch rate per session (kg per ",cpue.scaler," m hour or ",cpue.scaler," hook hour)",sep=''))+
+      xlab("")+ 
       theme_PA(strx.siz=12,axs.t.siz=10.75)+
       theme(legend.position="none",
             plot.margin = margin(.1, .5, .1, .1, "cm"))+
+      stat_summary(fun=mean, geom="point", shape=21, size=2, color="darkgreen", fill="darkgreen")+
       scale_y_sqrt()
     print(p)
     
@@ -1950,7 +2340,7 @@ if(do.Historic)
   d1=d1[match(names(d2),names(d1))]
   
   fn.fig(paste(hndl,"/catch_rates/Catch rates by method and zone for main species_daily_y_sqrt",sep=""),2600,2000)
-  daily.cpue=fn.catchrate(d1,d2)
+  daily.cpue=fn.catchrate(d1,d2) 
   dev.off()
   
     #b. standardization
@@ -1968,20 +2358,20 @@ if(do.Historic)
   LL.form=formula(cpue1~zone+hooksize+hooktype+s(vessel,bs='re'))
   #GN.form=formula(cpue1~zone+s(depthmax)+s(vessel,bs='re'))
   #LL.form=formula(cpue1~zone+s(depthmax)+hooksize+hooktype+s(vessel,bs='re'))
-  
-  system.time({
+
+  system.time({  
     for(m in 1:length(main.sp))
     {
+      #gillnets
       print(paste(main.sp[m],'GN GAM-------------'))
       D=daily.cpue%>%
         filter(method=='GN' & species==main.sp[m])%>%
         mutate(zone=as.factor(zone),
                method=as.factor(method),
                vessel=as.factor(vessel))
-      
       cpue.stand.out.GN[[m]]=cpue.stand.fun(d=D,Formula=GN.form)  
       
-      
+      #longlines
       print(paste(main.sp[m],'LL GAM-------------'))
       D=daily.cpue%>%
         filter(method=='LL' & species==main.sp[m] & hooksize>11)%>%
@@ -1991,7 +2381,6 @@ if(do.Historic)
                vessel=as.factor(vessel),
                hooksize=factor(hooksize),
                hooktype=as.factor(hooktype))
-      
       form=LL.form
       if(main.sp[m]==17001) form=formula(cpue1~zone+hooktype+s(vessel,bs='re'))
       cpue.stand.out.LL[[m]]=cpue.stand.fun(d=D,Formula=form)  
@@ -2101,22 +2490,24 @@ if(do.Historic)
     }
     
   }
-
+  
   #Method-zone 
-  fn.fig(paste(hndl,"/catch_rates/Standardized_Catch rates_Method.zone_daily",sep=""),2600,1600)
-  fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
+  fn.fig(paste(hndl,"/catch_rates/Standardized_Catch rates_Method.zone_daily_y_sqrt",sep=""),2600,1600)
+  out=fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
                               mutate(method.zone=paste(method,zone,sep='-'),
                                      species=factor(species,levels=Main.species),
                                      x=method.zone,
                                      y=response,
                                      fill=method.zone,
                                      facet=species),
-                            YLAB="Standardized catch rate (kg per 1000 m hour / 1000 hook hour)",
+                            YLAB=fn.tit(cpue.scaler),
                             XLAB='Fishing method and zone',
                             cex=10.5,
                             Rotate='Yes',
-                           Relative="No")
+                           Relative="No",
+                           Y_sqrt="YES")
   dev.off()
+  write.csv(out,paste(hndl,"/catch_rates/Standardized_Catch rates_Method.zone_daily.csv",sep=""),row.names = F)
   
   #Depth 
   # fn.fig(paste(hndl,"/catch_rates/Standardized_Catch rates_depth_daily",sep=""),2400,1400)
@@ -2135,7 +2526,7 @@ if(do.Historic)
   
   #Hooksize
   fn.fig(paste(hndl,"/catch_rates/Standardized_Catch rates_hooksize_daily",sep=""),2000,2400)
-  fn.barplot.cpue(d=do.call(rbind,Store.hook.size)%>%
+  out=fn.barplot.cpue(d=do.call(rbind,Store.hook.size)%>%
                     mutate(species=factor(species,levels=Main.species),
                            x=hooksize,
                            y=response,
@@ -2150,7 +2541,7 @@ if(do.Historic)
   
   #Hooktype
   fn.fig(paste(hndl,"/catch_rates/Standardized_Catch rates_hooktype_daily",sep=""),2000,2400)
-  fn.barplot.cpue(d=do.call(rbind,Store.hook.type)%>%
+  out=fn.barplot.cpue(d=do.call(rbind,Store.hook.type)%>%
                     mutate(species=factor(species,levels=Main.species),
                            x=hooktype,
                            y=response,
@@ -2162,62 +2553,6 @@ if(do.Historic)
                   Relative="Yes")
   dev.off()
   
-  
-  
-  #Monthly
-  if(do.monthly)
-  {
-    add.nms=Data.monthly%>%
-      distinct(SPECIES,SNAME)%>%
-      mutate(SNAME=case_when(SPECIES==18013~"Spot-tail shark",
-                             SPECIES==18014~"Blacktip sharks",
-                             SPECIES==18029~"Lemon shark",
-                             SPECIES==18026~"Pigeye shark",
-                             SPECIES==18030~"Grey reef shark",
-                             TRUE~SNAME))%>%
-      distinct(SPECIES,.keep_all=T)
-    
-    
-    d=Data.monthly%>%left_join(Effort.monthly%>%
-                                 mutate(Effort.net=1000*Km.Gillnet.Hours.c,
-                                        Effort.hook=BDAYS*HOURS*HOOKS)%>%
-                                 group_by(Same.return)%>%
-                                 summarise(Effort.net=max(Effort.net),
-                                           Effort.hook=max(Effort.hook)),
-                               by="Same.return")%>%
-      mutate(zone=tolower(zone))
-    d1=d%>%
-      filter(METHOD=="LL" & !is.na(SPECIES) &!is.na(Effort.hook))%>%
-      group_by(Same.return,SPECIES,zone)%>%
-      summarise(livewt=sum(LIVEWT.c),
-                Effort=max(Effort.hook))%>%
-      mutate(cpue=livewt/(Effort))%>%
-      left_join(add.nms,by="SPECIES")%>%
-      mutate(colr=ifelse(SPECIES<50000,"steelblue","firebrick"),
-             method='LL')%>%
-      ungroup()%>%
-      dplyr::rename(species=SPECIES,
-             Same.return.SNo=Same.return)
-    
-    d2=d%>%
-      filter(METHOD=="GN" & !is.na(SPECIES) &!is.na(Effort.net))%>%
-      group_by(Same.return,SPECIES,zone)%>%
-      summarise(livewt=sum(LIVEWT.c),
-                Effort=max(Effort.net))%>%
-      mutate(cpue=livewt/(Effort))%>%
-      left_join(add.nms,by="SPECIES")%>%
-      mutate(colr=ifelse(SPECIES<50000,"steelblue","firebrick"),
-             method='GN')%>%
-      ungroup()%>%
-      rename(species=SPECIES,
-             Same.return.SNo=Same.return)
-    
-    fn.fig(paste(hndl,"/Catch rates by method and zone for main species_monthly_y_sqrt",sep=""),2800,1800)
-    fn.catchrate(d1,d2)
-    dev.off()
-    rm(d,d1,d2)
-  }
-  
 
    
   #6. Average catch price per vessel-gear for last five years
@@ -2228,11 +2563,6 @@ if(do.Historic)
     filter(FINYEAR%in%Lst.fiv.yrs & METHOD%in%c("GN","LL"))%>%
     group_by(Same.return.SNo,VESSEL,SPECIES,METHOD)%>%
     summarise(Total.ktch = sum(LIVEWT.c))
-  setwd(handl_OneDrive("Analyses/Data_outs"))
-  PRICES=read.csv("PRICES.csv",stringsAsFactors = F)
-  PRICES=PRICES%>%mutate(dolar.per.kg=PRICES[,match('Processor.Weighted.Average.Price',names(PRICES))],
-                         dolar.per.kg=as.numeric(gsub("\\$", "", dolar.per.kg)))%>%
-    mutate(SPECIES=as.numeric(ASA.Species.Code))
   a=left_join(a,PRICES,by="SPECIES")%>%
     mutate(ktch.price=dolar.per.kg*Total.ktch)%>%
     group_by(Same.return.SNo,VESSEL,METHOD)%>%
@@ -2468,6 +2798,207 @@ if(do.Historic)
     
   }
   
+  #8. Number of fishing days to catch one tonne of fish
+  
+    #8.1 Fit model to catch for shot=1
+  hndl.catch.per.shot=handl_OneDrive('Analyses/Parks Australia/outputs/Socio-economics/catch.per.shot') 
+    #Longlines
+  dis.hook.size=Data.daily.original%>%
+    filter(METHOD=="LL" & !is.na(species) &!is.na(HOOKS) & !is.na(HOURS) & SHOTS==1)%>%
+    mutate(Same.return.SNo=paste(DSNo,TSNo,SNo))%>%
+    distinct(Same.return.SNo,.keep_all=T)%>%
+    group_by(HookSize)%>%
+    tally()
+  dis.hook.size=dis.hook.size%>%filter(n==max(n,na.rm=T))%>%pull(HookSize)
+  
+  dis.hook.type=Data.daily.original%>%
+    filter(METHOD=="LL" & !is.na(species) &!is.na(HOOKS) & !is.na(HOURS) & SHOTS==1)%>%
+    mutate(Same.return.SNo=paste(DSNo,TSNo,SNo))%>%
+    distinct(Same.return.SNo,.keep_all=T)%>%
+    group_by(HookType)%>%
+    tally()
+  dis.hook.type=dis.hook.type%>%filter(n==max(n,na.rm=T))%>%pull(HookType)
+  
+  Shot.per.ton_LL=Data.daily.original%>%
+    filter(METHOD=="LL" & !is.na(species) &!is.na(HOOKS) & !is.na(HOURS) 
+           & SHOTS==1 & HookSize==dis.hook.size & !species%in%c(22998,22999))%>%
+    filter(HOOKS>=300)%>%
+    mutate(Same.return.SNo=paste(DSNo,TSNo,SNo),
+           zone=case_when(zone=='*'~'west',
+                          TRUE~zone))%>%
+    group_by(Same.return.SNo,VESSEL,depthMax,blockx,MONTH)%>%
+    summarise(landwt=sum(landwt),
+              HOURS=max(HOURS),
+              HOOKS=max(HOOKS))%>%
+    ungroup()%>%
+    mutate(blockx=factor(blockx),
+           VESSEL=factor(VESSEL))%>%
+    data.frame
+  
+  Mod.LL=gam(log(landwt)~blockx+s(VESSEL,bs='re')+s(depthMax)+s(MONTH, bs = "cc", k = 12)+s(HOURS)+HOOKS,
+             dat=Shot.per.ton_LL,family='gaussian',method="REML")
+  save_as_docx(as_flextable(Mod.LL),path = paste(hndl.catch.per.shot,'Model.LL.docx',sep='/'))
+  
+  fn.fctr=function(d,x) return(factor(names(which.max(table(d[,x]))),levels=levels(d[,x])))
+  fn.con=function(d,x) return(round(mean(d[,x])))
+  
+  Pred.LL=expand.grid(HOOKS=seq(min(100*round(Shot.per.ton_LL$HOOKS/100)),max(round(Shot.per.ton_LL$HOOKS)),by=10),
+                      HOURS=seq(1,14,by=1),
+                      VESSEL=fn.fctr(d=Shot.per.ton_LL,x='VESSEL'),
+                      blockx=fn.fctr(d=Shot.per.ton_LL,x='blockx'),
+                      depthMax=fn.con(d=Shot.per.ton_LL,x='depthMax'),
+                      MONTH=fn.con(d=Shot.per.ton_LL,x='MONTH'))
+  LL.preds=predict(Mod.LL,newdata=Pred.LL,type='response',se.fit=T)
+  Pred.LL=Pred.LL%>%
+    mutate(fit=LL.preds$fit,
+           se=LL.preds$se.fit,
+           Catch=exp(fit)*exp(se^2/2),
+           lower.CL=exp(fit-1.96*se)*exp(se^2/2),
+           upper.CL=exp(fit+1.96*se)*exp(se^2/2))
+  
+  Pred.LL%>%
+    mutate(Wrap.title=factor(paste(HOURS,'hour',sep='-'),levels=paste(1:14,'hour',sep='-')))%>%
+    ggplot(aes(HOOKS,Catch,color=Wrap.title))+
+    geom_point()+
+    geom_line(aes(HOOKS,lower.CL))+
+    geom_line(aes(HOOKS,upper.CL))+
+    facet_wrap(~Wrap.title)+ylab('Catch (kg)')+
+    theme_PA()+
+    theme(legend.position = 'none')
+  ggsave(paste(hndl.catch.per.shot,'Preds_LL.tiff',sep='/'), width = 10,height = 10,dpi = 300, compression = "lzw")
+  
+
+    #Gillnets
+  Shot.per.ton_GN=Data.daily.original%>%
+    filter(METHOD=="GN" & !is.na(species) &!is.na(NETLEN) & !is.na(HOURS) & SHOTS==1)%>%
+    filter(NETLEN>=600 & !species%in%c(22998,22999))%>%
+    mutate(Same.return.SNo=paste(DSNo,TSNo,SNo),
+           zone=case_when(zone=='*'~'west',
+                          TRUE~zone))%>%
+    group_by(Same.return.SNo,VESSEL,depthMax,blockx,MONTH)%>%
+    summarise(landwt=sum(landwt,na.rm=T),
+              HOURS=max(HOURS),
+              NETLEN=max(NETLEN))%>%
+    ungroup()%>%
+    mutate(blockx=factor(blockx),
+           VESSEL=factor(VESSEL))%>%
+    data.frame
+  
+  Mod.GN=gam(log(landwt)~blockx+s(VESSEL,bs='re')+s(depthMax)+s(MONTH, bs = "cc", k = 12)+s(HOURS)+NETLEN,
+             dat=Shot.per.ton_GN,family='gaussian',method="REML")  #takes 7 mins
+  save_as_docx(as_flextable(Mod.GN),path = paste(hndl.catch.per.shot,'Model.GN.docx',sep='/'))
+  
+  Pred.GN=expand.grid(NETLEN=seq(600,max(round(Shot.per.ton_GN$NETLEN)),by=100),
+                      HOURS=seq(1,24,by=1),
+                      VESSEL=fn.fctr(d=Shot.per.ton_GN,x='VESSEL'),
+                      blockx=fn.fctr(d=Shot.per.ton_GN,x='blockx'),
+                      depthMax=fn.con(d=Shot.per.ton_GN,x='depthMax'),
+                      MONTH=fn.con(d=Shot.per.ton_GN,x='MONTH'))
+  GN.preds=predict(Mod.GN,newdata=Pred.GN,type='response',se.fit=T)
+  Pred.GN=Pred.GN%>%
+    mutate(fit=GN.preds$fit,
+           se=GN.preds$se.fit,
+           Catch=exp(fit)*exp(se^2/2),
+           lower.CL=exp(fit-1.96*se)*exp(se^2/2),
+           upper.CL=exp(fit+1.96*se)*exp(se^2/2))
+  
+  Pred.GN%>%
+    mutate(Wrap.title=factor(paste(HOURS,'hour',sep='-'),levels=paste(1:24,'hour',sep='-')))%>%
+    ggplot(aes(NETLEN,Catch,color=Wrap.title))+
+    geom_point()+
+    geom_line(aes(NETLEN,lower.CL))+
+    geom_line(aes(NETLEN,upper.CL))+
+    facet_wrap(~Wrap.title)+ylab('Catch (kg)')+
+    theme_PA()+
+    theme(legend.position = 'none')
+  ggsave(paste(hndl.catch.per.shot,'Preds_GN.tiff',sep='/'), width = 10,height = 10,dpi = 300, compression = "lzw")
+  
+
+    #8.2 Scale average standardised catch to 1 tonne for most commonly used netlen and hooks and hours
+  #note: also consider soak time of whole day
+  mode <- function(codes) which.max(tabulate(codes))
+  #mode(round(Shot.per.ton_LL$HOOKS))
+  Pred.LL.one.tonne=Pred.LL%>%
+                    dplyr::select(-c(VESSEL,blockx,depthMax,MONTH,fit,se))%>%
+                    filter(HOURS%in%c(4) & 
+                           HOOKS==1000)%>%
+                    mutate(shot=c(1),
+                           Catch.day=shot*Catch,
+                           lower.CL.day=shot*lower.CL,
+                           upper.CL.day=shot*upper.CL,
+                           fishing.day.1.ton_Catch=1000/Catch.day,
+                           fishing.day.1.ton_Catch.lower=1000/lower.CL.day,
+                           fishing.day.1.ton_Catch.upper=1000/upper.CL.day)%>%
+    dplyr::select(HOOKS,HOURS,shot,fishing.day.1.ton_Catch,
+                  fishing.day.1.ton_Catch.lower,fishing.day.1.ton_Catch.upper)
+  write.csv(Pred.LL.one.tonne,paste(hndl.catch.per.shot,'Ndays_one.tone_LL.csv',sep='/'),row.names=F)
+  
+  Pred.GN.one.tonne=Pred.GN%>%
+                    dplyr::select(-c(VESSEL,blockx,depthMax,MONTH,fit,se))%>%
+                    filter(HOURS%in%c(8) & 
+                             NETLEN==mode(100*round(Shot.per.ton_GN$NETLEN/100)))%>%
+                    mutate(shot=c(2),
+                           Catch.day=shot*Catch,
+                           lower.CL.day=shot*lower.CL,
+                           upper.CL.day=shot*upper.CL,
+                           fishing.day.1.ton_Catch=1000/Catch.day,
+                           fishing.day.1.ton_Catch.lower=1000/lower.CL.day,
+                           fishing.day.1.ton_Catch.upper=1000/upper.CL.day)%>%
+    dplyr::select(NETLEN,HOURS,shot,fishing.day.1.ton_Catch,
+                  fishing.day.1.ton_Catch.lower,fishing.day.1.ton_Catch.upper)
+  write.csv(Pred.GN.one.tonne,paste(hndl.catch.per.shot,'Ndays_one.tone_GN.csv',sep='/'),row.names=F)
+  
+
+  #9. Catch composition by fishing method
+ Comp_LL=Data.daily.original%>%
+    filter(METHOD=="LL" & !is.na(species) & !species%in%c(22998,22999))%>%
+   group_by(species)%>%
+   summarise(landwt=sum(landwt,na.rm=T))%>%
+   ungroup()%>%
+   left_join(All.species.names%>%
+               distinct(CAAB_code,.keep_all=T)%>%
+               dplyr::select(CAAB_code,COMMON_NAME,Taxa),
+             by=c('species'='CAAB_code'))%>%
+   filter(!is.na(COMMON_NAME))%>%
+   mutate(prop=landwt/sum(landwt))
+ write.csv(Comp_LL,paste(hndl.catch.per.shot,'Composition_LL.csv',sep='/'),row.names=F)
+ Comp_LL%>%
+   ggplot(aes(COMMON_NAME,prop,fill=Taxa))+
+   geom_col()+
+   theme_PA()+
+   theme(legend.position = 'top',
+         legend.title = element_blank(),
+         axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+   xlab('')+ylab('Proportion')
+ ggsave(paste(hndl.catch.per.shot,'Composition_LL.tiff',sep='/'), 
+        width = 12,height = 8,dpi = 300, compression = "lzw")
+ 
+           
+  Comp_GN=Data.daily.original%>%
+    filter(METHOD=="GN" & !is.na(species) & !species%in%c(22998,22999))%>%
+    group_by(species)%>%
+    summarise(landwt=sum(landwt,na.rm=T))%>%
+    ungroup()%>%
+    left_join(All.species.names%>%
+                distinct(CAAB_code,.keep_all=T)%>%
+                dplyr::select(CAAB_code,COMMON_NAME,Taxa),
+              by=c('species'='CAAB_code'))%>%
+    filter(!is.na(COMMON_NAME) & Taxa%in%c('Elasmobranch','Teleost'))%>%
+    mutate(prop=landwt/sum(landwt))
+  write.csv(Comp_GN,paste(hndl.catch.per.shot,'Composition_GN.csv',sep='/'),row.names=F)
+  Comp_GN%>%
+    ggplot(aes(COMMON_NAME,prop,fill=Taxa))+
+    geom_col()+
+    theme_PA()+
+    theme(legend.position = 'top',
+          legend.title = element_blank(),
+          axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))+
+    xlab('')+ylab('Proportion')
+  ggsave(paste(hndl.catch.per.shot,'Composition_GN.tiff',sep='/'), 
+         width = 12,height = 8,dpi = 300, compression = "lzw")
+  
+  
+  
 }
 #---------Manipulate PA observer TEPS ------------
 TEPS.code_contact=data.frame(contact.code=c('WWC','BFC','WER','WEN','WDNN','WDNF','WDDN','WDDF'),
@@ -2495,22 +3026,22 @@ TEPS.code_behav=data.frame(sighting.behav=c('INT','IRR','DES','ROW'),
 
 TEPS<-TEPS%>%
   dplyr::rename(sheet_no="Sheet #",
-         ves.act="Ves act",
-         obs.sector="Obs sector",
-         common.name="Common name",
-         sighting.period="Period",
-         sighting.dist="Dist",
-         sighting.count.method="Count method",
-         sighting.count="Count",
-         sighting.behav="Behav",
-         gear.type="Gear type",
-         hook.type="Hook type",
-         hook.size="Hook size",
-         snood.type="Snood type",
-         contact.code="Contact code",
-         contact.count="Contact count",
-         disc.prey="Disc prey",
-         steam.away="Steam away")%>%
+                 ves.act="Ves act",
+                 obs.sector="Obs sector",
+                 common.name="Common name",
+                 sighting.period="Period",
+                 sighting.dist="Dist",
+                 sighting.count.method="Count method",
+                 sighting.count="Count",
+                 sighting.behav="Behav",
+                 gear.type="Gear type",
+                 hook.type="Hook type",
+                 hook.size="Hook size",
+                 snood.type="Snood type",
+                 contact.code="Contact code",
+                 contact.count="Contact count",
+                 disc.prey="Disc prey",
+                 steam.away="Steam away")%>%
   mutate(contact.code=ifelse(contact.code=="WEN/ WWC" & sheet_no=='PA0036',NA,contact.code))%>%
   data.frame%>%
   filter(!is.na(contact.code))%>%
@@ -2618,6 +3149,8 @@ Video.net.interaction=Video.net.interaction%>%
                                         Code == 10000910 ~"Sponges"),
                      Period=tolower(Period),
                      Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                     OpCode=case_when(OpCode=='Augusta_Gillnet_PA00013_Camera_#S1'~'Augusta_Gillnet_PA0013_Camera_#S1',
+                                      TRUE~ OpCode),   
                      sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
                      Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)),
                      Escape2=ifelse(Escape=='landed',NA,Escape),
@@ -2650,6 +3183,8 @@ Video.longline.interaction=Video.longline.interaction%>%
                                         Code == 10000910 ~"Sponges"),
                      Period=tolower(Period),
                      Depth=as.numeric(gsub("[^0-9.-]", "", Depth)),
+                     OpCode=case_when(OpCode=='Augusta_longline_PA20024_Camera_#2'~'Augusta_longline_PA0024_Camera_#2',
+                                      TRUE~ OpCode),
                      sheet_no=sapply( strsplit( OpCode, "_" ), "[", 3),
                      Camera=paste("Camera",sapply( strsplit(OpCode, "_" ), "[", 5)),
                      Escape2=ifelse(Escape=='landed',NA,Escape),
@@ -2741,12 +3276,35 @@ DATA=DATA%>%
          tw=ifelse(!is.na(a_weight) & !is.na(tl),a_weight*tl^b_weight,NA),
          tw=ifelse(tw>2500,NA,tw))
 
+#set to average weight if no size information
+DATA=DATA%>%
+  group_by(common_name,method)%>%
+  mutate(tw.average=mean(tw,na.rm=T))%>%
+  ungroup()%>%
+  mutate(tw=ifelse(is.na(tw),tw.average,tw))
 
+#---------Number of fishing days and shots by zone ------------
+N.fshn=DATA%>%distinct(sheet_no,.keep_all=T)
+Tab.n.fshn.days=table(N.fshn$date,N.fshn$zone,useNA = 'ifany')
+N.fshn.days=Tab.n.fshn.days
+N.fshn.days[N.fshn.days>0]=1
+colSums(N.fshn.days)
+
+table(N.fshn$method,useNA = 'ifany')
+table(N.fshn$method,N.fshn$zone,useNA = 'ifany')
+
+N.fshn%>%
+  filter(skipper=='Tim Goodall' & method=="GN")%>%
+  dplyr::select(date,sheet_no,net_length)%>%
+  data.frame()%>%arrange(date,sheet_no)  #Tim split the net in 2 and 1 km
+
+with(subset(N.fshn,zone=="Zone2"),table(method,skipper,useNA = 'ifany'))
 #---------Observer catch composition ------------ 
 # Map of sampling sites
 do.map=FALSE
 if(do.map)
 {
+  library(grDevices)
   library(PBSmapping)
   Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
   Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
@@ -2756,6 +3314,11 @@ if(do.map)
   xbat=sort(unique(Bathymetry$V1))
   ybat=sort(unique(Bathymetry$V2)) 
   reshaped=as.matrix(reshape(Bathymetry,idvar="V1",timevar="V2",v.names="V3", direction="wide"))
+  
+  library(rgdal)
+  SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+  SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+  WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/WCDGDLL.shp"), layer="WCDGDLL") 
   
   #Spatial range
   #Lat.range=round(c(min(DATA$mid.lat)-1,max(DATA$mid.lat)+1))
@@ -2777,6 +3340,18 @@ if(do.map)
   #plot shots' Sampling site locations 
   plotMap(worldLLhigh, xlim=Long.range,ylim=Lat.range,axes=F,
           col="dark grey",tck = 0.025, tckMinor = 0.0125, xlab="",ylab="")
+  
+  #add zones
+  plot(WCDGDLL,add=T,col="aquamarine3")
+  text(114,-31,"West coast",srt=90,cex=1.5)
+  
+  plot(SDGDLL_zone1,add=T,col="deepskyblue3")
+  text(114.5,-35,"(Zone 1)",cex=1.5,srt=-45)
+  
+  plot(SDGDLL_zone2,add=T,col="chartreuse3")
+  text(118,-35.75,"(Zone 2)",cex=1.5)
+  
+  
   points(Sites$mid.long,Sites$mid.lat,col='black',pch=21,bg=Sites$Col,cex=1.25)
   
   #add bathymetry
@@ -2950,7 +3525,7 @@ for(z in 1:length(dis.zoun))
 mtext("Proportion of total catch",1,outer=T,line=0.1,cex=1.2) 
 dev.off()
 
-    #by LL configuration 
+  #by LL configuration 
 LL.configs=DATA%>%
   filter(method=="LL")%>%
   filter(!(is.na(hooktype)| is.na(hooksize) | is.na(wiretrace)))%>%
@@ -2969,6 +3544,27 @@ for(i in 1:length(LL.configs))
 }
 mtext("Proportion of total catch",1,outer=T,line=0.1,cex=1.2) 
 dev.off()
+
+  #by snood
+nn=DATA%>%
+  filter(method=="LL")%>%
+  filter(!(is.na(hooktype)| is.na(hooksize) | is.na(wiretrace)))%>%
+  group_by(wiretrace)%>%
+  tally()%>%pull(wiretrace)
+fn.fig(le.paste("Observer/catch_comp/Catch.comp_by_snood"),2400,1800)
+smart.par(length(nn),MAR=c(2,10.5,1,.1),OMA=c(1,.1,.5,.8),MGP=c(1.5,.5,0))
+par(cex.axis=.9)
+for(i in 1:length(nn))
+{
+  d=DATA%>%
+    filter(method=="LL" & wiretrace==nn[i])
+  fn.brplt(d=d,Grouped.species=Grouped.species.LL,CX.nm=.7)
+  mtext(paste(nn[i]," (",nrow(d)," individuals)",sep=""),3,cex=.6)
+  rm(d)
+}
+mtext("Proportion of total catch",1,outer=T,line=0.1,cex=1.2) 
+dev.off()
+
 
     #Multivariate stats  
 UNIK.gear.zone=unique(paste(DATA$method,DATA$zone))
@@ -3004,9 +3600,15 @@ rm(Community)
 dumi=DATA%>%
   filter(common_name%in%Main.species)%>%
   mutate(size=Size)
-Sumri=dumi %>% group_by(common_name,Taxa,method) %>% 
-  summarise(n=sum(number),size=median(size,na.rm=T))%>%
-  filter(n>2)
+Sumri=dumi %>%
+  group_by(common_name,Taxa,method) %>% 
+  summarise(n=sum(number),
+            Min=min(size,na.rm=T),
+            Max=max(size,na.rm=T),
+            size=median(size,na.rm=T))%>%
+  filter(n>2)%>% 
+  ungroup()%>%
+  mutate_if(is.numeric, round)
 
 fn.fig(le.paste("Observer/size/Size.density.dist.main.sp_GN_LL"),2400,1600)
 dumi%>%
@@ -3019,7 +3621,7 @@ ggplot(aes(x = size, y = common_name,fill=Taxa)) +
   theme_PA(leg.siz=13,axs.t.siz=12,axs.T.siz=14)+
   theme(legend.position = "top",
         legend.title = element_blank())+
-   geom_text(data=Sumri,aes(label=paste('n= ',n,', median= ',round(size)," cm",sep='')),
+   geom_text(data=Sumri,aes(label=paste('n= ',n,', median= ',size,' (',Min,'-',Max,')',sep='')),
              position=position_nudge(y=-0.1), colour="black", size=3)
 dev.off()
 
@@ -3196,7 +3798,7 @@ for(m in 1:length(this.sp.sizes))
   
 }
 fn.fig(le.paste("Observer/size/Standardized_Size_Method"),2400,2400)
-fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
+out=fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
                            mutate(species=factor(species,levels=this.sp.sizes),
                                   x=method,
                                   y=emmean,
@@ -3205,8 +3807,8 @@ fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
                          YLAB="Relative standardized size",
                          XLAB='Method',
                          cex=14,
-                          Relative="Yes",
-                NROW=3)
+                         Relative="Yes",
+                         NROW=3)
 dev.off()
 
   #Longline configuration effect
@@ -3227,7 +3829,7 @@ for(m in 1:length(this.sp.sizes))
   Tab=D%>%
     group_by(hooksize)%>%
     tally()%>%
-    mutate(n=ifelse(n>=15,1,0))
+    mutate(n=ifelse(n>=10,1,0))
   if(sum(Tab$n)>1)
   {
     a=fn.glm.size(d=D,  
@@ -3252,7 +3854,7 @@ fun.list.out=function(LIS,what)
 
     #Hook size
 fn.fig(le.paste("Observer/size/Standardized_Size_Hook.size"),2000,1400)
-fn.barplot.cpue(d=fun.list.out(LIS=Store,what='hooksize')%>%
+out=fn.barplot.cpue(d=fun.list.out(LIS=Store,what='hooksize')%>%
                            mutate(species=factor(species,levels=this.sp.sizes),
                                   x=hooksize,
                                   y=emmean,
@@ -3266,7 +3868,7 @@ dev.off()
 
       #Hook type
 fn.fig(le.paste("Observer/size/Standardized_Size_Hook.type"),1400,2400)
-fn.barplot.cpue(d=fun.list.out(LIS=Store,what='hooktype')%>%
+out=fn.barplot.cpue(d=fun.list.out(LIS=Store,what='hooktype')%>%
                            mutate(species=factor(species,levels=this.sp.sizes),
                                   x=hooktype,
                                   y=emmean,
@@ -3280,26 +3882,26 @@ dev.off()
 
 
     #Wire trace
-fn.fig(le.paste("Observer/size/Standardized_Size_Snood.type"),2000,2000)
-fn.barplot.cpue(d=fun.list.out(LIS=Store,what='wiretrace')%>%
-                  mutate(species=factor(species,levels=this.sp.sizes),
-                         x=wiretrace,
-                         y=emmean,
-                         fill=wiretrace,
-                         facet=species),
-                YLAB="Relative standardized size",
-                XLAB='Hook type',
-                cex=14,
-                Relative="Yes")
-dev.off()
+if(!is.null(fun.list.out(LIS=Store,what='wiretrace')))
+{
+  fn.fig(le.paste("Observer/size/Standardized_Size_Snood.type"),2000,2000)
+  out=fn.barplot.cpue(d=fun.list.out(LIS=Store,what='wiretrace')%>%
+                        mutate(species=factor(species,levels=this.sp.sizes),
+                               x=wiretrace,
+                               y=emmean,
+                               fill=wiretrace,
+                               facet=species),
+                      YLAB="Relative standardized size",
+                      XLAB='Hook type',
+                      cex=14,
+                      Relative="Yes")
+  dev.off()
+}
+
 
 #---------Observer cpue ------------ 
-MeanSE <- function(x)
-{
-  v <- c(mean(x) - sd(x)/sqrt(length(x)), mean(x), mean(x) + sd(x)/sqrt(length(x)))
-  names(v) <- c("ymin", "middle", "ymax")
-  v
-}
+
+#fix a few records where sum of hook combos > n.hooks due to gear loss
 fn.method.zone=function(what,GN.scale,LL.scale)
 {
   p=DATA%>%
@@ -3307,8 +3909,8 @@ fn.method.zone=function(what,GN.scale,LL.scale)
     mutate(zone=tolower(zone),
            methodzone=paste(method,zone),
            Effort=ifelse(method=="GN",1000*net_length*soak.time,  #net length in m
-                         ifelse(method=="LL",n.hooks*soak.time,
-                                NA)),
+                  ifelse(method=="LL",n.hooks*soak.time,
+                  NA)),
            common_name=case_when(!common_name%in%what~'Other',
                                  TRUE~common_name))%>%
     filter(common_name%in%c(what,'Other'))%>%  #add 'other' species to account for all shots
@@ -3336,26 +3938,26 @@ fn.method.zone=function(what,GN.scale,LL.scale)
            SE=SD/sqrt(N))%>%
     ungroup()%>%
     ggplot(aes(x=methodzone, y=cpue1)) + 
-    geom_boxplot(outlier.size = 1,aes(fill=Taxa),alpha=.3)+ 
+    geom_boxplot(outlier.size = 1,aes(fill=Taxa),alpha=.4)+ 
     coord_flip()+
     facet_wrap(~common_name,ncol=2,scales='free_x')+
-    ylab(paste("Catch rate per session (Kg per ",GN.scale," m hour or ",LL.scale," hook hour)",sep=''))+
+    ylab(paste("Catch rate per session (kg per ",GN.scale," m hour or ",LL.scale," hook hour)",sep=''))+
     xlab("")+ 
     theme_PA(strx.siz=12,leg.siz=12,axs.t.siz=12,axs.T.siz=14)+
     theme(legend.position="none")+
     scale_fill_manual(values=c(Teleost="firebrick",Elasmobranch="steelblue"))+
-    stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
+    #stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
     stat_summary(fun=mean, geom="point", shape=21, size=2, color="darkgreen", fill="darkgreen")+
     scale_y_sqrt()
   return(p)
 }
 
-#1. Main commercial
+#1. Main commercial 
     #1.a. By method-zone 
 fn.fig(le.paste("Observer/catch_rates/CPUE.main.sp_GN_LL_y_sqrt"),2400,2000)
 fn.method.zone(what=Main.species,
-               GN.scale=900,
-               LL.scale=300)
+               GN.scale=cpue.scaler,
+               LL.scale=cpue.scaler)
 dev.off()
 
 
@@ -3365,7 +3967,7 @@ fn.LL.config=function(what,LL.scale)
   p=DATA%>%
     filter(LL.config%in%LL.configs)%>%
     mutate(Effort=ifelse(method=="GN",1000*net_length*soak.time,  #net length in m
-                         ifelse(method=="LL",n.hooks*soak.time,
+                  ifelse(method=="LL",Effort.hook.combo,
                                 NA)),
            common_name=case_when(!common_name%in%what~'Other',
                                  TRUE~common_name))%>%
@@ -3392,14 +3994,14 @@ fn.LL.config=function(what,LL.scale)
            SE=SD/sqrt(N))%>%
     ungroup()%>%
     ggplot(aes(x=LL.config, y=cpue1)) + 
-    geom_boxplot(outlier.size = 1,aes(fill=Taxa),alpha=.3)+ 
+    geom_boxplot(outlier.size = 1,aes(fill=Taxa),alpha=.4)+ 
     coord_flip()+
     facet_wrap(~common_name,ncol=2,scales='free_x')+
-    ylab(paste("Catch rate per session (Kg per ",LL.scale," hook hour)",sep=''))+xlab("")+ 
+    ylab(paste("Catch rate per session (kg per ",LL.scale," hook hour)",sep=''))+xlab("")+ 
     theme_PA(strx.siz=12,leg.siz=12,axs.t.siz=12,axs.T.siz=14)+
     theme(legend.position="none")+
     scale_fill_manual(values=c(Teleost="firebrick",Elasmobranch="steelblue"))+
-    stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
+    #stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
     stat_summary(fun=mean, geom="point", shape=21, size=2, color="darkgreen", fill="darkgreen")+
     scale_y_sqrt()+scale_x_discrete(position = "top")
   return(p)
@@ -3412,7 +4014,7 @@ Display.these=DATA%>%     #select what species to display
   tally()%>%ungroup()%>%filter(n>=20)%>%pull(common_name)
 fn.fig(le.paste("Observer/catch_rates/CPUE.main.sp_LL.configuration_y_sqrt"),2400,2000)
 fn.LL.config(what=Display.these,
-             LL.scale=300)
+             LL.scale=cpue.scaler)
 dev.off()
 
   #1.c  Longline catch rate by shot and fisher to inspect learning behavior
@@ -3448,9 +4050,9 @@ fn.ll.cpue.shot=function(what,LL.scale)
     geom_point(size=2)+
     geom_line(alpha=0.5,linetype = "dashed")+
     facet_wrap(~common_name,scales='free')+
-    ylab(paste("Catch rate per session (Kg per ",LL.scale," hook hour)",sep=''))+
+    ylab(paste("Catch rate per session (kg per ",LL.scale," hook hour)",sep=''))+
     theme_PA(strx.siz=12,leg.siz=12,axs.t.siz=12,axs.T.siz=14)+
-    theme(legend.position="top")
+    theme(legend.position="top")+scale_y_sqrt()
   return(p)
 }
 fn.fig(le.paste("Observer/catch_rates/CPUE.main.sp_by.shot_vessel"),2400,2000)
@@ -3458,39 +4060,91 @@ fn.ll.cpue.shot(what=Main.species,LL.scale=300)
 dev.off()
 
   #1.d. Standardization
-do.standard=FALSE
+do.standard=TRUE
 if(do.standard)
 {
-  fn.reshape.cpue=function(d,Where)
+  fn.reshape.cpue=function(d,Where,resvar)
   {
-    d=d%>%
-      mutate(Effort=ifelse(method=="GN",1000*net_length*soak.time,  #net length in m
-                           ifelse(method=="LL",n.hooks*soak.time,
+    d1=d%>%
+      mutate(Effort=NA,
+             Effort=ifelse(method=="GN",1000*net_length*soak.time,  #net length in m
+                           ifelse(method=="LL",Effort.hook.combo.infered,  #effort by snood combo   
                                   NA)),
              common_name=case_when(!common_name%in%Where~'Other',
                                    TRUE~common_name))%>%
       filter(common_name%in%c(Where,'Other'))%>%  #add 'other' species to account for all shots
-      group_by(sheet_no,method,common_name,hooktype, hooksize, wiretrace,mid.lat,mid.long,zone)%>%
-      summarise(Weight=sum(tw,na.rm=T),
+      group_by(sheet_no,method,common_name,hooktype,hooksize,wiretrace,zone)%>%
+      summarise(Weight=sum(!!sym(resvar),na.rm=T),
                 Effort=max(Effort))%>%
       ungroup()%>%
       spread(common_name,Weight,fill=0)%>%  #add 0 records
-      gather(common_name,Weight,-c(sheet_no,method,Effort,hooktype, hooksize, wiretrace,mid.lat,mid.long,zone))%>%
+      gather(common_name,Weight,-c(sheet_no,method,Effort,hooktype,hooksize,wiretrace,zone))%>%
       filter(!common_name=='Other')%>%
       left_join(d%>%distinct(common_name,Taxa),by='common_name')%>%
       mutate(cpue=Weight/Effort,
-             cpue1=ifelse(method=="GN",cpue*cpue.scaler,   # (comparable cpue 3000 m GN = 1000 m LL)
+             cpue1=ifelse(method=="GN",cpue*cpue.scaler,   # (overall hook:gillnet is 1:3, Rory pers com)
                           ifelse(method=="LL",cpue*cpue.scaler,
                                  NA)),
              colr=ifelse(Taxa=='Teleost',"firebrick",
-                         ifelse(Taxa=='Elasmobranch',"steelblue",NA)))%>%
-      filter(!is.na(Effort))%>%
-      filter(Effort>0)
-    return(d)
+                         ifelse(Taxa=='Elasmobranch',"steelblue",NA)))
+    return(d1)
   }
-  cpue.data.GN=fn.reshape.cpue(d=DATA%>%filter(method=="GN"),Where=Main.species)
-  cpue.data.LL=fn.reshape.cpue(d=DATA%>%filter(method=="LL"),Where=Main.species)
+    #cpue in kg
+  cpue.data.GN=fn.reshape.cpue(d=DATA%>%filter(method=="GN"),
+                               Where=Main.species,
+                               resvar='tw')%>%
+                                          filter(!is.na(Effort))%>%
+                                          filter(Effort>0)
+                
+  cpue.data.LL=fn.reshape.cpue(d=DATA%>%filter(method=="LL"),
+                               Where=Main.species,
+                               resvar='tw')%>%
+                                          filter(!is.na(Effort))%>%
+                                          filter(Effort>0)
   
+  cpue.data.LL%>%
+    ggplot(aes(wiretrace,cpue1))+
+    stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
+    stat_summary(fun=mean, geom="point", shape=21, size=2, color="darkgreen", fill="darkgreen")+
+    facet_wrap(~common_name, scales='free')+ylab('Catch rate (Kg per 1 m hour or 1 hook hour)')
+  do.snood.shark.only=FALSE
+  if(do.snood.shark.only)
+  {
+    Main.shark.species=Main.species[1:4]
+    cpue.stand.snood=vector('list',length(Main.shark.species))
+    names(cpue.stand.snood)=Main.shark.species
+    for(m in 1:length(cpue.stand.snood))
+    {
+      D=cpue.data.LL%>%
+        filter(common_name==Main.shark.species[m] & !is.na(zone))%>%
+        filter(!is.na(wiretrace))%>%
+        mutate(wiretrace=as.factor(wiretrace))
+      cpue.stand.snood[[m]]=cpue.stand.fun(d=D,Formula=formula(cpue1~wiretrace))  
+      as_flextable(cpue.stand.snood[[m]]$mod)
+    }
+  }
+
+  
+    #cpue in numbers
+  cpue.data.GN.number=fn.reshape.cpue(d=DATA%>%filter(method=="GN"),
+                                      Where=Main.species,
+                                      resvar='number')%>%
+                                          filter(!is.na(Effort))%>%
+                                          filter(Effort>0)
+  
+  cpue.data.LL.number=fn.reshape.cpue(d=DATA%>%filter(method=="LL"),
+                                      Where=Main.species,
+                                      resvar='number')%>%
+                                          filter(!is.na(Effort))%>%
+                                          filter(Effort>0)
+  
+  cpue.data.LL.number%>%
+    ggplot(aes(wiretrace,cpue1))+
+    stat_summary(fun.data=MeanSE, geom="errorbar", color="darkgreen",alpha=1,aes(width=0.5))+
+    stat_summary(fun=mean, geom="point", shape=21, size=2, color="darkgreen", fill="darkgreen")+
+    facet_wrap(~common_name, scales='free')+ylab('Catch rate (Numbers per 1 m hour or 1 hook hour)')
+  
+
   #1.b.1 fit GAM
   cpue.stand.out.GN=vector('list',length(Main.species))
   names(cpue.stand.out.GN)=Main.species
@@ -3504,34 +4158,42 @@ if(do.standard)
     {
       print(paste(Main.species[m],'GN GAM-------------'))
       D=cpue.data.GN%>%
-        filter(common_name==Main.species[m])%>%
+        filter(common_name==Main.species[m] & !is.na(zone))
+      TAB=D%>%group_by(zone)%>%summarise(min=min(cpue1),max=max(cpue1))%>%filter(max>0)%>%pull(zone)
+      D=D%>%
+        filter(zone%in%TAB)%>%
         mutate(zone=as.factor(zone))
-      
       cpue.stand.out.GN[[m]]=cpue.stand.fun(d=D,Formula=GN.form)  
-      
+      rm(TAB)
       
       print(paste(Main.species[m],'LL GAM-------------'))
       D=cpue.data.LL%>%
-        filter(common_name==Main.species[m])%>%
+        filter(common_name==Main.species[m] & !is.na(zone))%>%
         filter(!is.na(hooktype))%>%
         filter(!is.na(wiretrace))%>%
-        filter(!is.na(hooksize))%>%
-        mutate(wiretrace=as.factor(wiretrace),
-               hooktype=as.factor(hooktype),
-               hooksize=factor(hooksize),
-               zone=as.factor(zone))
-      form=LL.form
-      if(nrow(D)>0)cpue.stand.out.LL[[m]]=cpue.stand.fun(d=D,Formula=form)  
-      
-      
-      
+        filter(!is.na(hooksize))
+      if(nrow(D)>0)
+      {
+        TAB=D%>%group_by(zone)%>%summarise(min=min(cpue1),max=max(cpue1))%>%filter(max>0)%>%pull(zone)
+        D=D%>%
+          filter(zone%in%TAB)%>%
+          mutate(wiretrace=as.factor(wiretrace),
+                 hooktype=as.factor(hooktype),
+                 hooksize=factor(hooksize),
+                 zone=as.factor(zone))
+        form=LL.form
+        if(length(TAB)==1) form=formula(cpue1~hooktype+hooksize+wiretrace)
+        if(nrow(D)>0 & !Main.species[m]=="Queen snapper" )cpue.stand.out.LL[[m]]=cpue.stand.fun(d=D,Formula=form)  
+        rm(TAB)
+        
+      }
     }
   })   #takes 30 secs
   #gam.check(cpue.stand.out[[m]])
   
   
   #1.b.2 export anova table
-  fn.wrp=function(NM,ext)le.paste(paste("Observer/catch_rates",paste('GAM_Anova_',NM,ext,sep=''),sep='/'))
+  fn.wrp=function(NM,ext)le.paste(paste("Observer/catch_rates/GAM_Anova",paste(NM,ext,sep=''),sep='/'))
   for(m in 1:length(Main.species))
   {
     NM=Main.species[m]
@@ -3540,7 +4202,7 @@ if(do.standard)
     print(paste(Main.species[m],'GN GAM Anova-------------'))
     ft <- as_flextable(cpue.stand.out.GN[[m]]$mod)
     save_as_image(ft, path = fn.wrp(NM,'.GN.png'))
-    save_as_docx(ft,path =  fn.wrp(NM,'.GN.docx'))
+    #save_as_docx(ft,path =  fn.wrp(NM,'.GN.docx'))
     rm(ft)
     
     #LL
@@ -3549,7 +4211,7 @@ if(do.standard)
     {
       ft <- as_flextable(cpue.stand.out.LL[[m]]$mod)
       save_as_image(ft, path = fn.wrp(NM,'.LL.png'))
-      save_as_docx(ft,path = fn.wrp(NM,'.LL.docx'))
+      #save_as_docx(ft,path = fn.wrp(NM,'.LL.docx'))
       rm(ft)
     }
     rm(NM)
@@ -3595,9 +4257,13 @@ if(do.standard)
     LL=NULL
     if(!is.null(cpue.stand.out.LL[[m]]))
     {
-      LL=pred.fun(mod=cpue.stand.out.LL[[m]]$mod,biascor="NO",PRED=c('zone'))%>%
-        mutate(method="LL",
-               species=SP)
+      if('zone'%in%labels(terms(cpue.stand.out.LL[[m]]$mod)))
+      {
+        LL=pred.fun(mod=cpue.stand.out.LL[[m]]$mod,biascor="NO",PRED=c('zone'))%>%
+          mutate(method="LL",
+                 species=SP)
+      }
+      
       
       #Hook type
       if(Main.species[m]%in%Get.hook.type.Pred)
@@ -3625,27 +4291,30 @@ if(do.standard)
   }
   
   #Method-zone
-  fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone"),2600,1600)
-  fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
+  fn.tit=function(x) paste("Standardized catch rate (kg per ",x," m hour or ",x," hook hour)",sep='')
+  fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone_y_sqrt"),2600,1600)
+  out=fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
                     mutate(method.zone=paste(method,zone,sep='-'),
                            species=factor(species,levels=Main.species),
                            x=method.zone,
                            y=response,
                            fill=method.zone,
                            facet=species),
-                  YLAB="Standardized catch rate (kg per 1000 m hour / 1000 hook hour)",
+                  YLAB=fn.tit(cpue.scaler),
                   XLAB='Fishing method and zone',
-                  cex=10,
+                  cex=12,
                   Rotate="Yes",
-                  Relative="No")
+                  Relative="No",
+                  Y_sqrt="YES")
   dev.off()
+  write.csv(out,le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone.csv"),row.names = F)
   
   #Hooksize  
   d=do.call(rbind,Store.hook.size)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_hooksize"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                       mutate(species=factor(species,levels=Main.species),
                              x=hooksize,
                              y=response,
@@ -3664,7 +4333,7 @@ if(do.standard)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_hooktype"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                       mutate(species=factor(species,levels=Main.species),
                              x=hooktype,
                              y=response,
@@ -3683,7 +4352,7 @@ if(do.standard)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_snood"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                       mutate(species=factor(species,levels=Main.species),
                              x=wiretrace,
                              y=response,
@@ -3696,10 +4365,60 @@ if(do.standard)
     dev.off()
   }
   
+  
+  #Test snood characteristics separately
+  #note: no different than combined gam
+  do.seprt=FALSE
+  if(do.seprt)
+  {
+    fn.test.longline=function(d,Where,var,efforvar)
+    {
+      d1=d%>%  
+        mutate(Effort=!!sym(efforvar),
+               common_name=case_when(!common_name%in%Where~'Other',
+                                     TRUE~common_name))%>%
+        filter(common_name%in%c(Where,'Other'))%>%  #add 'other' species to account for all shots
+        group_by(sheet_no,method,common_name,!!sym(var))%>%
+        summarise(Weight=sum(tw,na.rm=T),
+                  Effort=max(Effort))%>%
+        ungroup()%>%
+        spread(common_name,Weight,fill=0)%>%  #add 0 records
+        gather(common_name,Weight,-c(sheet_no,method,Effort,!!sym(var)))%>%
+        filter(!common_name=='Other')%>%
+        left_join(d%>%distinct(common_name,Taxa),by='common_name')%>%
+        mutate(cpue=Weight/Effort,
+               cpue1=cpue*cpue.scaler,
+               colr=ifelse(Taxa=='Teleost',"firebrick",
+                           ifelse(Taxa=='Elasmobranch',"steelblue",NA)))%>%
+        filter(!is.na(Effort))%>%
+        filter(Effort>0)%>%
+        mutate(Term=factor(!!sym(var)))
+      
+      this.sp=subset(Main.species,!Main.species%in%c("Blue groper","Queen snapper"))  
+      MODS=vector('list',length(this.sp))
+      names(MODS)=this.sp
+      form=formula(paste('cpue',var,sep = '~'))
+      for(s in 1:length(MODS))  MODS[[s]]=gam(form,dat=d1%>%filter(common_name==names(MODS)[s]),family=tw,method="REML")
+      #for(s in 1:length(MODS))  MODS[[s]]=glm(form,dat=d1%>%filter(common_name==names(MODS)[s] &cpue1>0),family='gaussian')
+      
+      return(list(data=d1,MODS=MODS))
+      
+    }
+    
+    Wire.mod=fn.test.longline(d=DATA%>%filter(method=="LL"),Where=Main.species,
+                              var='wiretrace',efforvar='Effort.wire.infered')
+    Hooksize.mod=fn.test.longline(d=DATA%>%filter(method=="LL"),Where=Main.species,
+                                  var='hooksize',efforvar='Effort.hooksize.infered')
+    Hooktype.mod=fn.test.longline(d=DATA%>%filter(method=="LL"),Where=Main.species,
+                                  var='hooktype',efforvar='Effort.hooktype.infered')
+    as_flextable(Hooktype.mod$MODS[[6]])
+    Hooktype.mod$data%>%ggplot(aes(Term,cpue1))+geom_boxplot()+facet_wrap(~common_name)
+    
+  }
 }
 
 
-#2. Main discarded
+#2. Main discarded   
 Main.discards=DATA%>%
   filter(!is.na(Code))%>%
   group_by(common_name,retainedflag)%>%
@@ -3712,11 +4431,14 @@ Main.discards=DATA%>%
   filter(Cumsum<.9)%>%
   pull(common_name)
 
+if("Guitarfish & shovelnose rays"%in%Main.discards)Main.discards=Main.discards[-match("Guitarfish & shovelnose rays",Main.discards)]
+
+
   #2.a. By method-zone
 fn.fig(le.paste("Observer/catch_rates/CPUE.main.sp.discarded_GN_LL_y_sqrt"),2400,2000)
 fn.method.zone(what=Main.discards,
-               GN.scale=900,
-               LL.scale=300)
+               GN.scale=cpue.scaler,
+               LL.scale=cpue.scaler)
 dev.off()
 
   #2.b. by LL configuration
@@ -3727,7 +4449,7 @@ Display.these=DATA%>%     #select what species to display
   tally()%>%ungroup()%>%filter(n>=20)%>%pull(common_name)
 fn.fig(le.paste("Observer/catch_rates/CPUE.main.sp.discarded_LL.configuration_y_sqrt"),2400,2200)
 fn.LL.config(what=Display.these,
-             LL.scale=300)
+             LL.scale=cpue.scaler)
 dev.off()
 
   #2.c. Standardization
@@ -3744,8 +4466,8 @@ if(Do.disc.cpue)
   # This.disc=subset(This.disc,!This.disc%in%c(Main.species,"Stingrays"))
   This.disc=c("Buffalo bream","Dusky morwong","Port Jackson","Southern eagle ray")
   
-  cpue.data.GN=fn.reshape.cpue(d=DATA%>%filter(method=="GN"),Where=This.disc)
-  cpue.data.LL=fn.reshape.cpue(d=DATA%>%filter(method=="LL"),Where=This.disc)
+  cpue.data.GN=fn.reshape.cpue(d=DATA%>%filter(method=="GN"),Where=This.disc,resvar='tw')
+  cpue.data.LL=fn.reshape.cpue(d=DATA%>%filter(method=="LL"),Where=This.disc,resvar='tw')
   
   #5.c.1 fit GAM
   cpue.stand.out.GN=vector('list',length(This.disc))
@@ -3876,27 +4598,29 @@ if(Do.disc.cpue)
   }
   
   #Method-zone
-  fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone_discards"),2600,1600)
-  fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
+  fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone_discards_y_sqrt"),2600,1600)
+  out=fn.barplot.cpue(d=do.call(rbind,Store.zone.method)%>%
                              mutate(method.zone=paste(method,zone,sep='-'),
                                     species=factor(species,levels=This.disc),
                                     x=method.zone,
                                     y=response,
                                     fill=method.zone,
                                     facet=species),
-                           YLAB="Standardized catch rate (kg per 1000 m hour / 1000 hook hour)",
+                           YLAB=fn.tit(cpue.scaler),
                            XLAB='Fishing method and zone',
                            cex=10,
                            Rotate="Yes",
-                           Relative="No")
+                           Relative="No",
+                           Y_sqrt='YES')
   dev.off()
+  write.csv(out,le.paste("Observer/catch_rates/Standardized_Catch rates_Method.zone_discards.csv"),row.names = F)
   
   #Hooksize
   d=do.call(rbind,Store.hook.size)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_hooksize_discards"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                       mutate(species=factor(species,levels=This.disc),
                              x=hooksize,
                              y=response,
@@ -3914,7 +4638,7 @@ if(Do.disc.cpue)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_hooktype_discards"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                        mutate(species=factor(species,levels=This.disc),
                               x=hooktype,
                               y=response,
@@ -3933,7 +4657,7 @@ if(Do.disc.cpue)
   if(!is.null(d))
   {
     fn.fig(le.paste("Observer/catch_rates/Standardized_Catch rates_snood_discards"),2000,2400)
-    fn.barplot.cpue(d=d%>%
+    out=fn.barplot.cpue(d=d%>%
                         mutate(species=factor(species,levels=This.disc),
                                x=wiretrace,
                                y=response,
@@ -3954,6 +4678,7 @@ if(Do.disc.cpue)
 fn.tab=function(what)
 {
   d=DATA%>%filter(method==what)
+  dum=d%>%distinct(common_name,Taxa)
   
   Out_table_Retained=d%>%
     #filter(!is.na(retainedflag))%>%
@@ -3999,7 +4724,12 @@ fn.tab=function(what)
   Out_table_Retained=Out_table_Retained%>%
     left_join(Rel.cond,by='common_name')
   
-  
+  Out_table_Retained=Out_table_Retained%>%
+                      left_join(dum,by="common_name")%>%
+                      mutate(n=Retained+Discarded+unk)%>%
+                      ungroup()%>%
+                      arrange(Taxa,-n)%>%
+                      dplyr::select(-Taxa,-n)
   return(Out_table_Retained)
 }
 out=fn.tab(what="GN")
@@ -4135,9 +4865,9 @@ DATA%>%
 dev.off()
 
 
-#---------Hook baiting, and numbers losts ------------
+#---------Hook baiting, and number of hooks lost ------------
 
-#1. Lost hooks 
+#1. Lost hooks (overall tally)
 LL.sessions=DATA%>%
             filter(method=='LL')%>%
             distinct(sheet_no)%>%
@@ -4167,16 +4897,48 @@ Lost.huk=rbind(Lost.huk,uniK)%>%
 Plost=Lost.huk%>%
   ggplot(aes(Session,Percent,fill=Lost))+
   geom_col()+
-  geom_text(data = Lost.huk%>%distinct(Session,.keep_all=T),
-            aes(y=110,label = paste('n=',n.hooks)),angle=75,size=2.5)+
+  geom_text(data = Lost.huk%>%filter(!is.na(Percent))%>%distinct(Session,.keep_all=T),
+            aes(y=110,label = paste("n=",n.hooks)),angle=65,size=2.5)+
   ylim(0,120)+
-  ylab("Percentage of hooks lost")+
-  theme_PA(leg.siz=12,axs.t.siz=10,axs.T.siz=12)+
+  ylab("Percentage of lost hooks")+
+  theme_PA(leg.siz=12,axs.t.siz=10,axs.T.siz=11)+
+  theme(legend.position = "top",
+        legend.title = element_blank())+xlab('')
+
+#2. Lost snoods
+Lost.snoods=Lost.snoods%>%
+              filter(!is.na(Sheet.no))%>%
+              map_if(is.numeric,~ifelse(is.na(.x),0,.x))%>%
+              data.frame%>%
+              mutate(Mono=C10.M+C12.M+C14.M+Eb10.M+Eb12.M+Eb14.M,
+                     Wire=C10.W+C12.W+C14.W+Eb10.W+Eb12.W+Eb14.W)%>%
+              arrange(Sheet.no)%>%
+              mutate(Session=1:n(),
+                     Tot=Mono+Wire)
+
+Average.lost.by.Mono=round(100*sum(Lost.snoods$Mono)/sum(Lost.snoods$Tot))
+Average.lost.by.Wire=round(100*sum(Lost.snoods$Wire)/sum(Lost.snoods$Tot))
+
+Lost.snoods=Lost.snoods%>%
+            mutate(Mono=100*Mono/Tot,
+                   Wire=100*Wire/Tot)%>%
+            dplyr::select(Tot,Session,Mono,Wire)%>%
+            gather('Snood','Percent',-c(Session,Tot))%>%
+            arrange(Session)
+PLost.snoods=Lost.snoods%>%
+  ggplot(aes(Session,Percent,fill=Snood))+
+  geom_col()+
+  geom_text(data = a%>%distinct(Session,.keep_all=T),
+            aes(y=110,label = Tot),angle=0,size=2.5)+
+  ylim(0,120)+
+  ylab("Percentage of lost snoods")+
+  theme_PA(leg.siz=12,axs.t.siz=10,axs.T.siz=11)+
   theme(legend.position = "top",
         legend.title = element_blank())+xlab('')
 
 
-#2. baiting efficiency  
+
+#3. baiting efficiency  
 Baiting=DATA%>%
   filter(method=="LL")%>%
   distinct(sheet_no,.keep_all=T)%>%
@@ -4187,13 +4949,13 @@ P.baitn.eff=Baiting%>%
               ggplot(aes(Session,Efficiency))+
               geom_point(size=3,color="forestgreen")+
               ylim(0,100)+
-              theme_PA(axs.t.siz=10,axs.T.siz=12)+
+              theme_PA(axs.t.siz=10,axs.T.siz=11)+
               theme(legend.position = "top",
                     legend.title = element_blank())+
             ylab("Deployment efficiency")+xlab('')
 
 
-#3. baiting time   
+#4. baiting time   
 Baiting.time=Hook.combos[,c('sheet_no','baiting.time','baiting.crew','hooks.baited')]%>%
               filter(!is.na(baiting.time) & !is.na(baiting.crew))%>%
               filter(!baiting.time=="NA" & !is.na(hooks.baited))%>%
@@ -4201,23 +4963,95 @@ Baiting.time=Hook.combos[,c('sheet_no','baiting.time','baiting.crew','hooks.bait
           mutate(baiting.time=as.numeric(baiting.time),
                  baiting.crew=as.numeric(baiting.crew),
                  hook.per.hour_person=60*(hooks.baited/baiting.crew)/baiting.time)
+Avrg.baitime=mean(Baiting.time$hook.per.hour_person,na.rm=T)
 P.baitn.time=Baiting.time%>%
           ggplot(aes(Session,hook.per.hour_person))+
-  geom_hline(yintercept = mean(Baiting.time$hook.per.hour_person),
+          geom_hline(yintercept = Avrg.baitime,
              col="steelblue",alpha=.6,size=2)+
+          geom_text(aes(2,Avrg.baitime*1.2),label="Average",col="steelblue",size=5
+                    ,nudge_x = 3,nudge_y = -5)+
           geom_point(size=3,color="forestgreen")+
           xlim(0,max(Baiting$Session))+
-          theme_PA(axs.t.siz=10,axs.T.siz=12)+
+          theme_PA(axs.t.siz=10,axs.T.siz=11)+
           theme(legend.position = "top",
                 legend.title = element_blank())+
-          ylab("Baited hooks per person-hour")+
+          ylab("Baited hooks per person-hour")+xlab('')+
           expand_limits(x = 0, y = 0)  
 
 
-fn.fig(le.paste("Observer/Hook baiting and lost"),2000,2400)
-ggarrange(Plost,P.baitn.eff,P.baitn.time,ncol=1,heights=c(1.5,1,1))
+fig=ggarrange(ggarrange(P.baitn.eff,P.baitn.time,
+                        nrow=1,ncol=2),Plost,nrow=2) 
+
+# fig=ggarrange(Plost,PLost.snoods,P.baitn.eff,P.baitn.time,
+#               ncol=1,heights=c(1.25,1.25,1,1))+
+#   theme(plot.margin = margin(.1,.1,.1,.1, "cm"))
+fn.fig(le.paste("Observer/Hook baiting and lost"),2400,2400)
+annotate_figure(fig,bottom = text_grob("Session", size = 12))
 dev.off()
 
+
+# fn.lost.huk.trace=function(with.catch,deployed)
+# {
+#   d=deployed%>%
+#     dplyr::select(-c(Date,baiting.time,baiting.crew,Comments))%>%
+#     gather(Snood,N,-c(sheet_no,hooks.baited))%>%
+#     mutate(wiretrace.deployed=sub(".*\\.", "", Snood),
+#            wiretrace=case_when(wiretrace.deployed=='M'~'Mono',
+#                                wiretrace.deployed=='W'~'Wire'),
+#            hook.size=gsub(".*?([0-9]+).*", "\\1", Snood),
+#            hook.type=sub("([0-9]+).*", "", Snood))
+#   
+#   d1=d%>%
+#     group_by(sheet_no,wiretrace)%>%
+#     summarise(N.deployed=sum(N))
+#   
+#   with.catch=with.catch%>%
+#     filter(!is.na(wiretrace))%>%
+#     group_by(sheet_no,wiretrace)%>%
+#     summarise(N.with.catch=sum(number))
+#   
+#   p=d1%>%
+#     left_join(with.catch,by=c('sheet_no','wiretrace'))%>%
+#     mutate(prop.with.catch=N.with.catch/N.deployed,
+#            shot=as.numeric(substr(sheet_no,4,6)))%>%
+#     ggplot(aes(shot,prop.with.catch))+
+#     geom_line()+geom_point()+
+#     facet_wrap(~wiretrace)
+#   print(p)
+#   
+#   
+# }
+# fn.lost.huk.trace(with.catch=DATA%>%filter(method=='LL' & Taxa=='Teleost'),deployed=Hook.combos)
+# fn.lost.huk.trace(with.catch=DATA%>%filter(method=='LL' & Taxa=='Elasmobranch'),deployed=Hook.combos)
+
+#---------Blood lactate ------------
+Lactate=DATA%>%
+  filter(!is.na(lactate) & common_name=="Port Jackson")%>%
+  mutate(lactate=as.numeric(lactate),
+         rel.cond=ifelse(is.na(rel.cond),'unknown',rel.cond))
+
+Mn=mean(Lactate$lactate,na.rm=T)
+SE=sd(Lactate$lactate,na.rm=T)/sqrt(nrow(Lactate))
+
+
+fn.fig("C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/Satellite_tagging/Outputs/Port Jackson/Lactate",
+       2400,2400)
+Lactate%>%
+  ggplot(aes(tl,lactate,color=rel.cond))+
+  geom_point(aes(size=soak.time))+
+  theme_PA(leg.siz=12,axs.t.siz=12,axs.T.siz=14)+
+  theme(legend.position = "top")+
+  xlab('Total length (cm)')+
+  ylab( expression(paste("Lactate (mmol L", ' '^{-1},")", sep = "")))+
+  #scale_color_continuous(guide = 'none')+
+  scale_color_discrete(name ='Release condition')+
+  scale_size_continuous(name ="Soak time (hours)")+
+  scale_y_continuous(expand = c(0, 0), limits = c(0,1.1*max(Lactate$lactate)))+
+  geom_hline(yintercept = Mn,alpha=0.5,size=1.5,color="forestgreen")+
+  geom_hline(yintercept = Mn-1.96*SE,alpha=0.5,size=1,color="forestgreen",linetype = 2)+
+  geom_hline(yintercept = Mn+1.96*SE,alpha=0.5,size=1,color="forestgreen",linetype = 2)
+
+dev.off()
 
 
 #---------Longine selectivity ------------
@@ -4395,6 +5229,7 @@ fn.LL.sel=function(d,Min.sample,Min.hooks,Size.Interval,convrt.this,Fitfunction,
     dplyr::select(common_name,hooksize,hooktype,size.class,tl,fl,Size)
   
   #Display size frequency
+  sp=unique(d1$common_name)
   library(lemon)
   fig2=function(d1)
   {
@@ -4407,6 +5242,7 @@ fn.LL.sel=function(d,Min.sample,Min.hooks,Size.Interval,convrt.this,Fitfunction,
       theme_PA(strx.siz=18,leg.siz=16,axs.t.siz=16,axs.T.siz=20)+
       theme(legend.position="top",
             legend.title=element_blank())
+    print(p)
   }
   fig2(d1=d%>%
          mutate(hooksize=as.factor(paste(hooksize,"/0",sep='')),
@@ -4415,7 +5251,6 @@ fn.LL.sel=function(d,Min.sample,Min.hooks,Size.Interval,convrt.this,Fitfunction,
   ggsave(le.paste('Selectivity_LL/Figure 2.tiff'), width = 10,height = 10, dpi = 300, compression = "lzw")
   
   #calculate selectivity by species based on Millar & Holst 1997
-  sp=unique(d1$common_name)
   hk.typ=unique(d1$hooktype)
   PlotLens=seq(Min.length+Size.Interval/2,Max.length-Size.Interval/2,by=Size.Interval)
   Store.sel=vector('list',length(sp))
@@ -4496,11 +5331,11 @@ fn.LL.sel=function(d,Min.sample,Min.hooks,Size.Interval,convrt.this,Fitfunction,
   Table.mod.fit=Table.mod.fit%>%
     relocate(Species)%>%
     mutate(Model=ifelse(Model=="norm.loc","Normal (fixed spread)",
-                        ifelse(Model=="norm.sca","Normal (prop. spread)",
-                               ifelse(Model=="gamma","Gamma",
-                                      ifelse(Model=="lognorm","Lognormal",
-                                             Model)))))%>%
-    Table.mod.fit$Species[duplicated(Table.mod.fit$Species)] <- ""
+                 ifelse(Model=="norm.sca","Normal (prop. spread)",
+                 ifelse(Model=="gamma","Gamma",
+                 ifelse(Model=="lognorm","Lognormal",
+                 Model)))))
+  Table.mod.fit$Species[duplicated(Table.mod.fit$Species)]=""
   Table.mod.fit[is.na(Table.mod.fit)] <- ""
   Table.mod.fit[Table.mod.fit=="NaN"] <- ""
   row.names(Table.mod.fit)=NULL
@@ -5112,8 +5947,8 @@ write.csv(out.under.n$Permanova.LL,le.paste("Video/underwater/interactions_Perma
 write.csv(out.under.n$adonis.pairwise.GN,le.paste("Video/underwater/interactions_Permanova_pairwise.GN.csv"),row.names = F)
 write.csv(out.under.n$adonis.pairwise.LL,le.paste("Video/underwater/interactions_Permanova_pairwise.LL.csv"),row.names = F)
 
-plist=list(out.under.n$simper.GN,out.under.n$simper.LL)%>%
-        discard(is.null)
+plist=list(out.under.n$simper.GN)
+if(!is.null(out.under.n$simper.LL))plist=list(out.under.n$simper.GN,out.under.n$simper.LL)%>%discard(is.null)
 fig=ggarrange(plotlist=plist,ncol = 1,common.legend=TRUE)
 annotate_figure(fig,
                 bottom = text_grob("Group",size = 20),
@@ -5527,7 +6362,7 @@ fn.plt.dropouts=function(d,TITLE,LegPos,var,MinN)
 }
 
 p1=fn.plt.dropouts(d=Video.camera2.deck,
-                   TITLE="Deck camera above roller",
+                   TITLE="Deck camera 2",
                    LegPos="top",
                    var='dropout',
                    MinN=Min.N.drop.out)
@@ -5584,11 +6419,11 @@ Glm.dropouts=fn.glm.dropouts(d=Video.camera2.deck,
 
 ft <- as_flextable(Glm.dropouts$GN.glm)
 save_as_image(ft, path = le.paste("Video/deck.cameras/anovas/drop_outs_GN.png"))
-save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/drop_outs_GN.docx"))
+#save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/drop_outs_GN.docx"))
 
 ft <- as_flextable(Glm.dropouts$LL.glm)
 save_as_image(ft, path = le.paste("Video/deck.cameras/anovas/drop_outs_LL.png"))
-save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/drop_outs_LL.docx"))
+#save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/drop_outs_LL.docx"))
 
 rm(ft)
 
@@ -5598,6 +6433,7 @@ p=fn.barplot.cpue(d=rbind(Glm.dropouts$GN.pred%>%
                             mutate(method="Longline"))%>%
                     left_join(Glm.dropouts$Col.vec,by='COMMON_NAME')%>%
                     mutate(Group=Col,
+                           species=COMMON_NAME,
                            x=COMMON_NAME,
                            y=1-prob,
                            fill=Group,
@@ -5608,77 +6444,99 @@ p=fn.barplot.cpue(d=rbind(Glm.dropouts$GN.pred%>%
                   XLAB='',
                   cex=12,
                   Rotate='Yes',
-                  Relative="No")
+                  Relative="No",
+                  RETURN=FALSE)
 fn.fig(le.paste("Video/deck.cameras/Drop.out.events_predictions_deckcam2"),2000,2000)
 p+scale_fill_manual(values=c("firebrick","steelblue"))+
   theme(axis.text.x = element_text(angle = 55, vjust = 1, hjust=1))
 dev.off()
 
 
-  #1.3.drop out rate table (drop out numbers per total number of individuals interacting with gear)
-TAB=Video.camera2.deck%>%
-  left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")%>%
-  group_by(COMMON_NAME,dropout,Period)%>%
-  tally()%>%
-  ungroup()%>%
-  mutate(Period=capitalize(Period),
-         dropout=ifelse(dropout=='No','Retained','Drop.out'),
-         drop.period=paste(dropout,Period,sep='.'))%>%
-  dplyr::select(-c(dropout,Period))%>%
-  spread(drop.period,n,fill=0)%>%
-  mutate(Percent.drop.out.gillnet=round(100*Drop.out.Gillnet/(Retained.Gillnet+Drop.out.Gillnet),1),
-         Percent.drop.out.longline=round(100*Drop.out.Longline/(Retained.Longline+Drop.out.Longline),1))%>%
-  arrange(COMMON_NAME)%>%
-  relocate(COMMON_NAME,Retained.Gillnet,Drop.out.Gillnet,Percent.drop.out.gillnet,
-           Retained.Longline,Drop.out.Longline,Percent.drop.out.longline)%>%
-  mutate_at(vars(Percent.drop.out.longline), ~replace(., is.nan(.), ""))%>%
-  mutate_at(vars(Percent.drop.out.gillnet), ~replace(., is.nan(.), ""))%>%
-  mutate(Drop.out.Gillnet=ifelse(Percent.drop.out.gillnet=='','',Drop.out.Gillnet),
-         Retained.Gillnet=ifelse(Percent.drop.out.gillnet=='','',Retained.Gillnet),
-         Drop.out.Longline=ifelse(Percent.drop.out.longline=='','',Drop.out.Longline),
-         Retained.Longline=ifelse(Percent.drop.out.longline=='','',Retained.Longline))
-write.csv(TAB,le.paste("Video/deck.cameras/Drop.out.events_table.csv"),row.names = F)
+  #1.3.Table of drop out percent (drop out numbers per total number of individuals interacting with gear)
+fun.table.ret.disc=function(d)
+{
+  TAB=d%>%
+    left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")%>%
+    mutate(dropout=ifelse(dropout=='No','Retained','Drop.out'))%>%
+    group_by(COMMON_NAME,dropout,Period)%>%
+    tally()%>%
+    ungroup()%>%
+    mutate(Period=capitalize(Period),
+           drop.period=paste(dropout,Period,sep='.'))%>%
+    dplyr::select(-c(dropout,Period))%>%
+    spread(drop.period,n,fill=0)%>%
+    mutate(Percent.drop.out.gillnet=round(100*Drop.out.Gillnet/(Retained.Gillnet+Drop.out.Gillnet),1),
+           Percent.drop.out.longline=round(100*Drop.out.Longline/(Retained.Longline+Drop.out.Longline),1))%>%
+    arrange(COMMON_NAME)%>%
+    relocate(COMMON_NAME,Retained.Gillnet,Drop.out.Gillnet,Percent.drop.out.gillnet,
+             Retained.Longline,Drop.out.Longline,Percent.drop.out.longline)%>%
+    mutate_at(vars(Percent.drop.out.longline), ~replace(., is.nan(.), ""))%>%
+    mutate_at(vars(Percent.drop.out.gillnet), ~replace(., is.nan(.), ""))%>%
+    mutate(Drop.out.Gillnet=ifelse(Percent.drop.out.gillnet=='','',Drop.out.Gillnet),
+           Retained.Gillnet=ifelse(Percent.drop.out.gillnet=='','',Retained.Gillnet),
+           Drop.out.Longline=ifelse(Percent.drop.out.longline=='','',Drop.out.Longline),
+           Retained.Longline=ifelse(Percent.drop.out.longline=='','',Retained.Longline))%>%
+    left_join(DATA%>%
+                distinct(common_name,Taxa),by=c('COMMON_NAME'='common_name'))%>%
+    mutate(n=as.numeric(Retained.Gillnet)+as.numeric(Drop.out.Gillnet))%>%
+    ungroup()%>%
+    arrange(Taxa,-n)%>%
+    dplyr::select(-Taxa,-n)
+  return(TAB)
+}
+write.csv(fun.table.ret.disc(d=Video.camera2.deck),
+          le.paste("Video/deck.cameras/Drop.out.events_table_camera2.csv"),row.names = F)
+
+write.csv(fun.table.ret.disc(d=Video.subsurface),
+          le.paste("Video/deck.cameras/Drop.out.events_table_subsurface.csv"),row.names = F)
 
   #1.4 Drop outs fate
 p=fn.plt.dropouts(d=Video.subsurface%>%filter(!dropout=='No'),
                 TITLE="Subsurface camera",
                 LegPos="top",
                 var='Dropout.condition',
-                MinN=Min.N.drop.out)
+                MinN=1)
 p+theme(plot.title=element_text(hjust = -.25))
 ggsave(le.paste("Video/deck.cameras/Drop.out.events_fate_subsurface.tiff"),width = 10,height = 8,compression = "lzw")
 
-  #1.5 Drop outs gaffing
-p=fn.plt.dropouts(d=Video.subsurface%>%filter(!dropout=='No')%>%
-                  mutate(Gaffed=ifelse(dropout=="Yes","Not gaffed",dropout),
-                         Gaffed=factor(Gaffed,levels=c("Gaffed","Not gaffed"))),
-                TITLE="Subsurface camera",
-                LegPos="top",
-                var='Gaffed',
-                MinN=Min.N.drop.out)
-p+theme(plot.title=element_text(hjust = -.25))
-ggsave(le.paste("Video/deck.cameras/Drop.out.events_gaffing_subsurface.tiff"),width = 10,height = 8,compression = "lzw")
 
+  #2. Gaffing of drop outs
+    #subsurface camera
+p1=fn.plt.dropouts(d=Video.subsurface%>%filter(!dropout=='No')%>%
+                     mutate(Gaffed=ifelse(dropout=="Yes","Lost",dropout),
+                            Gaffed=factor(Gaffed,levels=c("Gaffed","Lost"))),
+                   TITLE="Subsurface camera",
+                   LegPos="top",
+                   var='Gaffed',
+                   MinN=1)
+p1=p1+theme(plot.title=element_text(hjust = -.25))
+#ggsave(le.paste("Video/deck.cameras/Drop.out.events_gaffing_subsurface.tiff"),width = 10,height = 8,compression = "lzw")
 
-  #2. Gaffing
-p=fn.plt.dropouts(d=Video.camera2.deck%>%
-                  mutate(gaffed=case_when(dropout=='Yes' & gaffed=='No' ~  'Lost',
-                                          dropout=='Yes' & gaffed=='Yes' ~  'Gaffed',
-                                          TRUE ~ gaffed))%>%
-                  filter(!is.na(gaffed) & dropout=='Yes'),
-                TITLE="Deck camera above roller",
-                LegPos="top",
-                var='gaffed',
-                MinN=Min.N.gaff)
-p+theme(plot.title=element_text(hjust = -.25))
-ggsave(le.paste("Video/deck.cameras/Gaffing.events_deck.tiff"),width = 10,height = 8,compression = "lzw")
+    #deck camera 2
+p2=fn.plt.dropouts(d=Video.camera2.deck%>%
+                      mutate(Gaffed=case_when(dropout=='Yes' & gaffed=='No' ~  'Lost',
+                                              dropout=='Yes' & gaffed=='Yes' ~  'Gaffed',
+                                              TRUE ~ gaffed))%>%
+                      filter(!is.na(gaffed) & dropout=='Yes'),
+                  TITLE="Deck camera 2",
+                  LegPos="top",
+                  var='Gaffed',
+                  MinN=1)
+p2=p2+theme(plot.title=element_text(hjust = -.25))
+
+fig=ggarrange(p1+rremove("xlab"), p2+rremove("xlab"),
+              ncol = 1, nrow = 2,
+              common.legend=TRUE)
+annotate_figure(fig,bottom = text_grob("Number of events",size = 18))
+ggsave(le.paste("Video/deck.cameras/Drop.out.events_gaffing.tiff"),width = 10,height = 8,compression = "lzw")
 
 
   #3. Composition around weight or float
 # Display data
 Data_water.column=Video.camera2.deck%>%
             filter(!SHEET_NO%in%No.good.water.column)%>%
-            mutate(water.column=tolower(hook.distance.to.float.weight))%>%
+            mutate(Code=ifelse(Code==37018001,37018003,Code),
+                   water.column=tolower(hook.distance.to.float.weight))%>%
             filter(!is.na(water.column))
 these.compo.sp=Data_water.column%>%
   group_by(Code)%>%
@@ -5696,7 +6554,7 @@ Data_water.column%>%
         group_by(Code,water.column,Period,COMMON_NAME)%>%
         tally()%>%
         mutate(water.column=factor(water.column,levels=c("1w","2w","3w","1f","2f","3f")),
-                   Period=capitalize(Period))%>%
+               Period=capitalize(Period))%>%
         ggplot(aes(fill=water.column, y=n, x=COMMON_NAME)) + 
         geom_bar(position="stack", stat="identity")+
         coord_flip() +
@@ -5734,6 +6592,7 @@ p=fn.barplot.cpue(d=Pred%>%
                               by='COMMON_NAME')%>%
                     mutate(Group=Col,
                            x=COMMON_NAME,
+                           species=COMMON_NAME,
                            y=1-prob,
                            fill=Group,
                            facet="Longline",
@@ -5743,7 +6602,8 @@ p=fn.barplot.cpue(d=Pred%>%
                   XLAB='',
                   cex=18,
                   Rotate='Yes',
-                  Relative="No")
+                  Relative="No",
+                  RETURN=FALSE)
 fn.fig(le.paste("Video/deck.cameras/Weight_float_species_predictions"),2400,2400)
 p+scale_fill_manual(values=c("firebrick","steelblue"))+
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
@@ -5752,7 +6612,204 @@ dev.off()
   #Export anova table
 ft <- as_flextable(Mod)
 save_as_image(ft, path = le.paste("Video/deck.cameras/anovas/Weight_float_species.png"))
-save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/Weight_float_species.docx"))
+#save_as_docx(ft,path = le.paste("Video/deck.cameras/anovas/Weight_float_species.docx"))
+
+
+
+  #4. Rates of depredation, bait loss and drop outs
+#Underwater camera
+#1. All shots (to add 0 observations)
+All.underwater.shts=rbind(Video.longline.interaction%>%
+                            distinct(Camera,sheet_no,Method,soak.time),
+                          Video.net.interaction%>%
+                            distinct(Camera,sheet_no,Method,soak.time))%>%
+  mutate(Method=capitalize(Method))%>%
+  filter(!is.na(sheet_no))%>%
+  mutate(n=1)%>%
+  group_by(Method,sheet_no)%>%
+  summarise(N.cameras=sum(n),
+            soak.time=max(soak.time,na.rm=T))%>%
+  ungroup()%>%
+  mutate(Effort=case_when(Method=='Longline'~N.cameras*soak.time*hooks.observed,
+                          Method=='Gillnet'~N.cameras*soak.time*metres.observed))
+
+
+#2. Bait loss (in # of baits lost per hook hour)
+Rate.under_bait.loss=rbind(Video.longline.interaction%>%
+                             distinct(Camera,sheet_no,Method,soak.time,Interaction),
+                           Video.net.interaction%>%
+                             distinct(Camera,sheet_no,Method,soak.time,Interaction))%>%
+  filter(Interaction=="Bait feeding")%>%
+  mutate(Number=1,
+         Method=capitalize(Method))
+Rate.under_bait.loss=Rate.under_bait.loss%>%
+  left_join(All.underwater.shts%>%
+              filter(sheet_no%in%unique(Rate.under_bait.loss$sheet_no))%>%
+              dplyr::select(sheet_no,N.cameras),by='sheet_no')%>%
+  group_by(sheet_no,Method,Interaction)%>%
+  summarise(n=sum(Number),
+            soak.time=max(soak.time),
+            N.cameras=max(N.cameras))%>%
+  mutate(Effort=case_when(Method=='Longline'~soak.time*hooks.observed*N.cameras,
+                          Method=='Gillnet'~soak.time*metres.observed*N.cameras))
+
+Bait.loss.rate_under=unique(rbind(Rate.under_bait.loss%>%
+                                    dplyr::select(Method,sheet_no,n,Effort),
+                                  All.underwater.shts%>%     #add observed 0 records
+                                    filter(Method=='Longline' & !sheet_no%in%Rate.under_bait.loss$sheet_no)%>%
+                                    mutate(n=0)%>%
+                                    dplyr::select(Method,sheet_no,n,Effort))%>%
+                              ungroup()%>%
+                              mutate(Rate=sum(n)/sum(Effort))%>%
+                              pull(Rate))
+
+
+#3. Drop outs and depredation (in # of individuals per m hour or hook hour)
+Rate.under=rbind(Video.longline.interaction%>%
+                   distinct(Camera,sheet_no,Method,soak.time,Interaction),
+                 Video.net.interaction%>%
+                   distinct(Camera,sheet_no,Method,soak.time,Interaction))%>%
+  filter(Interaction%in%c("Predated on","Caught while predating","Dropout"))%>%
+  mutate(Number=1,
+         Method=capitalize(Method),
+         Interaction=ifelse(Interaction%in%c("Caught while predating","Predated on"),
+                            "Depredation",Interaction))
+Rate.under=Rate.under%>%
+  left_join(All.underwater.shts%>%
+              filter(sheet_no%in%unique(Rate.under$sheet_no))%>%
+              dplyr::select(sheet_no,N.cameras),by='sheet_no')%>%
+  group_by(sheet_no,Method,Interaction)%>%
+  summarise(n=sum(Number),
+            soak.time=max(soak.time),
+            N.cameras=max(N.cameras))%>%
+  mutate(Effort=case_when(Method=='Longline'~soak.time*hooks.observed*N.cameras,
+                          Method=='Gillnet'~soak.time*metres.observed*N.cameras))
+
+Drop.out.rate_under=rbind(Rate.under%>%
+                            filter(Interaction=='Dropout')%>%
+                            dplyr::select(Method,sheet_no,n,Effort),
+                          All.underwater.shts%>%     #add observed 0 records
+                            filter(!sheet_no%in%Rate.under$sheet_no)%>%
+                            mutate(n=0)%>%
+                            dplyr::select(Method,sheet_no,n,Effort))%>%
+  group_by(Method)%>%
+  summarise(Rate=sum(n)/sum(Effort))
+
+
+Drepedation.rate_under=rbind(Rate.under%>%
+                               filter(Interaction=='Depredation')%>%
+                               dplyr::select(Method,sheet_no,n,Effort),
+                             All.underwater.shts%>%     #add observed 0 records
+                               filter(!sheet_no%in%Rate.under$sheet_no)%>%
+                               mutate(n=0)%>%
+                               dplyr::select(Method,sheet_no,n,Effort))%>%
+  group_by(Method)%>%
+  summarise(Rate=sum(n)/sum(Effort))
+
+#4. Tabulate all events
+Tab.out=data.frame(Event=c("Bait loss",
+                           rep("Drepedation",2),
+                           rep("Drop outs",2)),
+                   Method=c("Longline",
+                            "Gillnet","Longline",
+                            "Gillnet","Longline"),
+                   Rate=c(Bait.loss.rate_under,
+                              Drepedation.rate_under%>%filter(Method=="Gillnet")%>%pull(Rate),
+                              Drepedation.rate_under%>%filter(Method=="Longline")%>%pull(Rate),
+                              Drop.out.rate_under%>%filter(Method=="Gillnet")%>%pull(Rate),
+                              Drop.out.rate_under%>%filter(Method=="Longline")%>%pull(Rate)),
+                   Units=c("Number of lost baits per 1 hook hour",
+                           "Number of depredated individuals per 1 m hour","Number of depredated individuals per 1 hook hour",
+                           "Number of dropouts per 1 m hour","Number of dropouts per 1 hook hour"))%>%
+  mutate(Rate=round(Rate,4))
+write.csv(Tab.out%>%
+            filter(Event=='Drop outs')%>%
+            dplyr::select(-Event),
+          le.paste("Video/underwater/Rate_Drop.out.csv"),row.names=F)
+write.csv(Tab.out%>%
+            filter(Event=='Drepedation')%>%
+            dplyr::select(-Event),
+          le.paste("Video/underwater/Rate_Drepedation.csv"),row.names=F)
+write.csv(Tab.out%>%
+            filter(Event=='Bait loss')%>%
+            dplyr::select(-Event),
+          le.paste("Video/underwater/Rate_Bait.loss.csv"),row.names=F)
+rm(Tab.out)
+
+#Subsurface and deck 2 cameras (effort is 1 m or 1 hook per hauling hour)
+All.shts=DATA%>%
+  distinct(sheet_no,method,haul.time,haul.time.end,net_length,n.hooks)%>%
+  mutate(method=ifelse(method=="GN","Gillnet",ifelse(method=="LL","Longline",NA)),
+         haul.time.end=as.POSIXct(haul.time.end, format = "%H:%M"),
+         haul.time=as.POSIXct(haul.time, format = "%H:%M"),
+         haul=difftime(haul.time.end,haul.time,units='hours'))%>%
+  group_by(method)%>%
+  mutate(Mean.haul=mean(haul,na.rm=T))%>%
+  ungroup()%>%
+  mutate(haul=ifelse(is.na(haul),Mean.haul,haul))%>%
+  filter(!is.na(sheet_no))%>%
+  group_by(method,sheet_no)%>%
+  summarise(net_length=max(net_length,na.rm=T),
+            n.hooks=max(n.hooks,na.rm=T),
+            haul=max(haul,na.rm=T))%>%
+  ungroup()%>%
+  mutate(Effort=case_when(method=='Longline'~haul*n.hooks,
+                          method=='Gillnet'~haul*net_length*1000))%>%
+  dplyr::select(sheet_no,method,Effort)
+
+
+fn.rates_sub_deck2=function(d,MinN)
+{
+  these.drop.out.sp=table(d$Code)
+  these.drop.out.sp=as.numeric(names(these.drop.out.sp[these.drop.out.sp>MinN]))
+  names(these.drop.out.sp)=All.species.names[match(these.drop.out.sp,All.species.names$Code),"COMMON_NAME"]
+  
+  d1=d%>%
+    filter(Code%in%these.drop.out.sp & dropout=="Yes")%>%
+    mutate(Method=capitalize(Period))%>%
+    group_by(Code,Method)%>%
+    tally()%>%
+    left_join(All.species.names%>%dplyr::select(COMMON_NAME,Code),by="Code")%>%
+    ungroup()%>%
+    left_join(All.shts%>%
+                filter(sheet_no%in%unique(d$sheet_no))%>%
+                group_by(method)%>%
+                summarise(Effort=sum(Effort))%>%
+                ungroup(),
+              by=c('Method'='method'))%>%
+    mutate(Rate=n/Effort)%>%
+    dplyr::select(-Code,-n,-Effort)%>%
+    spread(Method,Rate,fill=0)%>%
+    left_join(DATA%>%
+                distinct(common_name,Taxa),by=c('COMMON_NAME'='common_name'))%>%
+    ungroup()%>%
+    arrange(Taxa)%>%
+    dplyr::select(-Taxa)
+  return(d1)
+}
+
+Drop.out.rate_deck2=fn.rates_sub_deck2(d=Video.camera2.deck%>%rename(sheet_no=SHEET_NO),
+                                       MinN=Min.N.drop.out)
+Drop.out.rate_deck2=rbind(Drop.out.rate_deck2%>%mutate_if(is.numeric, round,5),
+                          Drop.out.rate_deck2[1,]%>%
+                            mutate(COMMON_NAME="Units",
+                                   Gillnet="Number of dropouts per 1 m haul-hour",
+                                   Longline="Number of dropouts per 1 hook haul-hour"))
+write.csv(Drop.out.rate_deck2,
+          le.paste("Video/deck.cameras/Rate_Drop.out_deck2.csv"),row.names=F)
+
+
+Drop.out.rate_subsurface=fn.rates_sub_deck2(d=Video.subsurface%>%
+                                              rename(sheet_no=SHEET_NO)%>%
+                                              mutate(dropout=ifelse(dropout=='Gaffed','Yes',dropout)),
+                                            MinN=Min.N.drop.out)
+Drop.out.rate_subsurface=rbind(Drop.out.rate_subsurface%>%mutate_if(is.numeric, round,5),
+                               Drop.out.rate_subsurface[1,]%>%
+                                mutate(COMMON_NAME="Units",
+                                       Gillnet="Number of dropouts per 1 m haul-hour",
+                                       Longline="Number of dropouts per 1 hook haul-hour"))
+write.csv(Drop.out.rate_subsurface,
+          le.paste("Video/deck.cameras/Rate_Drop.out_subsurface.csv"),row.names=F)
 
 
 
@@ -5768,10 +6825,10 @@ Video.camera1.deck=Video.camera1.deck%>%
             by="Code")
 
 Video.camera1=rbind(Video.camera1.deck_extra.records%>%
-                      dplyr::select("DIPRD code",Code,Period,number),
+                      dplyr::select("DIPRD code",Code,Period,number,condition),
                     Video.camera1.deck%>%
                       mutate(Code=ifelse(Genus=="Kyphosus" & Species=="spp",'37361903',Code))%>%
-                      dplyr::select("DIPRD code",Code,Period,number))%>%
+                      dplyr::select("DIPRD code",Code,Period,number,condition))%>%
               data.frame%>%
               mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                                         Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
@@ -6061,20 +7118,20 @@ lolipop=function(x)
     geom_linerange(aes(x = COMMON_NAME, ymin = 0, ymax =  Mean, colour = method), 
                    position = position_dodge(width = 0),show.legend=F)+
     geom_hline(yintercept = 0,linetype=2)+
-    geom_errorbar(aes(ymin = xmin,ymax = xmax,x=COMMON_NAME),width = .5,show.legend=F)+
-    geom_point(aes(x = COMMON_NAME, y = Mean, fill = method),pch=21,size=2.5,
+    geom_errorbar(aes(ymin = xmin,ymax = xmax,x=COMMON_NAME),width = .125,show.legend=F)+
+    geom_point(aes(x = COMMON_NAME, y = Mean, fill = method),pch=21,size=4,
                position = position_dodge(width = 0))+
     geom_text(aes(x = COMMON_NAME, y = Mean,label = paste("n= ",N,sep='')),
-              size=4,hjust=0.5, vjust=-0.5)+
+              size=6,alpha=.8,hjust=0.5, vjust=-0.5)+
     coord_flip()+
     facet_wrap(~method)+
-    theme_PA(Ttl.siz=18,Sbt.siz=17,str.siz=16,strx.siz=16,
+    theme_PA(Ttl.siz=18,Sbt.siz=17,str.siz=16,strx.siz=20,
              leg.siz=14,axs.t.siz=14,axs.T.siz=18)+
     theme(legend.position = "none")+
-    ylab("Percentage diference")+xlab('')
+    ylab("Percentage diference")+xlab('')+ylim(-100,100)
   return(p)
 }
-fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms)
+fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms, Minobs.per)
 {
   Not=c('sheet_no',Terms)
   d=rbind(CAM%>%
@@ -6134,7 +7191,7 @@ fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms)
     #  stat_poly_eq(formula = my.formula, 
     #              aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
     #             label.y = "top",label.x="left",parse = TRUE, size = 5) +
-    facet_wrap(~ method,ncol=2,scales = "free_x")+
+    facet_wrap(~ method,ncol=2,scales = "free")+
     xlab("Number of individuals reported by observer")+
     ylab("Number of individuals recorded by camera")+
     theme_PA(Ttl.siz=18,Sbt.siz=17,str.siz=16,strx.siz=16,
@@ -6224,7 +7281,10 @@ fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms)
               N=n())%>%
     mutate(SE=SD/sqrt(SD),
            xmin=ifelse(!is.na(SE),Mean-SE,0),
-           xmax=ifelse(!is.na(SE),Mean+SE,0))
+           xmax=ifelse(!is.na(SE),Mean+SE,0))%>%
+    ungroup()%>%
+    filter(N>=Minobs.per)
+  Per.dif=lolipop(x=Per.diff)
   Per.dif.com=lolipop(x=Per.diff%>%filter(!COMMON_NAME%in%Discarded.species))
   Per.dif.dis=lolipop(x=Per.diff%>%filter(COMMON_NAME%in%Discarded.species))
   
@@ -6289,6 +7349,7 @@ fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms)
               mod_all.species=mod_all.species,
               mod_commercial.species=mod_commercial.species,
               mod_discarded.species=mod_discarded.species,
+              Per.dif=Per.dif,
               Per.dif.com=Per.dif.com,
               Per.dif.dis=Per.dif.dis,
               p.GN=p.GN,p.LL=p.LL,
@@ -6297,7 +7358,8 @@ fn.compare.obs.cam=function(CAM, OBS, GROUP, Terms)
 Out=fn.compare.obs.cam(CAM=Video.camera1,
                        OBS=DATA,
                        GROUP='Top20',
-                       Terms='Platform')
+                       Terms='Platform',
+                       Minobs.per=Minobs.per)
   #export data issues
 write.csv(Out$out.for.Jack,le.paste("Camera_v_Observer/out.for.Jack.csv"),row.names=F)
 
@@ -6329,11 +7391,14 @@ ggsave(le.paste("Camera_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compre
 
 
   #export Percentage difference
-Out$Per.dif.com
-ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+Out$Per.dif
+ggsave(le.paste("Camera_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
-Out$Per.dif.dis
-ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
+#Out$Per.dif.com
+#ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+
+#Out$Per.dif.dis
+#ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
 
 
   #export MDS
@@ -6344,8 +7409,8 @@ ggsave(le.paste("Camera_v_Observer/MDS.tiff"),width = 8,height = 12,compression 
 
 
   #export Permanovas
-write.csv(Out$adon.GN,le.paste("Camera_v_Observer/Permanova_GN.csv"),row.names = F)
-write.csv(Out$adon.LL,le.paste("Camera_v_Observer/Permanova_LL.csv"),row.names = F)
+write.csv(Out$adon.GN,le.paste("Camera_v_Observer/Permanova_GN.csv"),row.names = T)
+write.csv(Out$adon.LL,le.paste("Camera_v_Observer/Permanova_LL.csv"),row.names = T)
 
 
 #---------Analysis of Deck 2 camera VS observers --------------------------------------------------------------------
@@ -6472,7 +7537,8 @@ ggsave(le.paste("Camera2_v_Observer/Barplot.tiff"),width = 12,height = 12,compre
 Out=fn.compare.obs.cam(CAM=Video.camera2,
                        OBS=DATA,
                        GROUP='Top20',
-                       Terms='Platform')
+                       Terms='Platform',
+                       Minobs.per=Minobs.per)
 #export data issues
 write.csv(Out$out.for.Jack,le.paste("Camera2_v_Observer/out.for.Jack.csv"),row.names=F)
 
@@ -6504,11 +7570,14 @@ ggsave(le.paste("Camera2_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compr
 
 
 #export Percentage difference
-Out$Per.dif.com
-ggsave(le.paste("Camera2_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+Out$Per.dif
+ggsave(le.paste("Camera2_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
-Out$Per.dif.dis
-ggsave(le.paste("Camera2_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
+#Out$Per.dif.com
+#ggsave(le.paste("Camera2_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+
+# Out$Per.dif.dis
+# ggsave(le.paste("Camera2_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
 
 
 #export MDS
@@ -6519,19 +7588,23 @@ ggsave(le.paste("Camera2_v_Observer/MDS.tiff"),width = 8,height = 12,compression
 
 
 #export Permanovas
-write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = F)
-write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = F)
+write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = T)
+write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = T)
 
 
 #---------Gilled or bagged ------------ 
 Tab.gilled.bagged=Video.camera1.deck%>%
                     filter(Period=="Gillnet")%>%
-                    group_by(COMMON_NAME,Code,meshed)%>%
+                    group_by(COMMON_NAME,meshed)%>%
                     tally()%>%
                     ungroup()%>%
                     spread(meshed,n,fill=0)%>%
-                    arrange(Code)%>%
-                    dplyr::select(-Code)%>%
+                    left_join(DATA%>%
+                                distinct(common_name,Taxa),by=c('COMMON_NAME'='common_name'))%>%
+                    mutate(n=bagged+gilled)%>%
+                    ungroup()%>%
+                    arrange(Taxa,-n)%>%
+                    dplyr::select(-Taxa,-n)%>%
                     filter(!is.na(COMMON_NAME))
 write.csv(Tab.gilled.bagged,le.paste("Video/deck.cameras/Tab.gilled.bagged.csv"),row.names=F)
 
@@ -6590,7 +7663,7 @@ dev.off()
 
 #---------Analyse PA TEPS ------------
 
-#2. Cameras
+#1. Cameras
 #note: number of events by interaction type
 fn.TEPS.barplot=function(n.shots,d,hours.LL,hours.GN,show.all.levels=TRUE,LGN,TITL)
 {
@@ -6621,7 +7694,7 @@ fn.TEPS.barplot=function(n.shots,d,hours.LL,hours.GN,show.all.levels=TRUE,LGN,TI
           legend.title = element_blank())+
     xlab('')+ylab('Number of events')+
     scale_y_continuous(breaks = integer_breaks())+
-    guides(fill = guide_legend(nrow = 2))+
+    guides(fill = guide_legend(nrow = 3))+
     scale_x_discrete(position = "top")
   
   if(!is.null(TITL)) p=p+ggtitle(TITL)
@@ -6634,7 +7707,7 @@ fn.TEPS.barplot=function(n.shots,d,hours.LL,hours.GN,show.all.levels=TRUE,LGN,TI
   print(p)
 }
 
-# 2.1. Underwater
+# 1.1. Underwater
 p1=fn.TEPS.barplot(n.shots=rbind(Video.longline.interaction%>%
                                    dplyr::select(sheet_no,Method,Interaction,Number,SP.group,Species,Code)%>%
                                    mutate(Period='longline'),
@@ -6669,7 +7742,7 @@ p1=fn.TEPS.barplot(n.shots=rbind(Video.longline.interaction%>%
 #ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,height = 8,compression = "lzw")
 
 
-# 2.2. subsurface
+# 1.2. subsurface
 p2=fn.TEPS.barplot(n.shots=Video.subsurface%>%
                      distinct(SHEET_NO,Period)%>%
                      group_by(Period)%>%
@@ -6697,7 +7770,7 @@ p2=fn.TEPS.barplot(n.shots=Video.subsurface%>%
                    TITL="Subsurface camera")
 #ggsave(le.paste("TEPS/Interactions_number.events_subsurface.tiff"),width = 12,height = 8,compression = "lzw")
 
-# 2.3. Deck 1 
+# 1.3. Deck 1 
 p3=fn.TEPS.barplot(n.shots=Video.camera1%>%
                      distinct(sheet_no,Period)%>%
                      group_by(Period)%>%
@@ -6705,7 +7778,7 @@ p3=fn.TEPS.barplot(n.shots=Video.camera1%>%
                      spread(Period,n),
                    d=Video.camera1%>%
                      filter(Code%in%TEPS.codes)%>%
-                     mutate(Interaction="Caught",
+                     mutate(Interaction=paste("Caught (",condition,")",sep=''),
                             Code=as.numeric(Code))%>%
                      left_join(TEPS.names,by="Code")%>%
                      mutate(Number=1,
@@ -6719,7 +7792,8 @@ p3=fn.TEPS.barplot(n.shots=Video.camera1%>%
                    TITL="Deck camera 1")
 #ggsave(le.paste("TEPS/Interactions_number.events_deck1.tiff"),width = 12,height = 8,compression = "lzw")
 
-# 2.4. Deck 2  (pointing to roller)
+# 1.4. Deck 2  (pointing to roller) 
+#note: condition is not recorded by this camera
 p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Period,SHEET_NO),
                                  Video.camera2.deck%>%distinct(Period,SHEET_NO))%>%
                      distinct(SHEET_NO,Period)%>%
@@ -6732,8 +7806,8 @@ p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Peri
                            Video.camera2.deck%>%
                              filter(Code%in%TEPS.codes)%>%
                              mutate(Activity=ifelse(dropout=='Yes' & gaffed=="No","Drop out",
-                                                    ifelse(dropout=='Yes' & gaffed=="Yes","Drop out and gaffed",
-                                                           NA)))%>%
+                                             ifelse(dropout=='Yes' & gaffed=="Yes","Drop out and gaffed",
+                                             NA)))%>%
                              dplyr::select(Period,Genus,Species,Code,Activity))%>%
                      filter(!is.na(Activity))%>%
                      left_join(TEPS.names,by="Code")%>%
@@ -6752,21 +7826,31 @@ p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Peri
                    TITL="Deck camera 2")
 #ggsave(le.paste("TEPS/Interactions_number.events_deck2.tiff"),width = 12,height = 8,compression = "lzw")
 
-#3. Observer data 
+#2. Observer data 
 #data from TEPS data sheets
-d.teps=TEPS%>%
+d.teps=TEPS%>%  
+  filter(!is.na(contact.code))%>%
   mutate(Method=ifelse(gear.type=="GN","Gillnet",
-                       ifelse(gear.type=="LL","Longline",
-                              NA)),
+                ifelse(gear.type=="LL","Longline",
+                NA)),
+         condition=ifelse(is.na(Cond),'unknown',
+                   ifelse(Cond>0,"alive",
+                   ifelse(Cond==0,"dead",
+                   ''))),
          con.code.sp=paste(capitalize(common.name),contact.code.to.complete),
-         con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp))%>%
+         con.code.sp=ifelse(con.code.sp=="NA NA",NA,con.code.sp),
+         contact.code.to.complete=capitalize(contact.code.to.complete),
+         contact.code.to.complete=case_when(contact.code.to.complete=='Diving for but not feeding from net/longline'~'Diving',
+                                            contact.code.to.complete=='Entangled/hooked'~'Caught',
+                                            contact.code.to.complete=='Feeding from net/longline'~'Feeding',
+                                            contact.code=='WDNN; WDDN'~'Feeding',
+                                            TRUE~contact.code.to.complete),
+         contact.code.to.complete=ifelse(contact.code.to.complete=='Caught',
+                                         paste(contact.code.to.complete," (",condition,")",sep=''),
+                                         contact.code.to.complete))%>%
   group_by(sheet_no,Method,contact.code.to.complete,common.name)%>%
   summarise(n=sum(contact.count))%>%
   mutate(common.name=capitalize(common.name),
-         contact.code.to.complete=capitalize(contact.code.to.complete),
-         contact.code.to.complete=case_when(contact.code.to.complete=='Entangled/hooked'~'Caught',
-                                            contact.code.to.complete=='Feeding from net/longline'~'Feeding',
-                                            TRUE~contact.code.to.complete),
          Name=common.name,
          Interaction=contact.code.to.complete)
 
@@ -6774,20 +7858,27 @@ d.teps=TEPS%>%
 d.data=rbind(DATA%>%
                filter(grepl(paste(tolower(c('bird','sea lion','Smooth',TEPS.names$Name)),collapse='|'),tolower(comments))),
              DATA%>%
-               filter(common_name%in%TEPS.names$Name))%>%
-  distinct(sheet_no,line_no,method,common_name)%>%
-  filter(common_name%in%TEPS.names$Name)%>%
+               filter(common_name%in%TEPS.names$Name),
+             DATA%>%
+               filter(common_name=="Dusky shark" & tl>190)%>%    #190 is tl corresponding to 70 cm idl
+               mutate(common_name='Oversized dusky shark'))%>%    
+  distinct(sheet_no,line_no,method,common_name,rel.cond)%>%
+  filter(common_name%in%TEPS.names$Name)%>%   
   rename(common.name=common_name,
          Method=method)%>%
-  mutate(contact.code.to.complete='Caught',
+  mutate(condition=ifelse(is.na(rel.cond),'unknown',
+                   ifelse(rel.cond>0,"alive",
+                   ifelse(rel.cond==0,"dead",
+                   ''))),
+         contact.code.to.complete=paste('Caught (',condition,')',sep=''),
          n=1,
          Name=common.name,
          Interaction=contact.code.to.complete)%>%
   filter(!sheet_no%in%d.teps$sheet_no)
 d.data=d.data[,match(names(d.teps),names(d.data))]%>%
   mutate(Method=ifelse(Method=="GN","Gillnet",
-                       ifelse(Method=="LL","Longline",
-                              NA)))  
+                ifelse(Method=="LL","Longline",
+                NA)))  
 
 p5=fn.TEPS.barplot(n.shots=DATA%>%
                          distinct(sheet_no,method)%>%
@@ -6916,6 +8007,8 @@ if(do.inter.for.each.shot)
 
 
 #---------Analyse PA socio-economic survey ------------
+#note: use Rogers 2017 multipliers to calculate overall value of fishery
+
 #some manipulations
 Survey.fishers=Survey.fishers%>%  
                     data.frame%>%
@@ -6929,7 +8022,7 @@ Survey.fishers[paste("Q.19.",letters[1:11],sep='')]=100*Survey.fishers[paste("Q.
 Survey.processor[paste("Q.16.",letters[1:8],sep='')]=100*Survey.processor[paste("Q.16.",letters[1:8],sep='')]/rowSums(Survey.processor[paste("Q.16.",letters[1:8],sep='')])
 
 
-#1. Display all responses 
+#1. Display distribution of all responses 
 fn.plt.hist=function(d,Var)
 {
   p=d%>%
@@ -6938,7 +8031,8 @@ fn.plt.hist=function(d,Var)
     geom_histogram(fill="forestgreen")+
     xlab(Var)+ylab("")+
     theme_PA(leg.siz=Cex.res,axs.t.siz=Cex.res,axs.T.siz=Cex.res+4)+
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
   print(p)
 }
 fn.plt.barplt=function(d,Var)
@@ -6949,7 +8043,8 @@ fn.plt.barplt=function(d,Var)
     geom_bar(stat="identity",aes(fill=x))+
     xlab(Var)+ylab("")+
     theme_PA(leg.siz=Cex.res,axs.t.siz=Cex.res,axs.T.siz=Cex.res+4)+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
   print(p)
 }
 Cex.res=12
@@ -6990,10 +8085,9 @@ for(l in 1:length(Fishers.list))
             nrow=optimum.disp[1],
             ncol = optimum.disp[2])
   annotate_figure(fig,left = text_grob("Frequency", rot=90,size=Cex.res+4))
-  ggsave(le.paste(paste("Socio-economics/Responses_fishers_",names(Fishers.list)[l],".tiff",sep='')),
+  ggsave(le.paste(paste("Socio-economics/raw_responses/Responses_fishers_",names(Fishers.list)[l],".tiff",sep='')),
          width = 10,height = 10,compression = "lzw")
 }
-
 
   # 1.2 Processor questionnaire
 Personal.questions.proc=c("Inteview","Q.1","Q.2.a")
@@ -7030,14 +8124,205 @@ for(l in 1:length(Proc.list))
                 nrow=optimum.disp[1],
                 ncol = optimum.disp[2])
   annotate_figure(fig,left = text_grob("Frequency", rot=90,size=Cex.res+4))
-  ggsave(le.paste(paste("Socio-economics/Responses_processors_",names(Proc.list)[l],".tiff",sep='')),
+  ggsave(le.paste(paste("Socio-economics/raw_responses/Responses_processors_",names(Proc.list)[l],".tiff",sep='')),
          width = 10,height = 10,compression = "lzw")
 }
 
 
-#2. Plot Network
-Export.SN=FALSE   #only export once all data in as it creates dummy files in out folder
-if(Export.SN)
+#2. Plot Sankey plot and social network to display flows
+
+  #2.1. Sankey plot
+fn.sankey.plot=function(d1,d2,Other,FROM,CL)
+{
+  N.int=length(unique(d1$Inteview))
+  df=d1%>%
+    gather(Question_no,value,-Inteview)
+  d=d2%>%
+    filter(Question_no%in%df$Question_no)%>%
+    dplyr::select(-Section)%>%
+    mutate(Question=sub(".*? ", "", sub(".* following buyers", "", Question)))
+  Other=Other%>%
+    rename(Question=2)%>%
+    mutate(Question=tolower(Question),
+           Question1=case_when(grepl('processor',Question)~"Other fish processor",
+                               TRUE~Question),
+           Question="Other")
+  
+  dat=left_join(df,d,by='Question_no')%>%
+    left_join(Other,by=c('Question','Inteview'))%>%
+    mutate(Question=ifelse(!is.na(Question1),Question1,Question))%>%
+    mutate(Question=ifelse(Question=='Self-consumed',FROM,
+                           ifelse(Question=='Direct to local restaurants or other retailers','Local retailer',
+                                  Question)),
+           From=FROM,
+           To=Question)%>%
+    dplyr::select(From,To,value)
+  
+  keep.level=dat%>%filter(value>0)%>%pull(To)
+  
+  dat=dat%>%
+    filter(To%in%keep.level)
+    
+  
+  p=dat%>%
+    gather_set_data(1:2)%>%
+    ggplot(aes(x, id = id, split = y, value = value)) +
+    geom_parallel_sets(fill = CL,alpha = 0.2, axis.width = 0.1,show.legend = FALSE) +
+    geom_parallel_sets_axes(axis.width = 0.6,alpha = 0.85,fill=CL,colour='transparent') +
+    geom_parallel_sets_labels(colour = 'black',size=5,angle = 0)+
+    theme_void()+
+    theme(plot.margin=unit(c(0,-1,.1,-1), "cm"))
+  
+  Tab=dat%>%
+    group_by(To)%>%
+    summarise(Percent=sum(value))%>%
+    mutate(Percent=Percent/N.int)
+    
+    
+  return(list(p=p,Tab=Tab))
+  
+}
+
+      #Fisher - catch
+p1=fn.sankey.plot(d1=Survey.fishers[c('Inteview','Q.9.a','Q.9.b','Q.9.c','Q.9.d','Q.9.e','Q.9.f','Q.9.g')],
+                  d2=Survey.fishers.metadata,
+                  Other=Survey.fishers[c('Inteview','Q.9.g.i')],
+                  FROM='Fisher',
+                  CL='#F8766d')
+
+      #Processor - catch
+p2=fn.sankey.plot(d1=Survey.processor[c('Inteview','Q.6.a','Q.6.b','Q.6.c','Q.6.d','Q.6.e','Q.6.f','Q.6.g')],
+                  d2=Survey.processor.metadata,
+                  Other=Survey.processor[c('Inteview','Q.6.g.i')],
+                  FROM='Local fish processor',
+                  CL='#00BFC4')
+
+ggarrange(p1$p,p2$p,nrow=1)
+ggsave(le.paste(paste("Socio-economics","sankey.plot_catch.tiff",sep='/')),width = 12,height = 8,compression = "lzw")
+write.csv(p1$Tab,le.paste(paste("Socio-economics","sankey.plot_catch_fisher.csv",sep='/')),row.names = F)
+write.csv(p2$Tab,le.paste(paste("Socio-economics","sankey.plot_catch_processor.csv",sep='/')),row.names = F)
+
+
+  #2.2. Social network
+fn.social.net.all=function(d1,d2,Other,dummy,sklr,Percent=100,show.lgn=FALSE,LGN.title=FALSE,LGN.loc)
+{
+  df=d1%>%
+    gather(Question_no,value,-Inteview)
+  d=d2%>%
+    filter(Question_no%in%df$Question_no)%>%
+    dplyr::select(-Section)%>%
+    mutate(Question=sub(".*? ", "", sub(".* following buyers", "", Question)))
+  dat=left_join(df,d,by='Question_no')
+  if(!is.null(Other))
+  {
+    Other=Other%>%
+      rename(Question=2)%>%
+      mutate(Question=tolower(Question),
+             Question1=case_when(grepl('processor',Question)~"Other fish processor",
+                                 TRUE~Question),
+             Question="Other")
+    dat=dat%>%
+      left_join(Other,by=c('Question','Inteview'))%>%
+      mutate(Question=ifelse(!is.na(Question1),Question1,Question))
+  }
+  dat=dat%>%
+    mutate(Question=case_when(Question=='Self-consumed'~dummy,
+                              Question=='Direct to local restaurants or other retailers'~'Local retailer',
+                              grepl("FTE",Question)~'FTEs',
+                              grepl("a whole year",Question)~'Employees per year',
+                              TRUE~Question),
+           from = paste(dummy,Inteview),
+           to=Question,
+           to=ifelse(to=='Fisher',from,to),
+           value=value/Percent,
+           col=Inteview)%>%
+    dplyr::select(from,to,value,col)%>%
+    filter(value>0)
+  
+  
+  net <- graph_from_data_frame(d=dat, directed=T) 
+  E(net)$width <- E(net)$value*sklr  #change edge width to proportional to weight
+  COLS=colorRampPalette(c("cadetblue", "chartreuse4","darkgreen"))
+  COLS=COLS(length(unique(dat$col)))
+  E(net)$color <-as.character(COLS[dat$col])
+  #X=layout_with_gem(net)
+  #X=layout_with_mds(net)
+  X=layout_with_kk(net)
+  plot(net,
+       vertex.label.font=1,
+       vertex.label=V(net)$label,
+       vertex.color=adjustcolor("tomato", alpha.f = .99),
+       vertex.label.color='black',
+       vertex.label.dist = -2,
+       vertex.label.cex=1.6,
+       edge.arrow.size=1.15,
+       edge.curved=0.25,
+       edge.color = E(net)$color,
+       layout=X)
+  if(show.lgn)
+  {
+    LGN=range(dat$value)
+    legend(LGN.loc,paste(LGN*Percent),lty=1,lwd=LGN*sklr,bty='n',cex=1.25,title=LGN.title)
+  }
+}
+    #2.2. Catch
+fn.fig(le.paste(paste("Socio-economics","social.network_catch_all",sep='/')),2400,2400)
+par(mfrow=c(2,1),par(mar=c(1,0,2,0)))
+      #2.2.1 Fisher
+fn.social.net.all(d1=Survey.fishers[c('Inteview','Q.9.a','Q.9.b','Q.9.c','Q.9.d','Q.9.e','Q.9.f','Q.9.g')],
+                  d2=Survey.fishers.metadata,
+                  Other=Survey.fishers[c('Inteview','Q.9.g.i')],
+                  dummy='Fisher',
+                  sklr=7,
+                  show.lgn=TRUE,
+                  LGN.title="Flow %",
+                  LGN.loc='bottomright')
+legend("topleft","A)",bty='n',cex=2)
+      #2.2.2 Processor
+fn.social.net.all(d1=Survey.processor[c('Inteview','Q.6.a','Q.6.b','Q.6.c','Q.6.d','Q.6.e','Q.6.f','Q.6.g')],
+                  d2=Survey.processor.metadata,
+                  Other=Survey.processor[c('Inteview','Q.6.g.i')],
+                  dummy='Fish processor',
+                  sklr=10,
+                  show.lgn=TRUE,
+                  LGN.title="Flow %",
+                  LGN.loc='bottomright')
+legend("topleft","B)",bty='n',cex=2)
+dev.off()
+
+
+  #2.3. Employment
+fn.fig(le.paste(paste("Socio-economics","social.network_employment_all",sep='/')),2400,2400)
+par(mfrow=c(2,1),par(mar=c(1,0,2,0)))
+    #2.3.1 Fisher
+fn.social.net.all(d1=Survey.fishers[c('Inteview','Q.7','Q.8')],
+                  d2=Survey.fishers.metadata,
+                  Other=NULL,
+                  dummy='Fisher',
+                  sklr=1,
+                  Percent=1,
+                  show.lgn=TRUE,
+                  LGN.title="Number of employees",
+                  LGN.loc='bottomleft')
+legend("topleft","A)",bty='n',cex=2)
+
+    #2.3.2 Processor
+fn.social.net.all(d1=Survey.processor[c('Inteview','Q.3','Q.4')],
+                  d2=Survey.processor.metadata,
+                  Other=NULL,
+                  dummy='Fish processor',
+                  sklr=1,
+                  Percent=1,
+                  show.lgn=TRUE,
+                  LGN.title="Number of employees",
+                  LGN.loc='bottomleft')
+legend("topleft","B)",bty='n',cex=2)
+dev.off()
+
+
+
+do.network.summary=FALSE   #only export once all data in as it creates dummy files in out folder
+if(do.network.summary)
 {
   setwd(le.paste(paste("Socio-economics","network",sep='/')))
   fn.social.net=function(d1,d2,Other,out,dummy)
@@ -7063,7 +8348,7 @@ if(Export.SN)
       group_by(Question)%>%
       summarise(value=100*sum(value))%>%
       mutate(Question=ifelse(Question=='Self-consumed',dummy,
-                      ifelse(Question=='Direct to local restaurants or other retailers','Local restaurant/retailer',
+                      ifelse(Question=='Direct to local restaurants or other retailers','Local retailer',
                       Question)),
              value=ifelse(value==0 & Question==dummy,1e-4,value))%>%
       filter(value>0)%>%
@@ -7123,19 +8408,21 @@ fn.body.part=function(Q,Var)
     facet_wrap(~Dat)+
     xlab(Var)+ylab("Frequency")+
     theme_PA(strx.siz=Cex.res+2,leg.siz=Cex.res+1,axs.t.siz=Cex.res+1,axs.T.siz=Cex.res+4)+
-    theme(legend.position = "none")
+    theme(legend.position = "none")+
+    scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))) #integer axis
   print(p)
 }
 p1=fn.body.part(Q="Q1",
              Var=Survey.fishers.metadata%>%filter(Question_no=='Q.10')%>%pull(Question))
 p2=fn.body.part(Q="Q2",
-                Var=Survey.fishers.metadata%>%filter(Question_no=='Q.14')%>%pull(Question))
+                #Var=Survey.fishers.metadata%>%filter(Question_no=='Q.14')%>%pull(Question)
+                Var="Do you sell other shark products in addition to flesh and fins?")
 ggarrange(p1, p2, ncol = 1, nrow = 2)
 ggsave(le.paste("Socio-economics/Question_body.parts.tiff"),width = 10,height = 10,compression = "lzw")
 
 
 #4. Average price per species
-fn.average.barplt=function(d.f,d.f_m,Dat.f,d.p,d.p_m,Dat.p,REMUV,REMUV.p,XLAB,YLAB,Rotate=NULL,Cex=12)
+fn.average.barplt=function(d.f,d.f_m,Dat.f,d.p,d.p_m,Dat.p,REMUV,REMUV.p,XLAB,YLAB,Rotate=0,Cex=12)
 {
   #fisher
   Mean=d.f%>%summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
@@ -7161,13 +8448,16 @@ fn.average.barplt=function(d.f,d.f_m,Dat.f,d.p,d.p_m,Dat.p,REMUV,REMUV.p,XLAB,YL
   
   d=rbind(d.f,d.p)%>%
     mutate(Question=case_when(Question=='Sandbar (thick skin) shark'~'Sandbar shark',
-                              Question=='Vessel repairs and maintenance'~'Vessel repairs',
-                              Question=='Gear repairs, maintenance and replacement'~'Equipment repairs',
+                              Question=='Vessel repairs and maintenance'~'Vess. repairs',
+                              Question=='Vessel lease/mortgage'~'Vess. lease/mortgage',
+                              Question=='Fuel and lubricants'~'Fuel/lubricants',
+                              Question=='Processing plant lease/mortgage'~'Proc. plant lease/mortgage',
+                              Question=='Gear repairs, maintenance and replacement'~'Equip. repairs',
                               Question=='Crew (including skipper; salaries, superannuation, etc.)'~'Crew',
                               grepl('Persons working in processing plant',Question)~'Personnel',
-                              grepl('Administration',Question)~'Administration',
+                              grepl('Administration',Question)~'Admin.',
                               Question=='Sourcing fish (purchasing from fisher or other processor)'~'Sourcing fish',
-                              Question=='Equipment repairs, maintenance and replacement'~'Equipment repairs',
+                              Question=='Equipment repairs, maintenance and replacement'~'Equip. repairs',
                               TRUE~Question),
            Question=factor(Question,
                            levels=unique(Question)))
@@ -7181,10 +8471,11 @@ fn.average.barplt=function(d.f,d.f_m,Dat.f,d.p,d.p_m,Dat.p,REMUV,REMUV.p,XLAB,YL
                   position=position_dodge(0.05))+
     facet_wrap(~Dat,ncol=1,scales='free')+
     xlab(XLAB)+ylab(YLAB)+
-    theme_PA(strx.siz=Cex+2,axs.t.siz=Cex+2,axs.T.siz=Cex+4)+
-    theme(legend.position = "none")
+    theme_PA(strx.siz=Cex+3,axs.t.siz=Cex+2,axs.T.siz=Cex+6)+
+    theme(legend.position = "none")+
+    scale_x_discrete(labels = label_wrap(10))
   if(any(grepl('shark',d$Question)))p=p+scale_fill_manual(values=c("firebrick","steelblue"))
-  if(!is.null(Rotate)) p=p+theme(axis.text.x = element_text(angle = Rotate, vjust = 1, hjust=1))
+  if(Rotate>0) p=p+theme(axis.text.x = element_text(angle = Rotate, vjust = 1, hjust=1))
   
   print(p)
 }
@@ -7199,12 +8490,12 @@ fn.average.barplt(d.f=Survey.fishers[,paste('Q.13',letters[1:11],sep='.')],
                   REMUV.p="What is the average price you receive per kg of ",
                   XLAB='Price per kg',
                   YLAB="AUD",
-                  Rotate=45,
+                  Rotate=0,
                   Cex=18)
-ggsave(le.paste("Socio-economics/Question_price.per.kg.tiff"),width = 14,height = 16,compression = "lzw")
+ggsave(le.paste("Socio-economics/Question_price.per.kg.tiff"),width = 16,height = 16,compression = "lzw")
 
 
-#5. Costs
+#5. Costs ACA
 fn.average.barplt(d.f=Survey.fishers[paste("Q.19.",letters[1:11],sep='')],
                   d.f_m=Survey.fishers.metadata%>%filter(Question_no%in%paste("Q.19.",letters[1:11],sep='')),
                   Dat.f="Fisher",
@@ -7213,11 +8504,11 @@ fn.average.barplt(d.f=Survey.fishers[paste("Q.19.",letters[1:11],sep='')],
                   Dat.p="Processor",
                   REMUV="What percentage of your annual fishing costs were due to?",
                   REMUV.p="What percentage of your annual processing costs were due to?",
-                  XLAB='Cost item',
+                  XLAB='',
                   YLAB="Percentage of total annual costs",
-                  Rotate=55,
-                  Cex=14)
-ggsave(le.paste("Socio-economics/Question_Costs.tiff"),width = 10,height = 12,compression = "lzw")
+                  Rotate=0,
+                  Cex=12)
+ggsave(le.paste("Socio-economics/Question_Costs.tiff"),width = 13,height = 10,compression = "lzw")
 
 
 #6. Business expenditure location
@@ -7229,140 +8520,879 @@ fn.average.barplt(d.f=Survey.fishers[paste("Q.20.",letters[1:11],sep='')],
                   Dat.p="Processor",
                   REMUV='What percentage of your annual costs is spent within your local government area?',
                   REMUV.p="What percentage of your annual processing costs is spent within your local government area?",
-                  XLAB='Cost item',
+                  XLAB='',
                   YLAB="Percentage of costs spent within local government area",
-                  Rotate=35)
-ggsave(le.paste("Socio-economics/Question_Expenditure_location.tiff"),width = 10,height = 10,compression = "lzw")
+                  Rotate=0)
+ggsave(le.paste("Socio-economics/Question_Expenditure_location.tiff"),width = 12,height = 10,compression = "lzw")
+
+
+#7. Tabulate responses for input into Report's body text
+N_contacted=28  #number of fishers that are participation in TDGDLF and processors contacted by phone
+write.csv(N_contacted,le.paste(paste('Socio-economics/N_contacted.csv',sep='')),row.names = F)
+N_answered=length(unique(Survey.processor$Inteview))+length(unique(Survey.fishers$Inteview))
+write.csv(N_answered,le.paste(paste('Socio-economics/N_answered.csv',sep='')),row.names = F)
+
+fn.tbl.location.zone=function(d)
+{
+  return(d%>%
+           mutate(Zone=case_when(Loc%in%c('Lancelin')~"West Coast",
+                                 Loc%in%c('Augusta','Bunbury','Busselton')~"Zone 1",
+                                 Loc%in%c('Albany','Esperance')~"Zone 2"))%>%
+           group_by(Zone)%>%tally())
+  
+}
+Resp_zone_fisher=fn.tbl.location.zone(d=Survey.fishers%>%dplyr::select(Q.20.l)%>%rename(Loc=Q.20.l))
+write.csv(Resp_zone_fisher,le.paste(paste('Socio-economics/Resp_zone_fisher.csv',sep='')),row.names = F)
+Resp_zone_proc=fn.tbl.location.zone(d=Survey.processor%>%dplyr::select(Q.17.i)%>%rename(Loc=Q.17.i))
+write.csv(Resp_zone_proc,le.paste(paste('Socio-economics/Resp_zone_proc.csv',sep='')),row.names = F)
+
+
+fun.tabl.out=function(d1,d2,outfile)
+{
+  d=d1%>%map(tabyl,show_na=F)
+  for(n in 1:length(d))
+  {
+    x=d2%>%filter(Question_no==names(d)[n])%>%pull(Question)
+    y=names(d)[n]
+    d[[n]]=d[[n]]%>%
+      mutate(Question_no=y,
+             Question=x)%>%
+      rename(Response='.x[[i]]')%>%
+      dplyr::select(Question_no,Question,Response,n,percent)
+  }
+  write.csv(do.call(rbind,d),le.paste(paste('Socio-economics/Tabulate_',outfile,'.csv',sep='')),row.names = F)
+  
+}
+fun.tabl.out(d1=Survey.fishers[c('Q.6','Q.6.a','Q.7','Q.8',
+                                   'Q.15',paste('Q',21:24,sep='.'))],
+             d2=Survey.fishers.metadata,
+             outfile='fisher')
+
+fun.tabl.out(d1=Survey.processor[c('Q.3','Q.4','Q.12',
+                                 paste('Q',18:21,sep='.'))],
+             d2=Survey.processor.metadata,
+             outfile='processor')
+
+
+#8. Histograms of income percent, ownership and demographics
+nwords <- function(string, pseudo=F){
+  ifelse( pseudo, 
+          pattern <- "\\S+", 
+          pattern <- "[[:alpha:]]+" 
+  )
+  str_count(string, pattern)
+}
+fn.plt.this=function(d,Var,d2,nline=32)
+{
+  Xtitl=d2$Question
+  if(nchar(Xtitl)>nline)
+  {
+    Xtitl=paste(c(word(Xtitl,1,5),word(Xtitl,6,nwords(Xtitl))),collapse="\n ")
+    #Xtitl=paste(substring(Xtitl, c(1,nline+2), c(nline,nchar(Xtitl))),collapse="\n ")
+  }
+  expression()
+  dummy=d[,Var]
+  if(is.character(dummy)|is.logical(dummy))
+  {
+    p=d%>%
+      mutate(x=!!sym(Var))%>%
+      group_by(x)%>%
+      tally()%>%
+      filter(!is.na(x))%>%
+      ggplot(aes(x=x,y=n))+
+      geom_bar(stat="identity",aes(fill=x))+
+      ylab("")+
+      xlab(Xtitl)+
+      theme_PA(leg.siz=Cex.res,axs.t.siz=Cex.res+1,axs.T.siz=Cex.res+4)
+  } 
+  if(is.numeric(dummy))
+  {
+    p=d%>%
+      mutate(x=!!sym(Var))%>%
+      ggplot(aes(x))+
+      geom_histogram(fill="forestgreen")+
+      ylab("")+
+      xlab(Xtitl)+
+      theme_PA(leg.siz=Cex.res,axs.t.siz=Cex.res+1,axs.T.siz=Cex.res+4)+
+      scale_x_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1)))))
+  }
+  print(p+theme(legend.position = "none",plot.title.position = 'plot')+
+          scale_y_continuous(breaks = function(x) unique(floor(pretty(seq(0, (max(x) + 1) * 1.1))))))
+}
+  #Fishers
+ld=c('Q.25','Q.26','Q.29')
+ll.fis=vector('list',length(ld))
+for(l in 1:length(ld))
+{
+  
+  ll.fis[[l]]=fn.plt.this(d=Survey.fishers,
+                          Var=ld[l],
+                          d2=Survey.fishers.metadata%>%filter(Question_no==ld[l]))
+}
+
+  #Processors
+ld=c('Q.22','Q.23','Q.25')
+ll.proc=vector('list',length(ld))
+for(l in 1:length(ld))
+{
+  
+  ll.proc[[l]]=fn.plt.this(d=Survey.processor,
+                           Var=ld[l],
+                           d2=Survey.processor.metadata%>%filter(Question_no==ld[l]))
+}
+ll=do.call(c, list(ll.fis, ll.proc))
+fig=ggarrange(plotlist=compact(ll),nrow=2,ncol = 3)
+annotate_figure(fig,left = text_grob("Frequency", rot=90,size=Cex.res+6))
+ggsave(le.paste("Socio-economics/Question_Income.percent_owner_family.tiff"),width = 14,height = 10,compression = "lzw")
 
 
 
-#7. Proportion of trips at a loss  MISSING
-#note: run model with terms season, vessel, region
+#9. Fishery valuation - overall market value through the supply chain 
+Avrg.ktch=read.csv(le.paste("Socio-economics/Avrg.ktch.csv"))
+Total.ktch.per.boat=read.csv(le.paste("Socio-economics/Total.ktch.per.boat.csv"))
+  
+    #Add species names
+Avrg.ktch=Avrg.ktch%>%
+  left_join(All.species.names%>%
+              distinct(CAES_Code,.keep_all=T)%>%
+              dplyr::select(COMMON_NAME,Taxa,CAES_Code),
+            by=c('SPECIES'='CAES_Code'))%>%
+  mutate(COMMON_NAME=case_when(SPECIES==22998~'Shark fin',
+                               SPECIES==441025~'Shark Mackerel',
+                               TRUE~COMMON_NAME),
+         Taxa=case_when(SPECIES==22998~'Elasmobranch',
+                        SPECIES==441025~'Teleost',
+                        TRUE~Taxa))%>%
+  filter(Taxa%in%c('Elasmobranch','Teleost'))%>%
+  rename(Avg.annual.landed_kg=Tot)
 
 
-#8. Map of economic contribution by location
+  #9.1 Get average prices by species and sector
+fn.get.sp.price=function(d,d_m,Chunk,REMUV,do.what)
+{
+  if(do.what=='min')d=d[,Chunk]%>%summarise(across(where(is.numeric), ~ min(.x, na.rm = TRUE)))
+  if(do.what=='max')d=d[,Chunk]%>%summarise(across(where(is.numeric), ~ max(.x, na.rm = TRUE)))
+  d=data.frame(Q=names(d),Mean=unlist(d))
+  
+  d_m=d_m%>%
+    filter(Question_no%in%Chunk)%>%
+    mutate(Question=str_remove(Question, REMUV))
+  if(any(grepl('\\?',d_m$Question))) d_m=d_m%>%mutate(Question=sub(".*? ", "",Question))
+  d_m=d_m%>%
+    rename(Species=Question)%>%
+    mutate(Species=ifelse(Species=='Sandbar (thick skin) shark','Sandbar shark',Species))%>%
+    dplyr::select(-Section)
+  
+  return(d%>%left_join(d_m,by=c('Q'='Question_no')))
+}
+  #Fishers
+#note: Mean (min,max) is the mean $ per kg of trunks (sharks) or whole fish (scalefish)
+Fisher.price.min=fn.get.sp.price(d=Survey.fishers,
+                             d_m=Survey.fishers.metadata,
+                             Chunk=paste('Q.13',letters[1:11],sep='.'),
+                             REMUV='What is the average price you receive per kg of ',
+                             do.what='min')%>%  
+  dplyr::select(-Q) 
+Fisher.price.max=fn.get.sp.price(d=Survey.fishers,
+                                 d_m=Survey.fishers.metadata,
+                                 Chunk=paste('Q.13',letters[1:11],sep='.'),
+                                 REMUV='What is the average price you receive per kg of ',
+                                 do.what='max')%>%  
+  dplyr::select(-Q) 
+
+  #Processors
+#note: Mean (min,max) is the mean $ per kg of fillets
+Processor.price.min=fn.get.sp.price(d=Survey.processor,
+                                d_m=Survey.processor.metadata,
+                                Chunk=c(paste(paste('Q.10',letters[1:11],sep='.'),'retail',sep='_'),
+                                        paste(paste('Q.10',letters[1:11],sep='.'),'wholesale',sep='_')),
+                                REMUV='What is the average price you receive per kg of ',
+                                do.what='min')%>%
+  mutate(Sector=ifelse(grepl('retail',Q),'retail','wholesale'))%>%
+  dplyr::select(-Q)
+Processor.price.max=fn.get.sp.price(d=Survey.processor,
+                                    d_m=Survey.processor.metadata,
+                                    Chunk=c(paste(paste('Q.10',letters[1:11],sep='.'),'retail',sep='_'),
+                                            paste(paste('Q.10',letters[1:11],sep='.'),'wholesale',sep='_')),
+                                    REMUV='What is the average price you receive per kg of ',
+                                    do.what='max')%>%
+  mutate(Sector=ifelse(grepl('retail',Q),'retail','wholesale'))%>%
+  dplyr::select(-Q)
+
+  #Fish & Chip 
+
+  #ABARES
+PRICES_abares=PRICES_abares%>%
+                mutate(dolar.per.kg=Beach.Price..Adjusted.,
+                       dolar.per.kg=as.numeric(gsub("\\$", "", dolar.per.kg)),
+                       SPECIES=ASA.Species.Code)%>%
+                dplyr::select(SPECIES,dolar.per.kg)
 
 
-#9. Map of social (FTEs, etc) contribution by location
+
+  #9.2 Get values by sector
+#note: this assumes the entire catch is sold only by a given sector
+fn.value=function(price_survey,annual.ktch,price_abares=NULL,
+                         wastage.fillet.shrk=NULL,wastage.bellyflap.shrk=NULL,
+                         wastage.fillet.tel=NULL)
+{
+  Add.bronzie=price_survey%>%
+              filter(Species=='Dusky shark')%>%
+              mutate(Species='Bronze whaler')
+  price_survey=price_survey%>%
+    mutate(Species=case_when(Species=='Shark fins'~'Shark fin',
+                             Species=='Dhufish'~'West Australian dhufish',
+                             Species=='Snapper'~'Pink snapper',
+                             TRUE~Species))
+  price_survey=rbind(price_survey,Add.bronzie)
+  
+  Scalefish.price=price_survey%>%filter(Species=='Other scalefish')%>%pull(Mean)
+  Shark.price=price_survey%>%filter(Species=='Other sharks and rays')%>%pull(Mean)
+  
+  if(!is.null(price_abares))
+  {
+    d=left_join(annual.ktch,price_survey,by=c('COMMON_NAME'='Species'))%>%
+      left_join(price_abares%>%mutate(SPECIES=as.integer(SPECIES)),by='SPECIES')%>%
+      mutate(Price=case_when(is.na(Mean) ~dolar.per.kg,
+                             TRUE~Mean),
+             Price=case_when(is.na(Price) & Taxa=='Elasmobranch' ~ Shark.price,
+                             is.na(Price) & Taxa=='Teleost' ~ Scalefish.price,
+                             TRUE~Price))
+  }else
+  {
+    d=left_join(annual.ktch,price_survey,by=c('COMMON_NAME'='Species'))%>%
+      mutate(Price=case_when(is.na(Mean) & Taxa=='Elasmobranch' ~ Shark.price,
+                             is.na(Mean) & Taxa=='Teleost' ~ Scalefish.price,
+                             TRUE~Mean))
+  }
+  
+  if(is.null(wastage.fillet.shrk))
+  {
+    d=d%>%mutate(Revenue=Avg.annual.landed_kg*Price)
+  }else
+  {
+    d=d%>%
+      mutate(Revenue.fillet=case_when(Taxa=='Elasmobranch'~Avg.annual.landed_kg*Price*wastage.fillet.shrk,
+                                      Taxa=='Teleost'~Avg.annual.landed_kg*Price*wastage.fillet.tel),
+             Revenue.fillet=case_when(COMMON_NAME=='Shark fin' ~ Avg.annual.landed_kg*Price,
+                                      TRUE ~ Revenue.fillet),
+             Revenue.belly=case_when(Taxa=='Elasmobranch'~Avg.annual.landed_kg*Price*wastage.bellyflap.shrk,
+                                     Taxa=='Teleost'~Avg.annual.landed_kg*Price*0),
+             Revenue.belly=case_when(COMMON_NAME=='Shark fin' ~ 0,
+                                     TRUE~Revenue.belly),
+             Revenue=Revenue.fillet+Revenue.belly)
+  }
+  
+  Value.in.millions=sum(d%>%pull(Revenue))/1e6
+  
+  return(Value.in.millions)
+}
+  #Fishers
+Value.to.fisher_millions.min=fn.value(price_survey=Fisher.price.min,
+                                  annual.ktch=Avrg.ktch,
+                                  price_abares=PRICES) 
+Value.to.fisher_millions.max=fn.value(price_survey=Fisher.price.max,
+                                  annual.ktch=Avrg.ktch,
+                                  price_abares=PRICES) 
+  #Processors 
+Value.to.processor_millions_retail.min=fn.value(price_survey=Processor.price.min%>%
+                                                     filter(Sector=='retail'),
+                                            annual.ktch=Avrg.ktch,
+                                            wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,  
+                                            wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                            wastage.fillet.tel=Scalefish.to.fillet)
+Value.to.processor_millions_wholesale.min=fn.value(price_survey=Processor.price.min%>%
+                                                     filter(Sector=='wholesale'),
+                                               annual.ktch=Avrg.ktch,
+                                               wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,  
+                                               wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                               wastage.fillet.tel=Scalefish.to.fillet)
+Value.to.processor_millions_retail.max=fn.value(price_survey=Processor.price.max%>%
+                                                  filter(Sector=='retail'),
+                                                annual.ktch=Avrg.ktch,
+                                                wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,  
+                                                wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                                wastage.fillet.tel=Scalefish.to.fillet)
+Value.to.processor_millions_wholesale.max=fn.value(price_survey=Processor.price.max%>%
+                                                     filter(Sector=='wholesale'),
+                                                   annual.ktch=Avrg.ktch,
+                                                   wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,  
+                                                   wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                                   wastage.fillet.tel=Scalefish.to.fillet)
 
 
-#10. Economc and social contribution 
-#missing: input the calculated GVP, social value, etc
-SKLr=50
+  #Fish & Chip
+
+    #Sharks
+Shark.price.list=Shark.price.list%>%
+  mutate(Price.per.kg.min=Price.per.fillet.min*1000/fillet.weight,
+         Price.per.kg.max=Price.per.fillet.max*1000/fillet.weight)
+fn.value.fish.chip_shk=function(price,annual.ktch,wastage.fillet.shrk,wastage.bellyflap.shrk,do.what)
+{
+  if(do.what=='min')
+  {
+    Shark.price=price%>%filter(Species=='Shark')%>%pull(Price.per.kg.min)
+    d=left_join(annual.ktch,price,by=c('COMMON_NAME'='Species'))%>%
+      mutate(Price=case_when(is.na(Price.per.kg.min) & Taxa=='Elasmobranch' ~ Shark.price,
+                             TRUE~Price.per.kg.min))
+  }
+  if(do.what=='max')
+  {
+    Shark.price=price%>%filter(Species=='Shark')%>%pull(Price.per.kg.max)
+    d=left_join(annual.ktch,price,by=c('COMMON_NAME'='Species'))%>%
+      mutate(Price=case_when(is.na(Price.per.kg.max) & Taxa=='Elasmobranch' ~ Shark.price,
+                             TRUE~Price.per.kg.max))
+  }
+  d=d%>%
+    mutate(Revenue.fillet=case_when(Taxa=='Elasmobranch'~Avg.annual.landed_kg*Price*wastage.fillet.shrk),
+           Revenue.belly=case_when(Taxa=='Elasmobranch'~Avg.annual.landed_kg*Price*wastage.bellyflap.shrk),
+           Revenue=Revenue.fillet+Revenue.belly)
+  
+  Value.in.millions=sum(d%>%pull(Revenue))/1e6
+  
+  return(Value.in.millions)
+}
+Value.to.fish.chip_millions_shk.min=fn.value.fish.chip_shk(price=Shark.price.list,
+                                                       annual.ktch=Avrg.ktch%>%filter(Taxa=='Elasmobranch' & !COMMON_NAME=="Shark fin"),
+                                                       wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,
+                                                       wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                                       do.what='min')
+Value.to.fish.chip_millions_shk.max=fn.value.fish.chip_shk(price=Shark.price.list,
+                                                           annual.ktch=Avrg.ktch%>%filter(Taxa=='Elasmobranch' & !COMMON_NAME=="Shark fin"),
+                                                           wastage.fillet.shrk=Trunk.wastage$Trunk.to.fillet,
+                                                           wastage.bellyflap.shrk=Trunk.wastage$Trunk.to.belly.flat,
+                                                           do.what='max')
+
+    #Scalefish 
+fn.value.fish.chip_tel=function(beach.price,multiplier,annual.ktch)
+{
+  beach.price=beach.price%>%
+    mutate(Species=case_when(Species=='Dhufish'~'West Australian dhufish',
+                             Species=='Snapper'~'Pink snapper',
+                             TRUE~Species))
+  Scalefish.price=beach.price%>%filter(Species=='Other scalefish')%>%pull(Mean)
+  
+  d=left_join(annual.ktch,multiplier,by=c('COMMON_NAME'='Species'))%>%
+    mutate(Multiplier=case_when(is.na(Multiplier) & Taxa=='Teleost' ~ Other.scalefish.price.multiplier,
+                                TRUE~Multiplier))%>%
+    left_join(beach.price,by=c('COMMON_NAME'='Species'))%>%
+    mutate(Price=case_when(is.na(Mean) & Taxa=='Teleost' ~ Scalefish.price,
+                           TRUE~Mean))%>%
+    mutate(Revenue=Avg.annual.landed_kg*Price*Multiplier)
+  
+  Value.in.millions=sum(d%>%pull(Revenue))/1e6
+  
+  return(Value.in.millions)
+}
+Value.to.fish.chip_millions_tel.min=fn.value.fish.chip_tel(beach.price=Fisher.price.min,
+                                                       multiplier=FSRDGVP.multipliers,
+                                                       annual.ktch=Avrg.ktch%>%filter(Taxa=='Teleost'))
+Value.to.fish.chip_millions_tel.max=fn.value.fish.chip_tel(beach.price=Fisher.price.max,
+                                                           multiplier=FSRDGVP.multipliers,
+                                                           annual.ktch=Avrg.ktch%>%filter(Taxa=='Teleost'))
+
+    #Total
+Value.to.fish.chip_millions.min=Value.to.fish.chip_millions_shk.min+Value.to.fish.chip_millions_tel.min
+Value.to.fish.chip_millions.max=Value.to.fish.chip_millions_shk.max+Value.to.fish.chip_millions_tel.max
+
+
+  #9.3 Get Proportion Processor sold retail and wholesale
+fn.get.proportion.ktch=function(d,d_m,Chunk)
+{
+  d=d[,Chunk]%>%
+    summarise(across(where(is.numeric), ~ mean(.x, na.rm = TRUE)))
+  d=data.frame(Q=names(d),Mean=unlist(d))
+  
+  d_m=d_m%>%
+    filter(Question_no%in%Chunk)%>%
+    mutate(Group=case_when(Question_no=='Q.6.a'~'Retail',
+                           Question_no=='Q.6.b'~'Fish.chips',
+                           TRUE~'Wholesale'))%>%
+    dplyr::select(-Section)
+  
+  d=d%>%left_join(d_m,by=c('Q'='Question_no'))%>%
+    filter(!Q%in%c('Q.6.c'))%>%
+    group_by(Group)%>%
+    summarise(Proportion=sum(Mean)/100)%>%
+    ungroup()
+  return(d)
+}
+Prop.ktch.processor=fn.get.proportion.ktch(d=Survey.processor,
+                                           d_m=Survey.processor.metadata,
+                                           Chunk=paste('Q.6',letters[1:7],sep='.'))
+
+
+  #9.4 Calculate actual value considering Processor and Fish & Chips proportion of the catch
+fn.out=function(x) Prop.ktch.processor%>%filter(Group==x)%>%pull(Proportion)
+Fishery.value.min=Value.to.processor_millions_retail.min * fn.out('Retail') + 
+                  Value.to.processor_millions_wholesale.min * fn.out('Wholesale') +
+                  Value.to.fish.chip_millions.min * fn.out('Fish.chips')
+Fishery.value.max=Value.to.processor_millions_retail.max * fn.out('Retail') + 
+                  Value.to.processor_millions_wholesale.max * fn.out('Wholesale') +
+                  Value.to.fish.chip_millions.max * fn.out('Fish.chips')
+
+
+write.csv(data.frame(Sector=c('Fisher','Fishery'),
+                     Value_millions.per.year.min=c(Value.to.fisher_millions.min,Fishery.value.min),
+                     Value_millions.per.year.max=c(Value.to.fisher_millions.max,Fishery.value.max)),
+          le.paste("Socio-economics/Fishery.value.csv"),row.names = F)
+
+
+#10. Fishery valuation - GVA   
+  #10.1 Fishery revenue
+GVA.revenue.min=Value.to.fisher_millions.min*1e6
+GVA.revenue.max=Value.to.fisher_millions.max*1e6
+
+  #10.2 Total number of vessels in TDGDLF
+N.vessels=sum(TDGDLF.vessels$Freq)
+
+  #10.3 Overall costs  
+Avg.ves.annual.ktch=mean(Total.ktch.per.boat$Tot)
+Kst.question=as.numeric(unlist(str_extract_all(Survey.fishers$Q.16, "[[:digit:]]+")))
+Kst.question=Kst.question[!is.na(Kst.question)]
+add.boat.nm=Survey.fishers%>%
+  filter(!is.na(Q.16))%>%
+  mutate(Q.4=tolower(Q.4))%>%
+  pull(Q.4)
+Kst.question=as.data.frame(matrix(Kst.question,nrow=length(add.boat.nm),byrow=T))
+names(Kst.question)=c('Min','Max')
+Kst.question=Kst.question%>%
+  mutate(BoatName=add.boat.nm)%>%
+  left_join(Total.ktch.per.boat,by='BoatName')%>%
+  filter(!is.na(Tot))%>%
+  mutate(Avg.ves.annual.ktch=Avg.ves.annual.ktch,
+         Min.scaled=Min*Avg.ves.annual.ktch/Tot,
+         Max.scaled=Max*Avg.ves.annual.ktch/Tot)
+
+Annual.cost.min=min(Kst.question$Min.scaled,na.rm=T) #min & max annual cost for average vessel
+Annual.cost.max=max(Kst.question$Max.scaled,na.rm=T)
+
+  #10.4 Costs per vessel 
+Kost.props.minus.wage=Survey.fishers[,paste('Q.19',letters[c(1:4,6:11)],sep='.')]
+
+GVA.costs.min=sum(apply(Kost.props.minus.wage,2,mean,na.rm=T)*Annual.cost.min/100)
+GVA.costs.max=sum(apply(Kost.props.minus.wage,2,mean,na.rm=T)*Annual.cost.max/100)
+  
+  #10.5 Taxes per vessel
+GVA.taxes.min=min(c(Survey.fishers$Q.18.a,Survey.fishers$Q.18.b),na.rm=T)
+GVA.taxes.max=max(c(Survey.fishers$Q.18.a,Survey.fishers$Q.18.b),na.rm=T)
+  
+  #10.6 Wages per vessel
+GVA.wages.min=mean(Survey.fishers$Q.19.e,na.rm=T)*Annual.cost.min/100
+GVA.wages.max=mean(Survey.fishers$Q.19.e,na.rm=T)*Annual.cost.max/100
+
+
+  #10.7 Total GVA
+GVA.fn=function(Fishery.revenue,Costs.per.vsl,Tax.per.vsl,Wage.per.vsl,N.ves)
+{
+  GVA=Fishery.revenue - Costs.per.vsl*N.ves + Tax.per.vsl*N.ves + Wage.per.vsl*N.ves
+  return(GVA/1e6)
+}
+  
+GVA.min=GVA.fn(Fishery.revenue=GVA.revenue.min,
+               Costs.per.vsl=GVA.costs.min,
+               Tax.per.vsl=GVA.taxes.min,
+               Wage.per.vsl=GVA.wages.min,
+               N.ves=N.vessels)
+GVA.max=GVA.fn(Fishery.revenue=GVA.revenue.max,
+               Costs.per.vsl=GVA.costs.max,
+               Tax.per.vsl=GVA.taxes.max,
+               Wage.per.vsl=GVA.wages.max,
+               N.ves=N.vessels)
+
+write.csv(data.frame(Range=c('Min','Max'),
+                     GVA=round(c(GVA.min,GVA.max)),
+                     Units='AUD.million'),
+          le.paste("Socio-economics/Fishery.value_GVA.csv"),row.names = F)
+
+
+
+#11. Fishery valuation - Employment
+FTE_fisher.min=min(Survey.fishers$Q.7,na.rm=T)
+FTE_fisher.max=max(Survey.fishers$Q.7,na.rm=T)
+Total.employees_fisher.min=min(Survey.fishers$Q.8,na.rm=T)
+Total.employees_fisher.max=max(Survey.fishers$Q.8,na.rm=T)
+
+FTE_proc.min=min(Survey.processor$Q.3,na.rm=T)
+FTE_proc.max=max(Survey.processor$Q.3,na.rm=T)
+Total.employees_proc.min=min(Survey.processor$Q.4,na.rm=T)
+Total.employees_proc.max=max(Survey.processor$Q.4,na.rm=T)
+
+write.csv(data.frame(Sector=c('Fisher','Processor'),
+                     FTE.min=round(c(FTE_fisher.min,FTE_proc.min)),
+                     FTE.max=round(c(FTE_fisher.max,FTE_proc.max)),
+                     All.min=round(c(Total.employees_fisher.min,Total.employees_proc.min)),
+                     All.max=round(c(Total.employees_fisher.max,Total.employees_proc.max))),
+          le.paste("Socio-economics/Employees.csv"),row.names = F)
+
+
+
+#12. Map of economic and social contribution 
+#MISSING: input the calculated GVA, social value, FTEs, etc by location
+Do.map.location=FALSE
+if(Do.map.location)
+{
+  SKLr=50
   #Economic contribution
-D=data.frame(lon.port=c(117.8837,115.1579),
-             lat.port=c(-35.0269,-34.3166),
-             Quantity=c(150000,350000))%>%   #the quantity to plot (GVP, FTEs, etc)
-  mutate(Prop=Quantity/sum(Quantity))
-p1=plt.map(D=D,
-           Title="Economic contributon",
-           Scaler=SKLr)
-Bubble.ref=data.frame(lon.port=c(128,128),
-                      lat.port=c(-35.75,-33.75),
-                      Prop=c(0.25,0.50),
-                      Text=c(1e5,5e5))
-p1=p1+geom_point(data = Bubble.ref, mapping = aes(x = lon.port, y = lat.port),
-                 size=Bubble.ref$Prop*SKLr, colour = grDevices::adjustcolor("steelblue", alpha=0.6))+
-  geom_text(data=Bubble.ref,aes(x = lon.port, y = lat.port,label = paste('$',Text,sep='')),
-            fontface="bold",color="white",size=5)
-
-
-#Social contribution
-D=data.frame(lon.port=c(117.8837,115.1579),
-             lat.port=c(-35.0269,-34.3166),
-             Quantity=c(5,7))%>%   #the quantity to plot (GVP, FTEs, etc)
-  mutate(Prop=Quantity/sum(Quantity))
-p2=plt.map(D=D,
-           Title='Social contribution',
-           Scaler=SKLr)
-
-Bubble.ref=data.frame(lon.port=c(128,128),
-                      lat.port=c(-35.75,-33.75),
-                      Prop=c(0.25,0.50),
-                      Text=c(5,10))
-p2=p2+geom_point(data = Bubble.ref, mapping = aes(x = lon.port, y = lat.port),
-                 size=Bubble.ref$Prop*SKLr, colour = grDevices::adjustcolor("steelblue", alpha=0.6))+
-  geom_text(data=Bubble.ref,aes(x = lon.port, y = lat.port,label = paste(Text,'FTEs')),
-            fontface="bold",color="white",size=5)
-
-
-ggarrange(p1, p2, ncol = 1, nrow = 2)
-ggsave(le.paste("Socio-economics/Map_contributions.tiff"),width = 7,height = 10,compression = "lzw")
+  D=data.frame(lon.port=c(117.8837,115.1579),
+               lat.port=c(-35.0269,-34.3166),
+               Quantity=c(150000,350000))%>%   #the quantity to plot (GVA, FTEs, etc)
+    mutate(Prop=Quantity/sum(Quantity))
+  p1=plt.map(D=D,
+             Title="Economic contributon",
+             Scaler=SKLr)
+  Bubble.ref=data.frame(lon.port=c(128,128),
+                        lat.port=c(-35.75,-33.75),
+                        Prop=c(0.25,0.50),
+                        Text=c(1e5,5e5))
+  p1=p1+geom_point(data = Bubble.ref, mapping = aes(x = lon.port, y = lat.port),
+                   size=Bubble.ref$Prop*SKLr, colour = grDevices::adjustcolor("steelblue", alpha=0.6))+
+    geom_text(data=Bubble.ref,aes(x = lon.port, y = lat.port,label = paste('$',Text,sep='')),
+              fontface="bold",color="white",size=5)
+  
+  #Social contribution
+  D=data.frame(lon.port=c(117.8837,115.1579),
+               lat.port=c(-35.0269,-34.3166),
+               Quantity=c(5,7))%>%   #the quantity to plot (GVP, FTEs, etc)
+    mutate(Prop=Quantity/sum(Quantity))
+  p2=plt.map(D=D,
+             Title='Social contribution',
+             Scaler=SKLr)
+  
+  Bubble.ref=data.frame(lon.port=c(128,128),
+                        lat.port=c(-35.75,-33.75),
+                        Prop=c(0.25,0.50),
+                        Text=c(5,10))
+  p2=p2+geom_point(data = Bubble.ref, mapping = aes(x = lon.port, y = lat.port),
+                   size=Bubble.ref$Prop*SKLr, colour = grDevices::adjustcolor("steelblue", alpha=0.6))+
+    geom_text(data=Bubble.ref,aes(x = lon.port, y = lat.port,label = paste(Text,'FTEs')),
+              fontface="bold",color="white",size=5)
+  
+  ggarrange(p1, p2, ncol = 1, nrow = 2)
+  ggsave(le.paste("Socio-economics/Map_contributions.tiff"),width = 7,height = 10,compression = "lzw")
+  
+}
 
 
 
 #---------Analyse PA economics of Longline vs Gillnet ------------
 
-#1. Calculate revenue
-  #1.1 get catch weight per trip
-trunk.ratio=1.59   #average total weight to trunk ratio from catch and effort returns
-fin.to.trunk.ratio=0.05     #adopted by NMFS (1993) fide in Biery & Pauly 2012
-Retained.catch=DATA%>%filter(retainedflag=='Yes' & !is.na(boat))%>%
-  dplyr::select(date,sheet_no,line_no,method,boat,taxa,species,common_name,
-                tl,fl,number,tw,a_weight,b_weight)%>%
-  group_by(common_name)%>%
-  mutate(tw.dummy=mean(tw,na.rm=T),
-         tw=ifelse(is.na(tw),tw.dummy,tw))%>%
-  ungroup()%>%
-  filter(!is.na(tw))%>%
-  arrange(date)%>%
-  mutate(weight=ifelse(taxa=='Teleost',tw,
-                ifelse(taxa=='Elasmobranch',tw/trunk.ratio,
-                NA)),
-         common_name.economics=case_when(common_name%in%c(Main.species,"fins")~common_name,
-                                         !common_name%in%c(Main.species,"fins") & taxa=='Elasmobranch'~"Other sharks",
-                                         !common_name%in%c(Main.species,"fins") & taxa=='Teleost'~"Other scalefish"))%>%
-  arrange(date)%>%
-  mutate(diff_days=difftime(date,lag(date,n=1),units="days"),
-         diff_days=ifelse(is.na(diff_days),0,diff_days),
-         delta_days=ifelse(diff_days>1,1,0),
-         trip=1+cumsum(delta_days))
+#1. Revenue from catching one tonne
+  #1.1. catch composition
+Composition_GN=read.csv(le.paste("Socio-economics/catch.per.shot/Composition_GN.csv"))
+Composition_LL=read.csv(le.paste("Socio-economics/catch.per.shot/Composition_LL.csv"))
 
-  #1.2 add price per species from questionnaires
+  #1.2. price per species ($ per kg of trunk for sharks or whole for scalefish)  
 This=c("Q.4",paste('Q.13',letters[1:11],sep='.'))
 oldnames = paste('Q.13',letters[1:11],sep='.')
 newnames=c("Gummy shark","Dusky shark","Whiskery shark","Sandbar shark","fins","Other sharks",
            "Pink snapper","West Australian dhufish","Queen snapper","Blue groper","Other scalefish")
-d.f=Survey.fishers[,This]%>%
-  mutate(boat=case_when(Q.4=="Tracey Lea"~"E35",
-                        Q.4=="Elizabeth Maria II"~"E007",
-                        Q.4=="Viking Legend"~"F399"))%>%
-  rename_at(vars(oldnames), ~ newnames)
-d.f=d.f%>%
+Price.species=Survey.fishers[,This]%>%
+    rename_at(vars(oldnames), ~ newnames)%>%
   dplyr::select(-Q.4)%>%
-  gather(common_name.economics,Price.per.kg,-boat)%>%
+  gather(common_name.economics,Price.per.kg)%>%
   mutate(Price.per.kg=ifelse(is.na(Price.per.kg) & common_name.economics=='fins',16.5,
-                      ifelse(is.na(Price.per.kg) & common_name.economics=='Other scalefish',5.4,
-                      Price.per.kg)))  #added manually as not provided
+                             ifelse(is.na(Price.per.kg) & common_name.economics=='Other scalefish',5.4,
+                             Price.per.kg)))%>%  #added manually as not provided
+  group_by(common_name.economics)%>%
+  summarise(Price.per.kg=mean(Price.per.kg))
 
-Retained.catch=Retained.catch%>%left_join(d.f,by=c('common_name.economics','boat'))%>%
-  mutate(revenue= Price.per.kg*weight)
+Price.LL.to.GN=mean(c(1,1+1.4*.1,1+1.4*.1))   #from Additional.questions$Q.29 & Additional.questions$Q.30. 
+                                      # LL-caught gets 42% better price if gillnet caught damaged by sealice.
+                                      # Sealice damage was not quantified by it is not very common so set at 10% 
 
+  #1.3. calculate revenue
+sp.pris=unique(Price.species$common_name.economics)
+Rev_LL=sum(Composition_LL%>%
+          mutate(Name=case_when(!COMMON_NAME%in%sp.pris & Taxa=='Elasmobranch'~'Other sharks',
+                                !COMMON_NAME%in%sp.pris & Taxa=='Teleost'~'Other scalefish',
+                                TRUE~COMMON_NAME))%>%
+          left_join(Price.species,by=c('Name'='common_name.economics'))%>%
+          mutate(Revenue.per.ton=1000*prop*Price.per.kg*Price.LL.to.GN)%>%pull(Revenue.per.ton))
+
+Rev_GN=sum(Composition_GN%>%
+             mutate(Name=case_when(!COMMON_NAME%in%sp.pris & Taxa=='Elasmobranch'~'Other sharks',
+                                   !COMMON_NAME%in%sp.pris & Taxa=='Teleost'~'Other scalefish',
+                                   TRUE~COMMON_NAME))%>%
+             left_join(Price.species,by=c('Name'='common_name.economics'))%>%
+             mutate(Revenue.per.ton=1000*prop*Price.per.kg)%>%pull(Revenue.per.ton))
+
+#2. Costs to catch one tonne
+
+  #2.1. number of fishing days required to catch a tonne of fish
+Ndays_one.tone_GN=read.csv(le.paste("Socio-economics/catch.per.shot/Ndays_one.tone_GN.csv"))
+Ndays_one.tone_LL=read.csv(le.paste("Socio-economics/catch.per.shot/Ndays_one.tone_LL.csv"))
+
+Ndays_one.tone_LL_S1=Ndays_one.tone_LL%>%
+  mutate(shot=2,
+         fishing.day.1.ton_Catch=fishing.day.1.ton_Catch/2,
+         fishing.day.1.ton_Catch.lower=fishing.day.1.ton_Catch.lower/2,
+         fishing.day.1.ton_Catch.upper=fishing.day.1.ton_Catch.upper/2)
+Ndays_one.tone_LL=rbind(Ndays_one.tone_LL,Ndays_one.tone_LL_S1)  
+
+  #2.2. Overall parameters (from questionnaires)  
+Annual.cost.GN=mean(c(Kst.question$Min.scaled,Kst.question$Max.scaled),na.rm=T)  #mean annual costs for average vessel
+dis.q=c('Q.6','Q.7','Q.10','Q.19','Q.20','Q.25','Q.26','Q.27','Q.28','Q.29','Q.30')
+
+Add_d=Additional.questions[,dis.q]%>%data.frame
+Additional.questions.metadata%>%filter(Question_no%in%dis.q)%>%data.frame
+Annual.LL.days=round(mean(c(150,150,170,120)))  #from Add_d$Q.6
+Annual.GN.days=round(mean(c(100,120,140,95)))   #from Add_d$Q.7 
+
+  #2.3 crew costs to catch one tonne    
+Annual.cost.crew_GN=mean(Survey.fishers$Q.19.e,na.rm=T)*Annual.cost.GN/100
+Annual.cost.crew_LL=Annual.cost.crew_GN
+
+Annual.n.fte_GN=mean(Survey.fishers$Q.7)
+Annual.n.fte_LL=Annual.n.fte_GN
+
+n.crew_LL=mean(c(2,2,3))+mean(c(1,0,1)) #from Add_d$Q.26, Add_d$Q.27
+n.crew_GN=mean(c(2,2,3))  #from Add_d$Q.25
+
+crew.cost=function(an.crew.kst,an.ftes,an.days,n.crew.day,n.day_one.ton)
+{
+  Lower=((an.crew.kst/an.ftes)/an.days)*n.crew.day*n.day_one.ton$fishing.day.1.ton_Catch.lower
+  Mean=((an.crew.kst/an.ftes)/an.days)*n.crew.day*n.day_one.ton$fishing.day.1.ton_Catch
+  Upper=((an.crew.kst/an.ftes)/an.days)*n.crew.day*n.day_one.ton$fishing.day.1.ton_Catch.upper
+  return(list(Lower=Lower,Mean=Mean,Upper=Upper))
+}
+Cost_crew_LL=crew.cost(an.crew.kst=Annual.cost.crew_LL,
+                       an.ftes=Annual.n.fte_LL,
+                       an.days=Annual.LL.days,
+                       n.crew.day=n.crew_LL,
+                       n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==1))
+Cost_crew_LL_S1=crew.cost(an.crew.kst=Annual.cost.crew_LL,
+                          an.ftes=Annual.n.fte_LL,
+                          an.days=Annual.LL.days,
+                          n.crew.day=n.crew_LL,
+                          n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==2))
+Cost_crew_GN=crew.cost(an.crew.kst=Annual.cost.crew_GN,
+                          an.ftes=Annual.n.fte_GN,
+                          an.days=Annual.GN.days,
+                          n.crew.day=n.crew_GN,
+                          n.day_one.ton=Ndays_one.tone_GN)
+
+  
+  #2.4. gear repair costs to catch one tonne   
+Annual.cost.gear.rep_GN=mean(Survey.fishers$Q.19.c,na.rm=T)*Annual.cost.GN/100
+Annual.cost.gear.rep_LL=Annual.cost.gear.rep_GN   #update longline with Markus survey values! MISSING
+
+
+gear.rep.cost=function(an.gear.rep.kst,an.days,n.day_one.ton)
+{
+  Lower=(an.gear.rep.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch.lower
+  Mean=(an.gear.rep.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch
+  Upper=(an.gear.rep.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch.upper
+  return(list(Lower=Lower,Mean=Mean,Upper=Upper))
+}
+Cost_gear.rep_LL=gear.rep.cost(an.gear.rep.kst=Annual.cost.gear.rep_LL,
+                                  an.days=Annual.LL.days,
+                                  n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==1))
+Cost_gear.rep_LL_S1=gear.rep.cost(an.gear.rep.kst=Annual.cost.gear.rep_LL,
+                                  an.days=Annual.LL.days,
+                                  n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==2)) 
+Cost_gear.rep_GN=gear.rep.cost(an.gear.rep.kst=Annual.cost.gear.rep_GN,
+                                  an.days=Annual.GN.days,
+                                  n.day_one.ton=Ndays_one.tone_GN)
+ 
+
+  #2.5. bait costs to catch one tonne (longline only)
+Bait.AUD_kg=mean(c(1,3,2.5)) #from Add_d$Q.19
+Bait.kg.per.hook=mean(c(8/250,10/250,70/1000)) #from Add_d$Q.20
+Bait.AUD.per.hook=Bait.kg.per.hook*Bait.AUD_kg
+bait.cost=function(n.huk.day,n.shot.day,bait.price.huk,n.day_one.ton)
+{
+  Lower=n.huk.day*n.shot.day*bait.price.huk*n.day_one.ton$fishing.day.1.ton_Catch.lower
+  Mean=n.huk.day*n.shot.day*bait.price.huk*n.day_one.ton$fishing.day.1.ton_Catch
+  Upper=n.huk.day*n.shot.day*bait.price.huk*n.day_one.ton$fishing.day.1.ton_Catch.upper
+  return(list(Lower=Lower,Mean=Mean,Upper=Upper))
+}
+Cost_bait_one.tonne=bait.cost(n.huk.day=Ndays_one.tone_LL$HOOKS[1],
+                                      n.shot.day=Ndays_one.tone_LL$shot[1],
+                                      bait.price.huk=Bait.AUD.per.hook,
+                                      n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==1))
+
+Cost_bait_one.tonne_S1=bait.cost(n.huk.day=Ndays_one.tone_LL$HOOKS[1],
+                                      n.shot.day=Ndays_one.tone_LL$shot[2],
+                                      bait.price.huk=Bait.AUD.per.hook,
+                                      n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==2))
+
+  #2.6 longline relative fuel cost for catching one tonne  
+add.fuel=FALSE
+if(add.fuel)
+{
+  fuel.rel.colst.LL=mean(c(1,1,1,2))-1  #M. Branderhorst leaves engine running and consumes double the fuel than gillnetting. Others don't
+  Annual.cost.fuel_GN=mean(Survey.fishers$Q.19.d,na.rm=T)*Annual.cost.GN/100
+  Annual.cost.fuel_LL=Annual.cost.fuel_GN
+  LL.rel.fuel.cost=function(an.fuel.kst,an.days,fuel.rel.kst,n.day_one.ton)
+  {
+    Lower=(an.fuel.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch.lower*fuel.rel.kst
+    Mean=(an.fuel.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch*fuel.rel.kst
+    Upper=(an.fuel.kst/an.days)*n.day_one.ton$fishing.day.1.ton_Catch.upper*fuel.rel.kst
+    return(list(Lower=Lower,Mean=Mean,Upper=Upper))
+  }
+  Cost_rel.fuel_LL=LL.rel.fuel.cost(an.fuel.kst=Annual.cost.fuel_LL,
+                                    an.days=Annual.LL.days,
+                                    fuel.rel.kst=fuel.rel.colst.LL,
+                                    n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==1))
+  Cost_rel.fuel_LL_S1=LL.rel.fuel.cost(an.fuel.kst=Annual.cost.fuel_LL,
+                                       an.days=Annual.LL.days,
+                                       fuel.rel.kst=fuel.rel.colst.LL,
+                                       n.day_one.ton=Ndays_one.tone_LL%>%filter(shot==2))
+}
+  
+
+  #2.7 calculate total costs to catch one tonne
+fn.tot.kst=function(Kru,Gr,Bei=NULL)
+{
+  Lower=Kru$Lower + Gr$Lower
+  if(!is.null(Bei)) Lower=Lower+ Bei$Lower
+  
+  Mean=Kru$Mean + Gr$Mean
+  if(!is.null(Bei)) Mean=Mean+ Bei$Mean
+  
+  Upper=Kru$Upper + Gr$Upper
+  if(!is.null(Bei)) Upper=Upper+ Bei$Upper
+  
+  return(data.frame(Lower=Lower,Mean=Mean,Upper=Upper))
+}
+Cost_LL=fn.tot.kst(Kru=Cost_crew_LL,Gr=Cost_gear.rep_LL,Bei=Cost_bait_one.tonne) 
+Cost_LL_S1=fn.tot.kst(Kru=Cost_crew_LL_S1,Gr=Cost_gear.rep_LL_S1,Bei=Cost_bait_one.tonne_S1)
+Cost_GN=fn.tot.kst(Kru=Cost_crew_GN,Gr=Cost_gear.rep_GN)
+
+if(add.fuel)
+{
+  Cost_LL=Cost_LL%>%mutate(Lower=Lower+Cost_rel.fuel_LL$Lower,
+                           Mean=Mean+Cost_rel.fuel_LL$Mean,
+                           Upper=Upper+Cost_rel.fuel_LL$Upper) 
+  Cost_LL_S1=Cost_LL_S1%>%mutate(Lower=Lower+Cost_rel.fuel_LL_S1$Lower,
+                           Mean=Mean+Cost_rel.fuel_LL_S1$Mean,
+                           Upper=Upper+Cost_rel.fuel_LL_S1$Upper)
+}
+
+
+#3. Longline relative performance from catching one tonne   
+#note: baiting time is considerable, only captured thru number of shots per day; GN has 0 baiting time
+Relative_comparison=rbind(Cost_LL,Cost_LL_S1,Cost_GN)%>%
+                      mutate(Method=c('LL','LL','GN'),
+                             Scenario=c('Base','S1','Base'),
+                             Rev=c(Rev_LL,Rev_LL,Rev_GN),
+                             Lower.Rev.minus.ksts=Rev-Lower,
+                             Mean.Rev.minus.ksts=Rev-Mean,
+                             Upper.Rev.minus.ksts=Rev-Upper)
+Lwr.in=Relative_comparison%>%filter(Method=='GN')%>%pull(Lower.Rev.minus.ksts)
+Mean.in=Relative_comparison%>%filter(Method=='GN')%>%pull(Mean.Rev.minus.ksts)
+Upr.in=Relative_comparison%>%filter(Method=='GN')%>%pull(Upper.Rev.minus.ksts)
+Relative_comparison=Relative_comparison%>%
+                      mutate(Lower.Rel.Per=Lower.Rev.minus.ksts/Lwr.in,
+                             Mean.Rel.Per=Mean.Rev.minus.ksts/Mean.in,
+                             Upper.Rel.Per=Upper.Rev.minus.ksts/Upr.in)
+
+write.csv(Relative_comparison%>%
+            filter(Method=='LL')%>%
+            dplyr::select(Scenario,Lower.Rel.Per,Mean.Rel.Per,Upper.Rel.Per),
+          le.paste("Socio-economics/longline.vs.gillnet/Relative_comparison.csv"),row.names = F)
+
+
+#4. Output parameter inputs
+Out.pars=data.frame(
+           Longline.price.relative.to.gillnet=Price.LL.to.GN,
+           Bait.kg.per.hook=Bait.kg.per.hook,
+           Bait.AUD_kg=Bait.AUD_kg,
+           Bait.AUD.per.hook=Bait.AUD.per.hook,
+           Hooks.per.day=unique(Ndays_one.tone_LL$HOOKS),
+           Shots.per.day_s1=Ndays_one.tone_LL$shot[1],
+           Shots.per.day_s2=Ndays_one.tone_LL$shot[2],
+           Annual.cost.gear.rep=Annual.cost.gear.rep_GN,
+           Annual.cost.gear.rep_LL=Annual.cost.gear.rep_LL,
+           daily.crew_LL=n.crew_LL,
+           daily.crew_GN=n.crew_GN,
+           Annual.n.ftes=Annual.n.fte_GN,
+           Annual.cost.crew=Annual.cost.crew_GN,
+           Annual.LL.days=Annual.LL.days,
+           Annual.GN.days=Annual.GN.days,
+           Ndays_1_tone_GN=Ndays_one.tone_GN$fishing.day.1.ton_Catch,
+           Ndays_1_tone_LL=Ndays_one.tone_LL$fishing.day.1.ton_Catch[1],
+           Ndays_1_tone_LL_S1=Ndays_one.tone_LL$fishing.day.1.ton_Catch[2])
+write.csv(Out.pars,le.paste("Socio-economics/longline.vs.gillnet/Relative_comparison_input_pars.csv"),row.names = F)
+
+
+
+Not.used=FALSE
+if(Not.used)
+{
+  #1. Calculate revenue
+  
+  #1.1 get catch weight per trip
+  trunk.ratio=1.59   #average total weight to trunk ratio from catch and effort returns
+  Percent.fin.of.livewt=0.03   #used in SOFAR and by Eva Lai
+  fin.to.trunk.ratio=Percent.fin.of.livewt*trunk.ratio
+  
+  #fin.to.trunk.ratio=0.05     #adopted by NMFS (1993) fide in Biery & Pauly 2012
+  
+  Retained.catch=DATA%>%filter(retainedflag=='Yes' & !is.na(boat))%>%
+    dplyr::select(date,sheet_no,line_no,method,boat,taxa,species,common_name,
+                  tl,fl,number,tw,a_weight,b_weight)%>%
+    group_by(common_name)%>%
+    mutate(tw.dummy=mean(tw,na.rm=T),
+           tw=ifelse(is.na(tw),tw.dummy,tw))%>%
+    ungroup()%>%
+    filter(!is.na(tw))%>%
+    arrange(date)%>%
+    mutate(weight=ifelse(taxa=='Teleost',tw,
+                         ifelse(taxa=='Elasmobranch',tw/trunk.ratio,
+                                NA)),
+           common_name.economics=case_when(common_name%in%c(Main.species,"fins")~common_name,
+                                           !common_name%in%c(Main.species,"fins") & taxa=='Elasmobranch'~"Other sharks",
+                                           !common_name%in%c(Main.species,"fins") & taxa=='Teleost'~"Other scalefish"))%>%
+    arrange(date)%>%
+    mutate(diff_days=difftime(date,lag(date,n=1),units="days"),
+           diff_days=ifelse(is.na(diff_days),0,diff_days),
+           delta_days=ifelse(diff_days>1,1,0),
+           trip=1+cumsum(delta_days))
+  
+  #1.2 add price per species from questionnaires
+  This=c("Q.4",paste('Q.13',letters[1:11],sep='.'))
+  oldnames = paste('Q.13',letters[1:11],sep='.')
+  newnames=c("Gummy shark","Dusky shark","Whiskery shark","Sandbar shark","fins","Other sharks",
+             "Pink snapper","West Australian dhufish","Queen snapper","Blue groper","Other scalefish")
+  d.f=Survey.fishers[,This]%>%
+    mutate(boat=case_when(Q.4=="Tracey Lea"~"E35",
+                          Q.4=="Elizabeth Maria II"~"E007",
+                          Q.4=="Viking Legend"~"F399"))%>%
+    rename_at(vars(oldnames), ~ newnames)
+  d.f=d.f%>%
+    dplyr::select(-Q.4)%>%
+    gather(common_name.economics,Price.per.kg,-boat)%>%
+    mutate(Price.per.kg=ifelse(is.na(Price.per.kg) & common_name.economics=='fins',16.5,
+                               ifelse(is.na(Price.per.kg) & common_name.economics=='Other scalefish',5.4,
+                                      Price.per.kg)))  #added manually as not provided
+  
+  Retained.catch=Retained.catch%>%left_join(d.f,by=c('common_name.economics','boat'))%>%
+    mutate(revenue= Price.per.kg*weight)
+  
   #1.3 add fins and aggregate revenue by trip
-Retained.catch.fins=Retained.catch%>%
-                      filter(taxa=='Elasmobranch')%>%
-                      group_by(boat,method,trip)%>%
-                      summarise(weight=sum(weight))%>%
-                      ungroup()%>%
-                      mutate(weight=weight*fin.to.trunk.ratio,
-                             common_name.economics='fins')%>%
-                      left_join(d.f,by=c('common_name.economics','boat'))%>%
-                      mutate(revenue= Price.per.kg*weight)%>%
-              dplyr::select(-c(weight,Price.per.kg))
-
-Revenue=rbind(Retained.catch.fins,
-              Retained.catch%>%
+  Retained.catch.fins=Retained.catch%>%
+    filter(taxa=='Elasmobranch')%>%
+    group_by(boat,method,trip)%>%
+    summarise(weight=sum(weight))%>%
+    ungroup()%>%
+    mutate(weight=weight*fin.to.trunk.ratio,
+           common_name.economics='fins')%>%
+    left_join(d.f,by=c('common_name.economics','boat'))%>%
+    mutate(revenue= Price.per.kg*weight)%>%
+    dplyr::select(-c(weight,Price.per.kg))
+  
+  Revenue=rbind(Retained.catch.fins,
+                Retained.catch%>%
                   group_by(boat,method,trip,common_name.economics)%>%
                   summarise(revenue=sum(revenue)))%>%
-              group_by(boat,method,trip)%>%
-              summarise(revenue=sum(revenue))%>%
-              ungroup()
-#ACA
-#2. Calculate costs
-#Knuckey et al page 8: auto longline daily costs (bait, fuel, crew, stores): 2,192
-#         they assume 200 fishing days per year
-#Additional.questions
-#Additional.questions.metadata
+    group_by(boat,method,trip)%>%
+    summarise(revenue=sum(revenue))%>%
+    ungroup()
+  
+  #2. Calculate costs
+  #Knuckey et al page 8: auto longline daily costs (bait, fuel, crew, stores): 2,192
+  #         they assume 200 fishing days per year
 
-#3. Calculate profit
-#Profit=Revenue - Cost
+}
