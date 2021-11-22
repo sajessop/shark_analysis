@@ -1,7 +1,7 @@
 ---
 title: "Long term sustainable use of demersal gillnet and demersal longline in Western Australia's temperate Shark Fishery, a Western Australian Government & WAFIC project"
-author: "Matias Braccini, Jack Parker, Maddison Watt, Nick Blay & Clinton Syers"
-date: "20/10/2021"
+author: "Matias Braccini, Jack Parker, Daniela Waltrick, Maddison Watt, Nick Blay & Clinton Syers"
+date: "23/12/2021"
 output:
   word_document:  
     toc: yes
@@ -15,9 +15,10 @@ knit: (function(inputFile, encoding) {
 <w:p><w:r><w:br w:type="page"/></w:r></w:p>
 ```
 ```{r globaloptions, include=FALSE}
+source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+library(knitr)
 knitr::opts_chunk$set(fig.width = 10,fig.height = 10,
                         echo = TRUE, warning=FALSE,message=FALSE)
-
 library(tidyverse)
 library(readxl)
 library(Hmisc)
@@ -104,8 +105,8 @@ Sampling followed standard commercial fishing operations with skippers allowed t
 
 The demersal longline was ~1500 m long and comprised of ~240 hooks of different size (10/0, 12/0 and 14/0) and shape (tuna circle hooks and Ezi-baiter) attached to the main line (8 mm diameter) via ~60 cm stainless steel (2 mm diameter coated with PVC 7x7 grade) or monofilament (1.8 mm diameter) snoods (Figure 1). Approximately 20 of each combination of snood type, hook type and hook size were used per gear deployment. Each hook was manually baited with squid, octopus, mullet, whiting, herring or pilchards. Approximately 10 snoods were clipped to the main line between each weight and pressure float to allow sampling close to the bottom and into the water column. 
 
-Demersal gillnets were deployed for between 0.7 and 23.4 hours (mean=12.2 hours) and demersal longlines were deployed for 0.8 and 20.8 hours (mean=10.9 hours). A tori line was used to minimize seabird-longline interactions during longline deployments. 
-**Here describe how longline was set and hauled using the net winch or dedicated winch in case of Anthony (Jack to do)**
+Demersal gillnets were deployed for between 0.7 and 23.4 hours (mean=12.2 hours) and demersal longlines were deployed for 0.8 and 20.8 hours (mean=10.9 hours). A tori line was used to minimize seabird-longline interactions during longline deployments. Depending on vessel configuration, longlines were set either by using the gillnet reel or a small dedicated longline reel. Once the first longline weight and float were deployed, the vessel steamed slowly forward and the crew and staff clipped the snoods onto the line at roughly 5m intervals. Floats and weights were set in an alternating fashion with either a float or weight being attached to the longline after every 10 hooks (50 m, Figure 1); however, this was up to the fisher’s discretion and one elected to use two weights then a float to keep their longline lower in the water column. Longlines were retrieved using the gillnet retrieval roller and winch. As the lines were retrieved the hook and snoods were unclipped and hung for baiting for the next deployment. The retrieval winch could be stopped easily to unclip caught animals or tangled hooks.
+
 
 ```{r, echo=FALSE}
 path=paste(PA.photos,'longline configuration.jpg',sep='/')
@@ -128,7 +129,7 @@ Hook size selectivity for circular and Ezi-Baiter hooks was estimated from longl
 
 ### Image collection
 #### Underwater cameras
-Mono gillnet, longline underwater video (GLUVs) were developed for this unique study. The GLUVs comprised one Sony FRD-x3000 action camera, mounted in an underwater housing. These housings were attached to an aluminum bracket with shark clips. This allowed the camera housing to be attached to the gillnet and longline mainline (Figure 3). The GLUVs were made neutrally buoyant to avoid compromising the way the fishing gear would normally sit in the water column. Ten GLUVs  were attached to the gillnets with a 45° angle to observe down the gillnet. Eight to ten GLUVs were attached to the longline; these cameras were positioned to observe straight along the longline so they were not angled. Each camera was attached to the fishing gear as it was deployed and recorded for the whole deployment period, mostly ranging between 4-6 hours for longlines and 6-8 for gillnets. Cameras were randomly positioned but were separated by at least 50m. GLUVs were only deployed during the day.
+Mono gillnet, longline underwater video systems (GLUVs) were developed for this unique study. The GLUVs comprised one Sony FRD-x3000 action camera, mounted in an underwater housing. These housings were attached to an aluminum bracket with shark clips. This allowed the camera housing to be attached to the gillnet and longline mainline (Figure 3). The GLUVs were made neutrally buoyant to avoid compromising the way the fishing gear would normally sit in the water column. Ten GLUVs  were attached to the gillnets with a 45° angle to observe down the gillnet. Eight GLUVs were attached to the longline; these cameras were not angled to observe straight along the longline. Each camera was attached to the fishing gear for the duration of the gear being set in the water, ranging between 4-6 hours for longlines and 6-8 for gillnets. Cameras were randomly positioned but were separated by at least 50m. GLUVs were only deployed during the day.
 
 ```{r, echo=FALSE}
 path=paste(PA.photos,'Figure underwater cameras.jpg',sep='/')
@@ -152,12 +153,12 @@ path=paste(PA.photos,'Figure deck cameras.jpg',sep='/')
 <br>
 
 #### Subsurface camera
-**SPECS DESCRIPTION MISSING (Jack)** (Figure 5).
+**SPECS DESCRIPTION MISSING (Abbey)** (Figure 5).
 
 ```{r, echo=FALSE}
-path=paste(PA.photos,'Figure deck cameras.jpg',sep='/')
+path=paste(PA.photos,'Figure subsurface camera.jpg',sep='/')
 ```
-![Figure 5. View from the subsurface camera. MISSING ](`r path`){width=800px}
+![Figure 5. View from the subsurface camera mounted under the boat.](`r path`){width=800px}
 
 <br>
 
@@ -165,7 +166,7 @@ path=paste(PA.photos,'Figure deck cameras.jpg',sep='/')
 #### Underwater cameras
 All video footage was downloaded onto external hard drives and analysed back in the lab using the software ‘EventMeasure (Stereo)’ [@Seager2014]. Video images from the GLUVs were reviewed for both the maximum number of individuals of each species observed (MaxN) and for the type of observed behaviour (Table 1). Example reference videos were made in order to standardise classification of the behaviour types recorded in Event Measure.
 
-All observed individuals were identified to the lowest taxonomic level. To avoid repeatedly counting individual fish that continuously re-entered the cameras fields of view, the maximum number of individuals of the same species that appeared in the one frame at the same time (MaxN) was used as a measure of relative abundance. MaxN allows for a conservative estimate of relative abundance. One limitation of video analysis with GLUVs was that occasionally it was not possible to identify species due to impaired visibility due to lighting or depth or a restricted field of view of the cameras. If an individual species could not be determined, species were grouped to Genus or Family level. **If an individual was caught on the fishing gear, the observer timed how long it was caught in the gear. This will allow us to understand the escape ration of animals that get caught by the fishing gear and their survival rates. If the fish is caught and landed then the time is still taken on how long it is in the net, to allow us to disentangle the effective soak times of the different fishing gear.**
+All observed individuals were identified to the lowest taxonomic level. To avoid repeatedly counting individual fish that continuously re-entered the cameras fields of view, the maximum number of individuals of the same species that appeared in the one frame at the same time (MaxN) was used as a measure of relative abundance. MaxN allows for a conservative estimate of relative abundance. One limitation of video analysis with GLUVs was that occasionally it was not possible to identify species due to impaired visibility due to lighting, depth or a restricted field of view of the cameras. If an individual species could not be determined, species were grouped to Genus or Family level. 
 
 ```{r echo=FALSE}
 Tab=data.frame(Behaviour=c('Swim Past','Swim through',
@@ -186,9 +187,35 @@ knitr::kable(Tab,caption="Table 1. List of behaviours recorded from underwater c
 
 <br>
 
-Information on benthic habitat structure and composition was collected using the Transect Measure software. As each camera stayed stationary, only one image per camera needed to be analysed. To determine benthic cover a virtual quadrat was placed over the seafloor that was visible in the image. Individually defining the quadrant this way allowed for the quadrats to be adaptive as every camera could have a different view and some should only be able to see a relatively small section of benthic habitat if it was tangled in the fishing gear during deployment. Within each quadrat 20 random points were overlayed over the benthic cover. Each point was categorised using the CATAMI guide [@Althaus2013]. Benthic cover was first classified into the following broad categories (**LIST OF WHAT THEY WERE ...MISSING, Jack to do**). These where then further broken down into finer categories based on their morphological form (**LIST OF THEM...MISSING, Jack to do**), health (**LIST THEM...MISSING, Jack to do**) and condition (**list them...MISSING, Jack to do**) (Table 2, Figure 6).
+Information on benthic habitat structure and composition was collected using the Transect Measure software. As each camera stayed stationary, only one image per camera needed to be analysed. To determine benthic cover a virtual quadrat was placed over the seafloor that was visible in the image. Individually defining the quadrant this way allowed for the quadrats to be adaptive as every camera could have a different view and some should only be able to see a relatively small section of benthic habitat if it was tangled in the fishing gear during deployment. Within each quadrat 20 random points were overlayed over the benthic cover. Each point was categorised using the CATAMI guide [@Althaus2013]. Benthic cover was classified into different categories based on morphological form and condition (Table 2, Figure 6).
 
-Table 2. Benthic cover classification based on morphology, health and condition (**MISSING, Jack to do**)
+```{r echo=FALSE}
+Tab=data.frame(Category=c(rep('Unconsolidated',3),
+                          rep('Consolidated',3),
+                          'Hydroids',
+                          'Sponge',
+                          'Stony Coral',
+                          rep('Macroalgae',6),
+                          rep('Seagrasses',2)),
+               Morphological.form=c('Rubble (>10mm)','Course sand','Silt',
+                                    'Boulders','Cobbles','Rock',
+                                    'N/A',
+                                    'N/A',
+                                    'Foliose/Plate',
+                                    'Erect course branching','Erect fine branching','Filamentous/turf','Large canopy forming','Sheet like membranous','Other',
+                                    'Elliptical Leaves','Strap-Like Leaves'),
+               Condition=c('Silt covering, no biota','Silt covering, no biota','No biota',
+                           'Turf mat vaneer','No biota, silt covering','No biota, silt covering, turf mat vaneer',
+                           'N/A',
+                           'Live',
+                           'N/A',
+                           'Brown, green, red','Brown, green, red','Green, red','Brown','Brown, green, red','N/A',
+                           rep('N/A',2)))
+names(Tab)[2]="Morphological form"
+knitr::kable(Tab,caption="Table 2. Benthic cover classification based on morphology and condition.")
+```
+
+ 
 
 ```{r, echo=FALSE}
 path=paste(PA.photos,'Figure habitat composite.jpg',sep='/')
@@ -198,12 +225,15 @@ path=paste(PA.photos,'Figure habitat composite.jpg',sep='/')
 <br>
 
 #### Deck cameras
-Deck camera footage was analysed in Event Measure and according to camera position. For deck camera 1, all individuals were identified to the lowest taxonomic level. Fish were identified once they were positioned on the measuring table to better compare the catch composition recorded by onboard observed with those recorded by the video observer. Video observers also noted the condition of each individual brought on board, whether it was alive or dead, retained or released and for gillnets, whether it was gilled (i.e. the net mesh had caught the fish around the gills) or bagged (i.e. the fish had become tangled in the net). To quantify relative habitat damage by gillnets the percentage of the net that had habitat caught in it. The fishing gear was watched as it passed from the retrieval roller to the net roller and this distance was calculated for each vessel. **THIS NEEDS BETTER EXPLAINATION (Jack to do)**. Habitat was classified into several categories: Reef Structure, Sponge and Coral, which were quantified into percentage cover. Seagrasses, Macroalgae and *Ecklonia radiata* were also quantified, however due to current, and swell, seagrass and macro algae could be caught in the nets while suspended in the water column. Small amounts of algae and seagrasses were ignored as it was uncertain if their presence in the net was due to actually habitat damage or due to entanglement while floating in the water column. Seagrasses, Macroalgae and *Ecklonia radiata* were quantified in 5% intervals starting from 10% and coverages less than 10%.
+Deck camera footage was analysed in Event Measure and according to camera position. For deck camera 1, all individuals were identified to the lowest taxonomic level. Fish were identified once they were positioned on the measuring table to better compare the catch composition recorded by onboard observed with those recorded by the video analyst. Video analysts also noted the condition of each individual brought on board, whether it was alive or dead, retained or released and for gillnets, whether it was gilled (i.e. the net mesh had caught the fish around the gills) or bagged (i.e. the fish had become tangled in the net). 
+To quantify relative habitat damage by gillnets, the percentage of habitat cover in the net was quantified. To achieve this, onboard observers measured the distance of the net that was captured on the deck cameras field of view, between the retrieval roller and the main gillnet roller. Once this was known video analysts work out the percentage of the net section that passed through the cameras line of sight that had habitat tangled in. 
 
-For deck camera 2, individuals were also identified to the lowest taxonomic level. When the longline was retrieved, the position of fish caught in relation to the closest pressure float or weight was recorded to calculate the relative position of the caught-fish in the water column. The relative position of fish caught more than 3 hooks from a pressure float or weight (Figure 1) was not recorded. Finally, dropout and gaffing events were also recorded.
+Habitat was classified into several categories: Reef Structure, Sponge and Coral, which were quantified into percentage cover. Seagrasses, Macroalgae and *Ecklonia radiata* were also quantified, however, due to current, and swell, seagrass and macro algae could be caught in the nets while suspended in the water column. As the aim was to determine habitat damage, small amounts of algae and seagrasses were ignored as it was unknown if their presence in the net was due to actual gear damage to habitats or due to seagrass or algae being caught while floating in the water column. Seagrasses, Macroalgae and *Ecklonia radiata* were quantified in 5% intervals starting from 10%.
+
+For deck camera 2, individuals were also identified to the lowest taxonomic level. For longline-caught individuals, the position of fish caught in relation to the closest pressure float or weight (Figure 1) was recorded to calculate the relative position of the caught-fish in the water column. Finally, dropout and gaffing events were also recorded.
 
 #### Subsurface camera
-For the subsurface camera individuals were identified to the lowest taxonomic level and gaffing and dropouts events recorded. If the captured individuals dropped out of the gear its retrieval by the crew was noted, as well as the individual’s condition (dead or alive). 
+For the subsurface camera individuals were identified to the lowest taxonomic level and dropouts events recorded. If captured individuals dropped out of the gear its retrieval by the crew was noted (gaffing events), as well as the individual’s condition (dead or alive). 
 
 #### Data analyses
 The multivariate statistics described in Phase 1 were applied to compare the behaviour types derived from underwater cameras by taxonomic group (sharks, rays, scalefish, invertebrates). For the most commonly caught species, a GLM with a binomial distribution was used to test for differences between gillnets and longlines in the probability of dropouts and of capture near a weight or pressure float (longline-caught fish only). Dropout rates were calculated for the information collected from deck camera 2, subsurface and underwater cameras whereas depredation (both fishing methods) and bait loss rates (longline only) were calculated from the underwater cameras.
@@ -679,12 +709,12 @@ path=paste(PA.Observer,'Barplot Longline configurations.tiff',sep='/')
 
 <br>
 
-#### Longline deployment efficiency, hook baiting time and percentage of lost hooks 
-For the longline fishing sessions, most of the baited hooks were deployed (Figure 34). The number of baited hooks per person-hour ranged between ~50 and 200, with an average of just under 100 hooks per person-hour. Overall, only a small percentage of deployed hooks were lost.
+#### Longline deployment efficiency, hook baiting time and percentage of lost hooks/snoods 
+For the longline fishing sessions, most of the baited hooks were deployed (Figure 34). The number of baited hooks per person-hour ranged between ~50 and 200, with an average of just under 100 hooks per person-hour. Overall, a relatively small percentage of deployed hooks/snoods were lost, however, for a couple of deployments, a relatively large percentage was lost due to a double break of the longline. Observers recorded the hook configuration of the lost hooks/snoods (i.e. hook size, type and snood) but did not record whether the either hook was bent or broke, or the snood snapped. Hence, it was not possible to directly compare the percentage loss of monofilament and wire snoods but it must be noted that based on a comparison of lost circular hooks (which tend to bend less than Ezi-baiter hooks) with monofilament or wire snoods, 60% were monofilament snoods and 40% were wire snoods. 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'Hook baiting and lost.tiff',sep='/')
 ```
-![Figure 34. Observed hook deployment efficiency (calculated as the difference between the number of hooks baited and the number deployed, top left pane), hook baiting time (top right pane) and percentage of lost hooks upon retrieval (bottom pane) by fishing session. The blue line in the top right pane indicates the average baiting time. In the bottom pane, the number of deployed hooks is shown above each column; gaps indicate that information on lost hooks was not available for that session.  ](`r path`){width=800px,height=800px}
+![Figure 34. Observed hook deployment efficiency (calculated as the difference between the number of hooks baited and the number deployed, top left pane), hook baiting time (top right pane) and percentage of lost hooks/snoods upon retrieval (bottom pane) by fishing session. The blue line in the top right pane indicates the average baiting time. In the bottom pane, the number of deployed hooks is shown above each column; gaps indicate that information on lost hooks was not available for that session.  ](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -707,7 +737,7 @@ path=paste(PA.Observer,'catch_rates/Standardized_Catch rates_Method.zone_y_sqrt.
 
 <br>
 
-For longline-caught individuals, standardized catch rates significantly increased with hook size for West Australian dhufish (Figure 37, Table A.2.12) and increased for sandbar shark caught by Tuna-circle hooks (Figure 38, Table A.2.8). 
+For longline-caught individuals, standardized catch rates significantly increased with hook size for West Australian dhufish (Figure 37, Table A.2.12). 
 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'catch_rates/Standardized_Catch rates_hooksize.tiff',sep='/')
@@ -716,19 +746,13 @@ path=paste(PA.Observer,'catch_rates/Standardized_Catch rates_hooksize.tiff',sep=
 
 <br>
 
-```{r, echo=FALSE}
-path=paste(PA.Observer,'catch_rates/Standardized_Catch rates_hooktype.tiff',sep='/')
-```
-![Figure 38. Estimated relative standardized (±95% CI) catch rates showing the effect of hook type. Each series has been normalised to a mean score of 1. Only species showing significant differences are displayed.](`r path`){width=600px}
-
-<br>
 
 #### Size composition for the most commonly caught species by fishing method
-For the most commonly caught species, the observed size distribution by fishing method is shown in Figure 39. The gillnet and longline size distributions showed considerable (>60%) overlap for most species with the exception of pink snapper, Port Jackson and nannygai. 
+For the most commonly caught species, the observed size distribution by fishing method is shown in Figure 38. The gillnet and longline size distributions showed considerable (>60%) overlap for most species with the exception of pink snapper, Port Jackson and nannygai. 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'size/Size.density.dist.overlap_GN_LL.tiff',sep='/')
 ```
-![Figure 39. Observed size density distribution by fishing method (GN, gillnet; LL, longline) for the most commonly caught species. Also shown is the number of individuals measured and the percentage overlap of the size distributions.](`r path`){width=800px,height=800px}
+![Figure 38. Observed size density distribution by fishing method (GN, gillnet; LL, longline) for the most commonly caught species. Also shown is the number of individuals measured and the percentage overlap of the size distributions.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -746,42 +770,42 @@ knitr::kable(Tab,
 
 <br>
 
-The standardized mean size (Figure 40) of gillnet-caught individuals was significantly higher for dusky (Table A.3.1), gummy (Table A.3.3), sandbar (Table A.3.5) sharks and nannygai (Table A.3.12), and significantly smaller for Port Jackson shark (Table A.3.7), West Australian dhufish (Table A.3.9) and pink snapper (Table A.3.10).
+The standardized mean size (Figure 39) of gillnet-caught individuals was significantly higher for dusky (Table A.3.1), gummy (Table A.3.3), sandbar (Table A.3.5) sharks and nannygai (Table A.3.12), and significantly smaller for Port Jackson shark (Table A.3.7), West Australian dhufish (Table A.3.9) and pink snapper (Table A.3.10).
 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'size/Standardized_Size_Method.tiff',sep='/')
 ```
-![Figure 40. Estimated relative standardized (±95% CI) mean size by fishing method. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+![Figure 39. Estimated relative standardized (±95% CI) mean size by fishing method. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
 
 <br>
 
-Ezi-baiter hooks caught significantly larger pink snapper (Figure 41, Table A.3.11). There was a significant increase in mean size with hook size for pink snapper (Figure 42, Table A.3.11). No significant differences in mean size between hook types or sizes were found for the other species analysed.
+Ezi-baiter hooks caught significantly larger pink snapper (Figure 40, Table A.3.11). There was a significant increase in mean size with hook size for pink snapper (Figure 41, Table A.3.11). No significant differences in mean size between hook types or sizes were found for the other species analysed.
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'size/Standardized_Size_Hook.size.tiff',sep='/')
 ```
-![Figure 41. Estimated relative standardized (±95% CI) mean size by hook size. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+![Figure 40. Estimated relative standardized (±95% CI) mean size by hook size. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'size/Standardized_Size_Hook.type.tiff',sep='/')
 ```
-![Figure 42. Estimated relative standardized (±95% CI) mean size by hook type. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
+![Figure 41. Estimated relative standardized (±95% CI) mean size by hook type. Each series has been normalised to a mean score of 1.](`r path`){width=800px,height=800px}
 
 <br>
 
 #### Hook size selectivity for the most commonly caught species
-The estimated relative selectivity curves for the most commonly caught species are shown in Figure 43. 
+The estimated relative selectivity curves for the most commonly caught species are shown in Figure 42. 
 ```{r, echo=FALSE}
 path=paste(PA.selectivity,'Relative selectivity.tiff',sep='/')
 ```
-![Figure 43. Relative selectivity curves by hook type and size for the most commonly caught species.](`r path`){width=800px,height=800px}
+![Figure 42. Relative selectivity curves by hook type and size for the most commonly caught species.](`r path`){width=800px,height=800px}
 
 <br>
 
 #### Number of individuals and species retained and discarded
-The number of retained and discarded individuals by species, and the size range and released condition of discards are shown in Table 14 for gillnet-caught individuals and Table 15 for longline-caught individuals. Overall, a higher percentage of gillnet-caught individuals was retained (Figure 44 top pane) and there was significantly higher probability of retaining a gillnet-caught individual (Figure 45, Table A.4.1). Dusky, whiskery and gummy sharks were the most commonly retained species from gillnets whereas pink snapper, and gummy and dusky sharks were the most commonly retained species from longlines.
-Port Jackson shark was the most commonly discarded elasmobranch from gillnets and longlines whereas buffalo bream and dusky morwong were the most commonly discarded teleosts from gillnets. For both fishing methods, the  majority of discarded individuals was released in good condition (release condition= 1, Figure 44 bottom pane). 
+The number of retained and discarded individuals by species, and the size range and released condition of discards are shown in Table 14 for gillnet-caught individuals and Table 15 for longline-caught individuals. Overall, a higher percentage of gillnet-caught individuals was retained (Figure 43 top pane) and there was significantly higher probability of retaining a gillnet-caught individual (Figure 44, Table A.4.1). Dusky, whiskery and gummy sharks were the most commonly retained species from gillnets whereas pink snapper, and gummy and dusky sharks were the most commonly retained species from longlines.
+Port Jackson shark was the most commonly discarded elasmobranch from gillnets and longlines whereas buffalo bream and dusky morwong were the most commonly discarded teleosts from gillnets. For both fishing methods, the  majority of discarded individuals was released in good condition (release condition= 1, Figure 43 bottom pane). 
 
 ```{r,echo=FALSE}
  Tab=read.csv(paste(PA.Observer,'retained/Retained_species_table_GN.csv',sep='/'))
@@ -813,14 +837,14 @@ knitr::kable(Tab,
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'retained/GN_LLretained_discarded_individuals.tiff',sep='/')
 ```
-![Figure 44. Observed percentage of retained and discarded individuals (top pane) and released condition (bottom pane) for discarded individuals by fishing method.](`r path`){width=800px,height=800px}
+![Figure 43. Observed percentage of retained and discarded individuals (top pane) and released condition (bottom pane) for discarded individuals by fishing method.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'retained/Standardized_retained_method.tiff',sep='/')
 ```
-![Figure 45. Probability of retaining an individuals by fishing method.](`r path`){width=800px,height=800px}
+![Figure 44. Probability of retaining an individuals by fishing method.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -851,7 +875,7 @@ knitr::kable(Tab,
 <br>
 
 #### Dropouts, bait loss, depredation, gaffing and position in water column
-The number and percentage of dropouts individuals by species and fishing method is shown in Table 18 (for deck camera 2 only) and Figure 46 (deck camera 2 and subsurface camera). For both fishing methods, the percent of dropouts was generally very low for commercial species but it was higher for discarded species. For example, 89%, 65% and 50% of stingrays, southern eagle rays and fiddler rays caught by longlines dropped out. 
+The number and percentage of dropouts individuals by species and fishing method is shown in Table 18 (for deck camera 2 only) and Figure 45 (deck camera 2 and subsurface camera). For both fishing methods, the percent of dropouts was generally very low for commercial species but it was higher for discarded species. For example, 89%, 65% and 50% of stingrays, southern eagle rays and fiddler rays caught by longlines dropped out. 
 
 ```{r, echo=FALSE}
 Tab=read.csv(paste(PA.video.deck.cameras,'Drop.out.events_table_camera2.csv',sep='/'))
@@ -868,22 +892,22 @@ knitr::kable(Tab,
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Drop.out.events.tiff',sep='/')
 ```
-![Figure 46. Number of dropout events observed from deck camera 2 (above roller) and subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
+![Figure 45. Number of dropout events observed from deck camera 2 (above roller) and subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
-There was no contrast in the gillnet data and for most longline-caught species (most observations were for 'retained', i.e. not dropped out) to estimate the dropout probability (Tables A.5.1 and A.5.2, Figures 47 and 48). There was, however, enough contrast in the data to estimate the dropout probability for smooth stingray and southern eagle ray (Table A.5.2), which showed a high dropout probability (Figure 48) but a high resilience with all observed individuals swimming way after dropping out (Figure 48).
+There was no contrast in the gillnet data and for most longline-caught species (most observations were for 'retained', i.e. not dropped out) to estimate the dropout probability (Tables A.5.1 and A.5.2, Figures 46 and 47). There was, however, enough contrast in the data to estimate the dropout probability for smooth stingray and southern eagle ray (Table A.5.2), which showed a high dropout probability (Figure 47) but a high resilience with all observed individuals swimming way after dropping out (Figure 47).
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Drop.out.events_predictions_deckcam2.tiff',sep='/')
 ```
-![Figure 47. Estimated dropout probability (±95% CI) derived from deck camera 2.](`r path`){width=800px,height=800px}
+![Figure 46. Estimated dropout probability (±95% CI) derived from deck camera 2.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Drop.out.events_fate_subsurface.tiff',sep='/')
 ```
-![Figure 48. Fate of dropouts observed from subsurface camera.](`r path`){width=800px,height=800px}
+![Figure 47. Fate of dropouts observed from subsurface camera.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -935,11 +959,11 @@ knitr::kable(Tab,
 
 <br>
 
-The observed number of lost and gaffed individuals that dropped out is shown in Figure 49. For commercial species, a very small proportion dropped out (Figure 46) but for those that did, most were lost (Figure 49). Discarded species were not gaffed.  
+The observed number of lost and gaffed individuals that dropped out is shown in Figure 50. For commercial species, a very small proportion dropped out (Figure 45) but for those that did, most were lost (Figure 50). Discarded species were not gaffed.  
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Drop.out.events_gaffing.tiff',sep='/')
 ```
-![Figure 49. Gaffing of dropouts by fishing method observed from the subsurface camera and deck camera 2.](`r path`){width=800px,height=800px}
+![Figure 50. Gaffing of dropouts by fishing method observed from the subsurface camera and deck camera 2.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -950,66 +974,66 @@ path=paste(PA.video.deck.cameras,'Weight_float_species.events.tiff',sep='/')
 ![Figure 50. Position in water column derived from deck camera 1. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
 <br>
-**Update significance after completion of video analyses (Table A.6.1 and Figure 51)**
+**Update significance after completion of video analyses (Table A.6.1 and Figure 50)**
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Weight_float_species_predictions.tiff',sep='/')
 ```
-![Figure 51. Estimated capture probability (±95% CI) near a weight derived from  deck camera 1 for longline-caught individuals.](`r path`){width=800px,height=800px}
+![Figure 50. Estimated capture probability (±95% CI) near a weight derived from  deck camera 1 for longline-caught individuals.](`r path`){width=800px,height=800px}
 
 <br>
 
 #### Behaviours observed by underwater cameras
-Twelve different types of behaviour were observed from underwater cameras mounted on gillnets and longlines for the main taxonomic groups (Figure 52) and main commercial species (Figure 53). Overall, for both fishing methods, all taxonomic groups and main commercial species, 'swim past' was the most commonly observed behaviour, followed by 'swim through' for gillnets and 'bait feeding' or 'caught' for longlines.
+Twelve different types of behaviour were observed from underwater cameras mounted on gillnets and longlines for the main taxonomic groups (Figure 51) and main commercial species (Figure 52). Overall, for both fishing methods, all taxonomic groups and main commercial species, 'swim past' was the most commonly observed behaviour, followed by 'swim through' for gillnets and 'bait feeding' or 'caught' for longlines.
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Interactions_number.individuals_sqrt.transf_by.group.tiff',sep='/')
 ```
-![Figure 52. Number of different behaviour types observed from underwater cameras by taxonomic group. For display purposes, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
+![Figure 51. Number of different behaviour types observed from underwater cameras by taxonomic group. For display purposes, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Interactions_number.individuals_main.target.tiff',sep='/')
 ```
-![Figure 53. Number of different behaviour types observed from underwater cameras for the main commercial species only.](`r path`){width=800px,height=800px}
+![Figure 52. Number of different behaviour types observed from underwater cameras for the main commercial species only.](`r path`){width=800px,height=800px}
 
 <br>
 
 ### Comparison of observer and deck camera 1
-Congruence between OM and EM derived from deck camera 1 was high for commercial and the main discarded species (Figures 54 and 55).
+Congruence between OM and EM derived from deck camera 1 was high for commercial and the main discarded species (Figures 53 and 54).
 ```{r, echo=FALSE}
 path=paste(PA.cam.obs,'Barplot.tiff',sep='/')
 ```
-![Figure 54. Comparison of the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
+![Figure 53. Comparison of the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
 
 <br>
-There was a good fit to the 1:1 relationship for all species combined (Table A.7.1, Figure 61 top pane), commercial species (Table A.7.2, Figure 61 middle pane) and discarded species (Table A.7.3, Figure 61 bottom pane). The model intercepts were not significantly different from 0 and the slopes were close to 1. There were no significant differences between gillnets and longlines indicating that congruence between OM and EM was not affected by type of fishing method.
+There was a good fit to the 1:1 relationship for all species combined (Table A.7.1, Figure 60 top pane), commercial species (Table A.7.2, Figure 60 middle pane) and discarded species (Table A.7.3, Figure 60 bottom pane). The model intercepts were not significantly different from 0 and the slopes were close to 1. There were no significant differences between gillnets and longlines indicating that congruence between OM and EM was not affected by type of fishing method.
 ```{r, echo=FALSE}
 path=paste(PA.cam.obs,'raw.tiff',sep='/')
 ```
-![Figure 55. Comparison of the number of individuals of each species recorded by onboard observers and deck camera 1. The black line represents a 1:1 relationship. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
+![Figure 54. Comparison of the number of individuals of each species recorded by onboard observers and deck camera 1. The black line represents a 1:1 relationship. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.cam.obs,'GLM_preds.tiff',sep='/')
 ```
-![Figure 56. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 1.](`r path`){width=800px,height=800px}
+![Figure 55. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 1.](`r path`){width=800px,height=800px}
 
 <br>
 
-For the most-commonly observed species (n>5), the percentage difference for each species was relatively small, particularly for those species with larger sample sizes (Figure 57).
+For the most-commonly observed species (n>5), the percentage difference for each species was relatively small, particularly for those species with larger sample sizes (Figure 56).
 ```{r, echo=FALSE}
 path=paste(PA.cam.obs,'Percentage.difference.tiff',sep='/')
 ```
-![Figure 57. Mean percentage (with standard error) difference in individual species reported by observers and camera 1 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and vice versa. Only species with at least 5 observations are shown.](`r path`){width=800px,height=800px}
+![Figure 56. Mean percentage (with standard error) difference in individual species reported by observers and camera 1 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and vice versa. Only species with at least 5 observations are shown.](`r path`){width=800px,height=800px}
 
 <br>
 
-The multivariate statistics showed a good congruence between OM and EM derived from deck camera 1 with no data clustering (Figure 58) and no significant differences in the catch composition derived OM and EM for gillnets (Table 24) and longlines (Table 25).
+The multivariate statistics showed a good congruence between OM and EM derived from deck camera 1 with no data clustering (Figure 57) and no significant differences in the catch composition derived OM and EM for gillnets (Table 24) and longlines (Table 25).
 ```{r, echo=FALSE}
 path=paste(PA.cam.obs,'MDS.tiff',sep='/')
 ```
-![Figure 58. MDS comparing the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
+![Figure 57. MDS comparing the catch composition recorded by onboard observers and deck camera 1.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1052,18 +1076,18 @@ knitr::kable(Tab,
 <br>
 
 ### Comparison of observer and deck camera 2
-A very similar pattern to the one observed from deck camera 1 was observed from deck camera 2 where there was good congruence between OM and EM (Figures 59–63, Tables 26, 27, A.7.4–A.7.6).
+A very similar pattern to the one observed from deck camera 1 was observed from deck camera 2 where there was good congruence between OM and EM (Figures 58–62, Tables 26, 27, A.7.4–A.7.6).
 ```{r, echo=FALSE}
 path=paste(PA.cam2.obs,'Barplot.tiff',sep='/')
 ```
-![Figure 59. Comparison of the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
+![Figure 58. Comparison of the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.cam2.obs,'raw.tiff',sep='/')
 ```
-![Figure 60. Comparison of the number of individuals of each species recorded by onboard observers and deck camera 2. The black line represents a 1:1 relationship. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
+![Figure 59 Comparison of the number of individuals of each species recorded by onboard observers and deck camera 2. The black line represents a 1:1 relationship. Jitter was added to display all data points.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1071,21 +1095,21 @@ Here Table Appendix A.7.4 to A.7.6 on significant effects of
 ```{r, echo=FALSE}
 path=paste(PA.cam2.obs,'GLM_preds.tiff',sep='/')
 ```
-![Figure 61. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 2.](`r path`){width=800px,height=800px}
+![Figure 60. Estimated regression (with 95% CI) for gillnet- and longline-caught individuals and 1:1 relationships (dotted line) between observers and camera 2.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.cam2.obs,'Percentage.difference.tiff',sep='/')
 ```
-![Figure 62. Mean percentage (with standard error) difference in individual species reported by observers and camera 2 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and vice versa. Only species with at least 5 observations are shown.](`r path`){width=800px,height=800px}
+![Figure 61. Mean percentage (with standard error) difference in individual species reported by observers and camera 2 for each fishing gear. Species are ordered by sample size (shown above each point). Negative percentages indicate that the camera reported more individuals than the observer and vice versa. Only species with at least 5 observations are shown.](`r path`){width=800px,height=800px}
 
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.cam2.obs,'MDS.tiff',sep='/')
 ```
-![Figure 63. MDS comparing the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
+![Figure 62. MDS comparing the catch composition recorded by onboard observers and deck camera 2.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1128,46 +1152,46 @@ knitr::kable(Tab,
 <br>
 
 ### Endangered, Threatened and Protected species
-Overall, the number of observed ETP species (Figure 64) was very small compared to the number of observed commercial and discarded species (Figures 52 and 53). From the underwater cameras (Figure 64, top pane), the most commonly observed behaviour for gillnets and longlines was ‘swim past’ (predominately for smooth stingrays, followed by white shark, Australian sea-lion (ASL), pied cormorant and humpback whale). The second most-commonly observed behaviour was ‘bounced off’ for gillnets (smooth and black stingrays) and ‘attracted’ for longlines (smooth stingray). From the subsurface camera (Figure 64, second pane), one ASL and one grey nurse shark dropped out dead and alive, respectively from gillnets. For longlines, 20 smooth stingrays dropped out alive and 2 were caught whereas one Pacific gull was caught. From deck camera 2 (Figure 64, third pane), one ASL was observed feeding and one grey nurse shark dropped out from gillnets. For longlines, >10 smooth stingrays dropped out. From deck camera 1 (Figure 64, fourth pane), only two smooth stingrays were caught and discarded alive. Finally, onboard observed reported a range of behaviours (Figure 64, bottom pane). The most commonly observed behaviour was ‘Feeding’ for gillnets (mostly seabirds and one ASL) and ‘Diving’ (seabirds) for longlines. Observers also reported cases of caught ETPs both dead and alive, which for gillnets it was mostly oversized dusky sharks and for longlines it was mostly smooth stingrays.
+Overall, the number of observed ETP species (Figure 63) was very small compared to the number of observed commercial and discarded species (Figures 52 and 53). From the underwater cameras (Figure 63, top pane), the most commonly observed behaviour for gillnets and longlines was ‘swim past’ (predominately for smooth stingrays, followed by white shark, Australian sea-lion (ASL), pied cormorant and humpback whale). The second most-commonly observed behaviour was ‘bounced off’ for gillnets (smooth and black stingrays) and ‘attracted’ for longlines (smooth stingray). From the subsurface camera (Figure 63, second pane), one ASL and one grey nurse shark dropped out dead and alive, respectively from gillnets. For longlines, 20 smooth stingrays dropped out alive and 2 were caught whereas one Pacific gull was caught. From deck camera 2 (Figure 63, third pane), one ASL was observed feeding and one grey nurse shark dropped out from gillnets. For longlines, >10 smooth stingrays dropped out. From deck camera 1 (Figure 63, fourth pane), only two smooth stingrays were caught and discarded alive. Finally, onboard observed reported a range of behaviours (Figure 63, bottom pane). The most commonly observed behaviour was ‘Feeding’ for gillnets (mostly seabirds and one ASL) and ‘Diving’ (seabirds) for longlines. Observers also reported cases of caught ETPs both dead and alive, which for gillnets it was mostly oversized dusky sharks and for longlines it was mostly smooth stingrays.
 
 ```{r, echo=FALSE}
 path=paste(PA.TEPS,'Interactions.tiff',sep='/')
 ```
-![Figure 64. Number of different behaviour types observed for ETP species recorded by cameras and onboard observers.](`r path`){width=800px,height=800px}
+![Figure 63. Number of different behaviour types observed for ETP species recorded by cameras and onboard observers.](`r path`){width=800px,height=800px}
 
 <br>
 
 ### Habitats
-The types of habitats identified from underwater cameras are shown in Figure 65. For gillnets, most of the gear deployments were done on substrate (comprised of mostly coarse sand, followed by rock and cobbles), followed by macroalgae (comprised of erect fine and course branching, and canopy forming). Longlines were deployed on erect fine branching macroalgae. 
+The types of habitats identified from underwater cameras are shown in Figure 64. For gillnets, most of the gear deployments were done on substrate (comprised of mostly coarse sand, followed by rock and cobbles), followed by macroalgae (comprised of erect fine and course branching, and canopy forming). Longlines were deployed on erect fine branching macroalgae. 
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Habitats_coarse.records.tiff',sep='/')
 ```
-![Figure 65. Habitat types observed by the underwater cameras set on demersal gillnets and longlines.](`r path`){width=800px,height=800px}
+![Figure 64. Habitat types observed by the underwater cameras set on demersal gillnets and longlines.](`r path`){width=800px,height=800px}
 
 <br>
 
-The quantification of habitat damage exerted by gillnets is shown in Figure 66. Overall, only a very small percentage of the analysed frames (~4.5 m of net) showed signs of habitat damage (top pane), and when damaged was observed, it comprised of mostly macroalgae (middle pane). For the analysed frames, when habitat damage was observed, it comprised mostly of 0 to 5% of each frame (bottom pane). 
+The quantification of habitat damage exerted by gillnets is shown in Figure 65. Overall, only a very small percentage of the analysed frames (~4.5 m of net) showed signs of habitat damage (top pane), and when damaged was observed, it comprised of mostly macroalgae (middle pane). For the analysed frames, when habitat damage was observed, it comprised mostly of 0 to 5% of each frame (bottom pane). 
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Habitat.interactions.tiff',sep='/')
 ```
-![Figure 66. Observed gillnet habitat-damage by deck camera 1.](`r path`){width=800px,height=800px}
+![Figure 65. Observed gillnet habitat-damage by deck camera 1.](`r path`){width=800px,height=800px}
 
 <br>
 
 ### Satellite tagging and blood sampling
-The depth profile for the discarded satellite-tagged Port Jackson sharks is shown in Figure 67. For the initially-tagged individual, the tag detached the day after deployment (tag # 200432). For the five sPAT tags set to detach if the shark was a constant depth for >48 hours, one tag was not detected either due to detachment or transmission failure and four tags detached after the programmed 30-day deployment period, indicating survival from the catch and release process. These sharks showed a clear day-night movement pattern where sharks showed little to no movement during the day and active movement during the night.
+The depth profile for the discarded satellite-tagged Port Jackson sharks is shown in Figure 66. For the initially-tagged individual, the tag detached the day after deployment (tag # 200432). For the five sPAT tags set to detach if the shark was a constant depth for >48 hours, one tag was not detected either due to detachment or transmission failure and four tags detached after the programmed 30-day deployment period, indicating survival from the catch and release process. These sharks showed a clear day-night movement pattern where sharks showed little to no movement during the day and active movement during the night.
 ```{r, echo=FALSE}
 path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/Satellite_tagging/Outputs/Port Jackson/Fine.scale_depth.tiff'
 ```
-![Figure 67. Depth profile (last 5 days of deployment) for satellite-tagged Port Jackson sharks.](`r path`){width=800px,height=800px}
+![Figure 66. Depth profile (last 5 days of deployment) for satellite-tagged Port Jackson sharks.](`r path`){width=800px,height=800px}
 
 <br>
 
-The blood lactate concentration for discarded Port Jackson sharks is shown in Figure 68. Overall, lactate concentration averaged 1.97 mmol L^-1^ and ranged between 0.84 and 4.7 mmol L^-1^, the latter corresponding to an individual in release condition 3. There was no clear relationship between lactate concentration and total length or soak time.
+The blood lactate concentration for discarded Port Jackson sharks is shown in Figure 67. Overall, lactate concentration averaged 1.97 mmol L^-1^ and ranged between 0.84 and 4.7 mmol L^-1^, the latter corresponding to an individual in release condition 3. There was no clear relationship between lactate concentration and total length or soak time.
 ```{r, echo=FALSE}
 path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/Satellite_tagging/Outputs/Port Jackson/Lactate.tiff'
 ```
-![Figure 68. Blood lactate concentration by size, release condition and soak time for Port Jackson sharks. The size and color of the dots indicate the soak time and release condition, respectively. The solid and dashed green lines indicated the mean and 95% CI of the lactate concentration.](`r path`){width=800px,height=800px}
+![Figure 67. Blood lactate concentration by size, release condition and soak time for Port Jackson sharks. The size and color of the dots indicate the soak time and release condition, respectively. The solid and dashed green lines indicated the mean and 95% CI of the lactate concentration.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1220,7 +1244,7 @@ if(min_hous==max_hous) House=min_hous else
 a=read.csv(paste(PA.socio.econ,'Resp_zone_fisher.csv',sep='/'))
 n.by.zone=paste(a$Zone,paste('(n=',a$n,')',sep=''),collapse=', ')
 ```
-Participating fishers have commercially fished for between `r min_yr.fshn` and `r max_yr.fshn` years, were `r Sex`, `r Ab` was of aboriginal and/or Torres Strait islander origin, had household sizes of `r House` and have home ports in the `r n.by.zone`. For these fishers, `r method.used`. All respondents owned the vessel used for commercial fishing and one respondent neither skipped the vessel nor had family members involved in the TDGDLF whereas for those respondents involved in the fishery, between 4 and 6 family members participated in the TDGDLF (Figure 69). Finally, family income derived from the TDGDLF ranged between just under 30% to 100% (Figure 69), with fishers keeping `r income.fisher` of the total fishing revenue as personal income.    
+Participating fishers have commercially fished for between `r min_yr.fshn` and `r max_yr.fshn` years, were `r Sex`, `r Ab` was of aboriginal and/or Torres Strait islander origin, had household sizes of `r House` and have home ports in the `r n.by.zone`. For these fishers, `r method.used`. All respondents owned the vessel used for commercial fishing and one respondent neither skipped the vessel nor had family members involved in the TDGDLF whereas for those respondents involved in the fishery, between 4 and 6 family members participated in the TDGDLF (Figure 68). Finally, family income derived from the TDGDLF ranged between just under 30% to 100% (Figure 68), with fishers keeping `r income.fisher` of the total fishing revenue as personal income.    
 
 ```{r, echo=FALSE}
 a=read.csv(paste(PA.socio.econ,'Tabulate_processor.csv',sep='/'))%>%
@@ -1258,46 +1282,46 @@ if(min_hous==max_hous) House=min_hous else
 a=read.csv(paste(PA.socio.econ,'Resp_zone_proc.csv',sep='/'))
 n.by.zone=paste(a$Zone,paste('(n=',a$n,')',sep=''),collapse=', ')
 ```
-Participating processors have processed fish for between `r min_yr.fshn` and `r max_yr.fshn` years, `r Sex`, `r Ab` was of aboriginal and/or Torres Strait islander origin. These processors had household sizes of `r House` and are based in `r n.by.zone`. One processor owned the processing plant whereas the other leased it (Figure 69). Family engagement in fish processing ranged between 4 and 6 members and, for both processors, 100% of the family income originated from fish processing (Figure 69), with processors keeping `r income.processor` of the total processing revenue as personal income. 
+Participating processors have processed fish for between `r min_yr.fshn` and `r max_yr.fshn` years, `r Sex`, `r Ab` was of aboriginal and/or Torres Strait islander origin. These processors had household sizes of `r House` and are based in `r n.by.zone`. One processor owned the processing plant whereas the other leased it (Figure 68). Family engagement in fish processing ranged between 4 and 6 members and, for both processors, 100% of the family income originated from fish processing (Figure 68), with processors keeping `r income.processor` of the total processing revenue as personal income. 
 
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_Income.percent_owner_family.tiff',sep='/')
 ```
-![Figure 69. Family engagement, income and ownership for fishers (top panels) and processors (bottom panels).](`r path`){width=800px,height=800px}
+![Figure 68. Family engagement, income and ownership for fishers (top panels) and processors (bottom panels).](`r path`){width=800px,height=800px}
 
 <br>
 
-The price range paid to fishers (shark trunks and fins; whole scalefish) and processors (fillets) is shown in Figure 70. For fishers, average shark price ranged from AUD 3.5 per kg of 'other sharks and rays' to AUD 16.5 per kg of shark fins whereas average scalefish price ranged from AUD 5.5 per kg of 'other scalefish' to AUD 16.7 per kg of dhufish.
+The price range paid to fishers (shark trunks and fins; whole scalefish) and processors (fillets) is shown in Figure 69. For fishers, average shark price ranged from AUD 3.5 per kg of 'other sharks and rays' to AUD 16.5 per kg of shark fins whereas average scalefish price ranged from AUD 5.5 per kg of 'other scalefish' to AUD 16.7 per kg of dhufish.
 
 For processors, average shark price ranged from AUD 18 (retail) and 14 (wholesale) per kg of 'other sharks and rays' to AUD 32 (retail) and 25 (wholesale) per kg of dusky shark whereas average scalefish price ranged from AUD 30 (retail) and 28 (wholesale) per kg of 'other scalefish' to AUD 60 (retail) and 56 (wholesale) per kg of dhufish.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_price.per.kg.tiff',sep='/')
 ```
-![Figure 70. Average price (±SD) per kg of trunks (sharks) or whole body (scalefish) for fishers or per kg of fillets for processors.](`r path`){width=800px,height=800px}
+![Figure 69. Average price (±SD) per kg of trunks (sharks) or whole body (scalefish) for fishers or per kg of fillets for processors.](`r path`){width=800px,height=800px}
 
 <br>
 
-The types of body parts (in addition to flesh and fins) sold by fishers and processors is shown in Figure 71. Fishers and processors sold fins to overseas exporters but did not sell other shark body parts.
+The types of body parts (in addition to flesh and fins) sold by fishers and processors is shown in Figure 70. Fishers and processors sold fins to overseas exporters but did not sell other shark body parts.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_body.parts.tiff',sep='/')
 ```
-![Figure 71. Exported shark parts and other shark parts sold by fishers and processors.](`r path`){width=800px,height=800px}
+![Figure 70. Exported shark parts and other shark parts sold by fishers and processors.](`r path`){width=800px,height=800px}
 
 <br>
 
-A breakdown of the annual fishing and processing costs is shown in Figure 72. For fishers, crew wage was by far the greatest cost. For processors, fish sourcing was by far the greatest cost.
+A breakdown of the annual fishing and processing costs is shown in Figure 71. For fishers, crew wage was by far the greatest cost. For processors, fish sourcing was by far the greatest cost.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_Costs.tiff',sep='/')
 ```
-![Figure 72. Breakdown of the total annual costs (averaged across all respondents with SD).](`r path`){width=800px,height=800px}
+![Figure 71. Breakdown of the total annual costs (averaged across all respondents with SD).](`r path`){width=800px,height=800px}
 
 <br>
 
-The percentage of annual costs spent within local government areas is shown in Figure 73. For both fishers and processors, the vast majority of the costs was spent within local government areas.
+The percentage of annual costs spent within local government areas is shown in Figure 72. For both fishers and processors, the vast majority of the costs was spent within local government areas.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_Expenditure_location.tiff',sep='/')
 ```
-![Figure 73. Breakdown of the total annual costs (averaged across all respondents with SD) spent within local government areas.](`r path`){width=800px,height=800px}
+![Figure 72. Breakdown of the total annual costs (averaged across all respondents with SD) spent within local government areas.](`r path`){width=800px,height=800px}
 
 <br>
 ```{r, echo=FALSE}
@@ -1309,12 +1333,15 @@ Proc.public=paste('(',sum(a%>%filter(grepl('public',To))%>%pull(Percent)),'%)',s
 Proc.retailer=paste('(',sum(a%>%filter(grepl('retailer',To))%>%pull(Percent)),'%)',sep='')
 Proc.export=paste('(',sum(a%>%filter(grepl('Export',To))%>%pull(Percent)),'%)',sep='')
 ```
-The catch destination by respondent and overall is shown in Figures 74 and 75, respectively. All fishers sold most of their catch `r Most.sold.fisher` to fish processors with some fishers selling directly to the public, local retailers and exporting interstate or consuming a small amount. For processors, the processed catch was mostly sold to local retailers `r Proc.retailer`, direct to public `r Proc.public` or exported interesate `r Proc.export`. 
+The catch destination by respondent and overall is shown in Figures 73, 74 and 75, respectively. All fishers sold most of their catch `r Most.sold.fisher` to fish processors with some fishers selling directly to the public, local retailers and exporting interstate or consuming a small amount. For processors, the processed catch was mostly sold to local retailers `r Proc.retailer`, direct to public `r Proc.public` or exported interesate `r Proc.export`. 
 ```{r, echo=FALSE}
-path=paste(PA.socio.econ,'social.network_catch_all.tiff',sep='/')
+path=paste(PA.socio.econ,'social.network_catch_all_fisher.tiff',sep='/')
 ```
-![Figure 74. Social network displaying the destination of landed/processed catch for each inteviewed A) Fisher and B) Processor. Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
-
+![Figure 73. Social network displaying the destination of landed catch for each inteviewed fisher. Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'social.network_catch_all_processor.tiff',sep='/')
+```
+![Figure 74. Social network displaying the destination of processed catch for each inteviewed processor. Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
 <br>
 
 ```{r, echo=FALSE}
@@ -1369,7 +1396,9 @@ a=read.csv(paste(PA.socio.econ,'Employees.csv',sep='/'))
 All.fisher.min=a%>%filter(Sector=='Fisher')%>%pull(All.min)*N.vessels
 All.fisher.max=a%>%filter(Sector=='Fisher')%>%pull(All.max)*N.vessels
 
-TDGDLF_processors=6  #dummy, replace with value from Christie's
+TDGDLF_processors=read.csv(paste(PA.socio.econ,'Processors_TDGDLF.csv',sep='/'))$x    #vertically integrated fishers
+WA.all_processors=read.csv(paste(PA.socio.econ,'Processors_allWA_shark.csv',sep='/'))$x   #all processors in WC and SC 
+WA.all_processors_shark=read.csv(paste(PA.socio.econ,'Processors_allWA_shark.csv',sep='/'))$x   #all processors in WC and SC processing shark
 N.proc.min=a%>%filter(Sector=='Processor')%>%pull(FTE.min)*TDGDLF_processors
 N.proc.max=a%>%filter(Sector=='Processor')%>%pull(FTE.max)*TDGDLF_processors
 All.proc.min=a%>%filter(Sector=='Processor')%>%pull(All.min)*TDGDLF_processors
@@ -1379,14 +1408,21 @@ All.proc.max=a%>%filter(Sector=='Processor')%>%pull(All.max)*TDGDLF_processors
 With regards to jobs, the TDGDLF annually employs `r N.crew` FTEs and between `r All.fisher.min` and`r All.fisher.max` persons overall.
 
 
+Based on 2019-20 landings, almost 50% of landings were caught by vertically-integrated fishers, i.e. operators that catch and process the catch (Figure 76). Of the `r WA.all_processors` finfish processors located in the West Coast and South Coast Bioregions, `r WA.all_processors_shark` processed sharks and rays in addition to scalefish, of which `r TDGDLF_processors` processed mostly sharks and rays, which were all sourced from the TDGDLF.
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Vertical_integration.tiff',sep='/')
+
+```
+![Figure 76. Percentage of TDGLDF 2019-20 catch for fishers that .](`r path`){width=800px,height=800px}
+
 <br>
 
 # Discussion
 The current report summarized historical information and generated novel information on the catch, relative efficiency, habitat impacts and economics of demersal gillnets and demersal longlines in southwestern Australia. In addition, this study used a range of different cameras to collect novel information not previously available for these fishing methods. The key findings originating from this study are summarized in the following dot points:
 
-* Demersal Gillnets and demersal longlines have different species compositions across the different zones that comprise the TDGDLF. Overall, most of the main commercial species were captured by both fishing methods though in different proportions with gillnets catching a greater number of species (retained and discarded) and showing a higher probability of retaining a caught-individual. Overall comparisons (i.e. all years and spatial blocks combined) from monthly returns showed a higher proportion of sharks in the catch composition of both fishing methods. However, this differed for ‘comparable records’, daily logbooks and the fishing survey which all showed a higher proportion of scalefish in the longline catch. The shift from monthly returns to daily logbooks coincided with the prohibition of metal tracers so a relatively lower proportion of sharks (which can bite through monofilament) in the longline catch composition derived from daily logbooks was expected. In contrast, the analysis of ‘comparable records’ (which for monthly returns included records using wire tracers) and fishing survey data (which included records using both mono and wire tracers) still showed a higher proportion of scalefish in the longline catch despite the use of wire tracers.
+* Demersal Gillnets and demersal longlines have different species compositions across the different zones that comprise the TDGDLF. Overall, most of the main commercial species were captured by both fishing methods though in different proportions with gillnets catching a greater number of species (retained and discarded) and showing a higher probability of retaining a caught-individual. Overall comparisons (i.e. all years and spatial blocks combined) from monthly returns showed a higher proportion of sharks in the catch composition of both fishing methods. However, this differed for ‘comparable records’, daily logbooks and the fishing survey which all showed a higher proportion of scalefish in the longline catch. The shift from monthly returns to daily logbooks coincided with the prohibition of metal tracers so a relatively lower proportion of sharks (which can bite through monofilament) in the longline catch composition derived from daily logbooks was expected. In contrast, the analysis of ‘comparable records’ (which for monthly returns included records using wire tracers) and fishing survey data (which included records using both mono and wire tracers) still showed a higher proportion of scalefish in the longline catch despite the use of wire tracers. It must be noted, however, that the catch rates of sharks collected during the fishing survey, particularly for those species with serrated triangular teeth like dusky, copper and sandbar sharks, may be underestimated due to the loss of hooks/snoods if those hooks/snoods were lost due to shark biting through the snood or bending the hook. Finally, all chartered fishing vessels that took part of the survey have traditionally fished with gillnets and a learning stage is expected for the use of longlines. Hence, a lower catchability could be expected therefore influencing longline catch rates. 
 * Although demersal gillnets and demersal longlines have different effort units, overall patterns can be inferred. The catch rates of these two fishing methods varied depending on species. Demersal longlines showed higher catch rates of pink snapper, West Australian dhufish and gummy shark but negligible to very low catch rates of blue groper and queen snapper. For other main commercial species, differences in demersal longline and demersal gillnet catch rates were not as evident.
-* Information on the use of wire or monofilament snoods for longline-caught individuals was not available in the commercial catch and effort returns. For the fishing survey, where both wire and monofilament snoods were used, no significant differences in catch rates were found. This, however, may be an artifact of the relatively low number of individuals caught in the 55 fishing days conducted and the relatively small size of the most-commonly caught shark species which may not be as capable of biting through the monofilament snood as larger individuals. Since the prohibition of metal tracers, anecdotal information from multiple fishers indicates an increase in snood loss due to bite-offs by species with serrated triangular teeth like dusky and sandbar sharks and therefore, a reduction in their catch rates. 
+* Information on the use of wire or monofilament snoods for longline-caught individuals was not available in the commercial catch and effort returns. For the fishing survey, where both wire and monofilament snoods were used, no significant differences in catch rates were found between snood type. This, however, may be an artifact of the relatively low number of individuals caught in the 55 fishing days conducted and the relatively small size of the most-commonly caught shark species which may not be as capable of biting through the monofilament snood as larger individuals. Since the prohibition of metal tracers (i.e. wire snoods), anecdotal information from multiple fishers indicates an increase in snood loss due to bite-offs by species with serrated triangular teeth and therefore, a reduction in their catch rates. Information on hook/snood loss collected in this study suggests a higher loss of monofilament snoods, however, the information collected cannot distinguish whether the hook was bent or the snood snapped.   
 * There was a clear reduction in fishing effort across the TDGDLF due to management intervention since the historic peak. This translated into a reduction in the number of vessel and ports participating in the TDGDLF. In particular, demersal longline effort has substantially declined, and it is at its historic low.
 * The majority of discarded individuals showed a good release condition. In particular, Port Jackson shark, the most-commonly discarded species in the TDGDLF, had a very high post-release survival rate.
 * Overall, dropout rates were low for both fishing methods, particularly for commercial species. For discarded species, most dropouts were in good condition.
@@ -1394,8 +1430,14 @@ The current report summarized historical information and generated novel informa
 * Electronic (EM) and onboard observer (OM) monitoring showed very similar catch compositions.
 * Demersal gillnets were mostly set on coarse sand and to a lower extent, macroalgae, and had very limited damage on the different habitats where the gear was deployed.
 * Anecdotal information provided by longline fishers challenges the financial viability of manually-bait longlines, which require longer working hours (e.g., the average baiting time in this study was just under 100 hooks per person-hour), incur in bait losses (31 baits lost per 1000 hook hour observed in this study) and may result in lower shark catch rates due to monofilament bite-offs (although not observed in this study).
-* Due to longlines’ higher catch rates of scalefish and current restrictions on scalefish catches and unit conversions, particularly in the West Coast Bioregion, the use of demersal longline in inshore waters, particularly in the WCDGDLF, seems unviable. A consideration should be given to using demersal longline in offshore-deeper waters where the use of demersal gillnets is logistically impractical.
+* The socio-economic survey generated novel information not previously available for the TDGDLF.
+# Most of the catch landed by fishers is sold to processors, who, in turn, sell most of the processed catch to local retailers and direct to public, and a lesser extent export the catch interestate.
+* Most of the TDGDLF Fishers and processors costs are spent within local government areas.
+* The TDGDLF employs up to 100 persons and has an overall annual market value through the supply chain of up to AUD 27 million, considerably larger than its GVP.
+* Demersal longlining is comparably less economically efficient than demersal gillneting if hooks are baited manually. If baiting time can be reduced, through for example automatic-baiting, longline performance consdirably increased.   
+* However, due to longlines’ higher catch rates of scalefish and current restrictions on scalefish catches and unit conversions, particularly in the West Coast Bioregion, the use of demersal longline in inshore waters, particularly in the WCDGDLF, seems unviable. A consideration should be given to using demersal longline in offshore-deeper waters where the use of demersal gillnets is logistically impractical.
 
+**DPIRD to prepare a policy statement to accompany the Research Report regarding, amongst other considerations, hook and net equivalence, and possible use of longlines in deep water. This was unlikely to be expected until the end of March 2022 following finalisation of the research report**
 
 **Reasons why results for economic comparison LL vs GN should be use cautiously: page 55 Knuckey**
 
