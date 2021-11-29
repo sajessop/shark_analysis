@@ -1413,7 +1413,7 @@ Based on 2019-20 landings, almost 50% of landings were caught by vertically-inte
 path=paste(PA.socio.econ,'Vertical_integration.tiff',sep='/')
 
 ```
-![Figure 76. Percentage of TDGLDF 2019-20 catch for fishers that .](`r path`){width=800px,height=800px}
+![Figure 76. Percentage of TDGLDF 2019-20 catch for fishers that only catch fish ('Fisher only') and catch and process fish ('Fisher & Processor'.](`r path`){width=800px,height=800px}
 
 <br>
 
