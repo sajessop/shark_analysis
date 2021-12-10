@@ -65,6 +65,9 @@ Main.species=c("Dusky shark","Gummy shark","Sandbar shark","Whiskery shark",
 ```
 
 # Executive summary
+The Temperate Demersal Gillnet and Demersal Longline Fisheries (TDGDLF) are one of the main commercial shark fisheries of Australia. Fishers in the TDGDLF employ mostly demersal gillnets to target sharks with scalefish taken as byproduct, with demersal longline also being permitted but not widely used. Gillnets are size selective, they do not necessarily discriminate among species, catching target and non-target species. The current project addressed key issues relating to the use of gillnet and longlines by TDGDLF fishers. There were two parts to this project, a desktop study of historical information and field study using onboard observers and cameras mounted on demersal gillnets and demersal longlines, which were fished simultaneously for a total of 55 fishing days. 
+Demersal gillnets and demersal longlines had relatively different species compositions; although most of the main commercial species were captured by both fishing methods, they done so in different proportions. Similarly, catch rates varied by fishing method. Dropout rates were low for both fishing methods, particularly for commercial species. Despite the popular perception of gillnets being ‘indiscriminate walls of death’, the most commonly observed behaviour by underwater cameras was ‘swim past’. The majority of discarded individuals where released in good condition. Electronic (EM) and onboard observer (OM) monitoring showed very similar catch compositions.
+Demersal gillnets were mostly set on coarse sand and to a lower extent, macroalgae, and had very limited damage on the different habitats where deployed. Most of the catch landed by fishers is sold to processors, who, in turn, sell most of the processed catch to local retailers and direct to public, and a lesser extent export the catch interestate. The TDGDLF employs up to 100 persons and has an overall annual market value through the supply chain of up to AUD 27 million, considerably larger than its GVP. The information collected in this study challenges the financial feasibility of manually-bait, which require longer working hours, incur in bait losses and may result in lower shark catch rates due to monofilament bite-offs. 
 
 # Introduction
 The Temperate Demersal Gillnet and Demersal Longline Fisheries (TDGDLF) comprise of the West Coast Demersal Gillnet and Demersal Longline (Interim) Managed Fishery (WCDGDLF), which operates between 26° and 33° S, and the Southern Demersal Gillnet and Demersal Longline Managed Fishery (SDGDLF), which operates from 33° S to the Western Australian (WA)/South Australian (SA) border. 
@@ -264,7 +267,7 @@ path='C:/Users/myb/OneDrive - Department of Primary Industries and Regional Deve
 ### Socio-economic survey
 A survey of TDGDLF vessel owners, skippers and fish processors was undertaken to understand the economic and social contribution of the TDGDLF to the WA community. The survey aimed to estimate what the combined benefit is to the local economy from TDGDLF operators. Information was also collected to compare the economic performance of demersal gillnet and demersal longlines. 
 The socio-economic questionnaires (Tables A.8.1 and A.8.2) were designed following [@Pascoe2016].
-A total of 28 stake-holders (fishers and fish processors) were identified from DPIRD's licensing and catch and effort return databases. Initially, an e-mail was sent to each stakeholder followed by a phone call. The importance of participating in the survey was explained and a face to face meeting was arranged with those agreeing to participate. **MISSING, to do Maddie**
+A total of 28 stake-holders (fishers and fish processors) were identified from DPIRD's licensing and catch and effort return databases. Initially, an e-mail was sent to each stakeholder followed by a phone call. The importance of participating in the survey was explained and a face to face meeting was arranged with those agreeing to participate. **MISSING, to do by Maddie**
 
 Network analysis and sankey plots were used to visualize the flow of the TDGDLF catch for the fisher and processor sectors. 
 
@@ -608,9 +611,10 @@ path=paste(PA.historic,'longline only/longline_gillnet.soak times_daily only.tif
 <br>
 
 ### Gear selectivity
+**TO BE FILLED IN BY MADDIE/NICK**
 
 ### Interactions with ETPs and habitat
-
+**TO BE FILLED IN BY MADDIE/NICK**
 
 ## Fishing survey
 A total of 55 fishing days (79 gillnet and 63 longline deployments) were done across the WCDGDLF (13 fishing days; 12 gillnet and 10 longline deployments), SDGDLF Zone 1 (20 fishing days; 22 gillnet and 23 longline deployments) and SDGDLF Zone 2 (22 fishing days; 45 gillnet and 30 longline deployments).
@@ -701,7 +705,7 @@ knitr::kable(Tab,caption='Table 12. Summary statistics for the Simper analysis o
 <br>
 
 #### Number of individuals caught by snood configuration
-The number of individuals (all species combined) caught by each snood configuration is shown in Figure 33. Overall, the different number of configurations used caught a similar number of individuals, except for Ezi-baiter 10/0 hooks, which caught a smaller number of individuals. 
+The number of individuals (all species combined) caught by each snood configuration is shown in Figure 33. Overall, the different number of configurations used caught a similar number of individuals, except for Ezi-baiter 10/0 hooks, which caught relatively less individuals. 
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'Barplot Longline configurations.tiff',sep='/')
 ```
@@ -779,7 +783,7 @@ path=paste(PA.Observer,'size/Standardized_Size_Method.tiff',sep='/')
 
 <br>
 
-Ezi-baiter hooks caught significantly larger pink snapper (Figure 40, Table A.3.11). There was a significant increase in mean size with hook size for pink snapper (Figure 41, Table A.3.11). No significant differences in mean size between hook types or sizes were found for the other species analysed.
+There was a significant increase in mean size with hook size for pink snapper, West Australian dhufish and Port Jackson shark (Figure 40). Ezi-baiter hooks caught significantly larger pink snapper (Figure 41). No significant differences in mean size between hook types or sizes were found for the other species analysed.  
 ```{r, echo=FALSE}
 path=paste(PA.Observer,'size/Standardized_Size_Hook.size.tiff',sep='/')
 ```
@@ -849,12 +853,13 @@ path=paste(PA.Observer,'retained/Standardized_retained_method.tiff',sep='/')
 <br>
 
 ### Overall camera observations
-The number of hours of footage collected by the different cameras is shown in Table 16.
+The number of hours of footage collected by the different cameras is shown in Table 16. More than 3000 hour footage were collected from which between 50 and 72% were analysed. The remaining collected footage will be analysed as part of a Masters student thesis before the end of 2022.
+
 ```{r echo=FALSE}
 Tab=data.frame(Camera=c('Underwater','Deck 1','Deck 2','Subsurface'),
                Deployed.numbers=c(464,137,137,104),
                Collected.hours=c(2902,176,176,144),
-               Percent.analysed=c(49,25,25,24))
+               Percent.analysed=c(49,72,72,57))
 knitr::kable(Tab,
              col.names = c("Camera","Numbers deployed","Hours collected","Percent analysed"),
              caption="Table 16. Hours of footage collected and analysed by camera type.")
@@ -875,7 +880,7 @@ knitr::kable(Tab,
 <br>
 
 #### Dropouts, bait loss, depredation, gaffing and position in water column
-The number and percentage of dropouts individuals by species and fishing method is shown in Table 18 (for deck camera 2 only) and Figure 45 (deck camera 2 and subsurface camera). For both fishing methods, the percent of dropouts was generally very low for commercial species but it was higher for discarded species. For example, 89%, 65% and 50% of stingrays, southern eagle rays and fiddler rays caught by longlines dropped out. 
+The number and percentage of dropouts by species and fishing method is shown in Table 18 (for deck camera 2 only) and Figure 45 (deck camera 2 and subsurface camera). For both fishing methods, the percent of dropouts was generally very low for commercial species but it was higher for discarded species. 
 
 ```{r, echo=FALSE}
 Tab=read.csv(paste(PA.video.deck.cameras,'Drop.out.events_table_camera2.csv',sep='/'))
@@ -894,7 +899,7 @@ path=paste(PA.video.deck.cameras,'Drop.out.events.tiff',sep='/')
 ```
 ![Figure 45. Number of dropout events observed from deck camera 2 (above roller) and subsurface camera. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
-There was no contrast in the gillnet data and for most longline-caught species (most observations were for 'retained', i.e. not dropped out) to estimate the dropout probability (Tables A.5.1 and A.5.2, Figures 46 and 47). There was, however, enough contrast in the data to estimate the dropout probability for smooth stingray and southern eagle ray (Table A.5.2), which showed a high dropout probability (Figure 47) but a high resilience with all observed individuals swimming way after dropping out (Figure 47).
+There was no contrast in the gillnet data and for most longline-caught species (most observations were for 'retained', i.e. not dropped out) to estimate the dropout probability (Tables A.5.1 and A.5.2, Figures 46 and 47). There was, however, enough contrast in the data to estimate the longline dropout probability for smooth stingray and southern eagle ray (Table A.5.2), which showed a high dropout probability (Figure 46) but a high resilience with all (southern eagle ray) or most (smooth stingray) individuals swimming way after dropping out (Figure 47).
 <br>
 
 ```{r, echo=FALSE}
@@ -911,7 +916,7 @@ path=paste(PA.video.deck.cameras,'Drop.out.events_fate_subsurface.tiff',sep='/')
 
 <br>
 
-The dropout rates for the most commonly caught species are shown in Tables 19, 20 and 21 for deck 2, subsurface and underwater cameras, respectively. Overall, commercial species had low dropout rates, ranging from 0 to up to 0.00011 individuals per m haul-hour for blue groper caught in gillnets and 0.00344 individuals per hook haul-hour for pink snapper caught in longlines.
+The dropout rates for the most commonly caught species are shown in Tables 19, 20 and 21 for deck 2, subsurface and underwater cameras, respectively. Overall, commercial species had low dropout rates, ranging from 0 to up to 0.00006 individuals per m haul-hour for blue groper caught in gillnets and 0.00124 individuals per hook haul-hour for pink snapper caught in longlines.
 ```{r, echo=FALSE}
 Tab=read.csv(paste(PA.video.deck.cameras,'Rate_Drop.out_deck2.csv',sep='/'))
 knitr::kable(Tab,
@@ -942,7 +947,7 @@ knitr::kable(Tab,
 
 <br>
 
-Overall, 0.031 baits were lost per hook-hour (Table 22) whereas 0.0008 caught-individuals per m hour were depredated from gillnets (Table 23). No depredation events were observed for individuals caught by longlines. 
+Overall, 0.031 baits were lost per hook-hour (Table 22) whereas 0.0003 caught-individuals per m hour were depredated from gillnets (Table 23). No depredation events were observed for individuals caught by longlines. 
 ```{r, echo=FALSE}
 Tab=read.csv(paste(PA.video.underwater,'Rate_Bait.loss.csv',sep='/'))
 knitr::kable(Tab,
@@ -967,23 +972,23 @@ path=paste(PA.video.deck.cameras,'Drop.out.events_gaffing.tiff',sep='/')
 
 <br>
 
-The relative position in the water column as inferred from the relative position of longline-caught individuals from a weight or pressure float is shown in Figure 50. Most observed dusky sharks were caught near the pressure floats whereas most pink snapper and the other shark and ray species were caught near the weights.  
+The relative position in the water column as inferred from the relative position of longline-caught individuals from a weight or pressure float is shown in Figure 50. Most observed dusky and whaler sharks were caught near the pressure floats whereas most pink snapper and the other shark and ray species were caught near the weights.  
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Weight_float_species.events.tiff',sep='/')
 ```
 ![Figure 50. Position in water column derived from deck camera 1. Only species with at least 10 observed events are displayed.](`r path`){width=800px,height=800px}
 
 <br>
-**Update significance after completion of video analyses (Table A.6.1 and Figure 50)**
+The estimated probability of capture near a weight is shown in Figure 50. For Port Jackson shark and western wobbegong the estimated probability showed substantial error due to the lack of contrast (all individuals were caugh near the weight); however, the other species showed acceptable probability estimates (Table A.6.1).
 ```{r, echo=FALSE}
 path=paste(PA.video.deck.cameras,'Weight_float_species_predictions.tiff',sep='/')
 ```
-![Figure 50. Estimated capture probability (±95% CI) near a weight derived from  deck camera 1 for longline-caught individuals.](`r path`){width=800px,height=800px}
+![Figure 50. Estimated capture probability (±95% CI) near a weight derived from deck camera 1 for longline-caught individuals.](`r path`){width=800px,height=800px}
 
 <br>
 
 #### Behaviours observed by underwater cameras
-Twelve different types of behaviour were observed from underwater cameras mounted on gillnets and longlines for the main taxonomic groups (Figure 51) and main commercial species (Figure 52). Overall, for both fishing methods, all taxonomic groups and main commercial species, 'swim past' was the most commonly observed behaviour, followed by 'swim through' for gillnets and 'bait feeding' or 'caught' for longlines.
+Thirteen different types of behaviour were observed from underwater cameras mounted on gillnets and longlines for the main taxonomic groups (Figure 51) and main commercial species (Figure 52). Overall, for both fishing methods, all taxonomic groups and main commercial species, 'swim through' and 'swim past' were the most commonly observed behaviours, followed bygillnets and 'bait feeding' or 'caught' for longlines.
 ```{r, echo=FALSE}
 path=paste(PA.video.underwater,'Interactions_number.individuals_sqrt.transf_by.group.tiff',sep='/')
 ```
@@ -992,9 +997,9 @@ path=paste(PA.video.underwater,'Interactions_number.individuals_sqrt.transf_by.g
 <br>
 
 ```{r, echo=FALSE}
-path=paste(PA.video.underwater,'Interactions_number.individuals_main.target.tiff',sep='/')
+path=paste(PA.video.underwater,'Interactions_number.individuals_main.target_sqrt.transf.tiff',sep='/')
 ```
-![Figure 52. Number of different behaviour types observed from underwater cameras for the main commercial species only.](`r path`){width=800px,height=800px}
+![Figure 52. Number of different behaviour types observed from underwater cameras for the main commercial species only. For display purposes, the x-axis was square-root transformed.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1309,19 +1314,26 @@ path=paste(PA.socio.econ,'Question_body.parts.tiff',sep='/')
 
 <br>
 
-A breakdown of the annual fishing and processing costs is shown in Figure 71. For fishers, crew wage was by far the greatest cost. For processors, fish sourcing was by far the greatest cost.
+The range of total annual fishing revenue and costs is shown in Figure 71 and a breakdown of the annual fishing and processing costs is shown in Figure 72. For fishers, crew wage was by far the greatest cost. For processors, fish sourcing was by far the greatest cost.
+
+```{r, echo=FALSE}
+path=paste(PA.socio.econ,'Question_revenue_costs.tiff',sep='/')
+```
+![Figure 71. Total annual revenue and costs by fisher.](`r path`){width=800px,height=800px}
+
+
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_Costs.tiff',sep='/')
 ```
-![Figure 71. Breakdown of the total annual costs (averaged across all respondents with SD).](`r path`){width=800px,height=800px}
+![Figure 72. Breakdown of the total annual costs (averaged across all respondents with SD).](`r path`){width=800px,height=800px}
 
 <br>
 
-The percentage of annual costs spent within local government areas is shown in Figure 72. For both fishers and processors, the vast majority of the costs was spent within local government areas.
+The percentage of annual costs spent within local government areas is shown in Figure 73. For both fishers and processors, the vast majority of the costs was spent within local government areas.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Question_Expenditure_location.tiff',sep='/')
 ```
-![Figure 72. Breakdown of the total annual costs (averaged across all respondents with SD) spent within local government areas.](`r path`){width=800px,height=800px}
+![Figure 73. Breakdown of the total annual costs (averaged across all respondents with SD) spent within local government areas.](`r path`){width=800px,height=800px}
 
 <br>
 ```{r, echo=FALSE}
@@ -1333,22 +1345,22 @@ Proc.public=paste('(',sum(a%>%filter(grepl('public',To))%>%pull(Percent)),'%)',s
 Proc.retailer=paste('(',sum(a%>%filter(grepl('retailer',To))%>%pull(Percent)),'%)',sep='')
 Proc.export=paste('(',sum(a%>%filter(grepl('Export',To))%>%pull(Percent)),'%)',sep='')
 ```
-The catch destination by respondent and overall is shown in Figures 73, 74 and 75, respectively. All fishers sold most of their catch `r Most.sold.fisher` to fish processors with some fishers selling directly to the public, local retailers and exporting interstate or consuming a small amount. For processors, the processed catch was mostly sold to local retailers `r Proc.retailer`, direct to public `r Proc.public` or exported interesate `r Proc.export`. 
+The catch destination by respondent and overall is shown in Figures 74, 75 and 76, respectively. All fishers sold most of their catch `r Most.sold.fisher` to fish processors with some fishers selling directly to the public, local retailers and exporting interstate or consuming a small amount. For processors, the processed catch was mostly sold to local retailers `r Proc.retailer`, direct to public `r Proc.public` or exported inter-estate `r Proc.export`. 
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'social.network_catch_all_fisher.tiff',sep='/')
 ```
-![Figure 73. Social network displaying the destination of landed catch for each inteviewed fisher. Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
+![Figure 74. Social network displaying the destination of landed catch for each interviewed fisher. Link width is proportional to catch flow.](`r path`){width=800px,height=800px}
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'social.network_catch_all_processor.tiff',sep='/')
 ```
-![Figure 74. Social network displaying the destination of processed catch for each inteviewed processor. Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
+![Figure 75. Social network displaying the destination of processed catch for each interviewed processor. Link width is proportional to catch flow.](`r path`){width=800px,height=800px}
 <br>
 
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'sankey.plot_catch.tiff',sep='/')
 
 ```
-![Figure 75. Sankey plot summarising the destination of landed/processed catch (averaged across fishers or processors). Link width is propoportional to catch flow.](`r path`){width=800px,height=800px}
+![Figure 76. Sankey plot summarising the destination of landed/processed catch (averaged across fishers or processors). Link width is proportional to catch flow.](`r path`){width=800px,height=800px}
 
 <br>
 
@@ -1408,19 +1420,19 @@ All.proc.max=a%>%filter(Sector=='Processor')%>%pull(All.max)*TDGDLF_processors
 With regards to jobs, the TDGDLF annually employs `r N.crew` FTEs and between `r All.fisher.min` and`r All.fisher.max` persons overall.
 
 
-Based on 2019-20 landings, almost 50% of landings were caught by vertically-integrated fishers, i.e. operators that catch and process the catch (Figure 76). Of the `r WA.all_processors` finfish processors located in the West Coast and South Coast Bioregions, `r WA.all_processors_shark` processed sharks and rays in addition to scalefish, of which `r TDGDLF_processors` processed mostly sharks and rays, which were all sourced from the TDGDLF.
+Based on 2019-20 landings, almost 50% of landings were caught by vertically-integrated fishers, i.e. operators that catch and process the catch (Figure 77). Of the `r WA.all_processors` finfish processors located in the West Coast and South Coast Bioregions, `r WA.all_processors_shark` processed sharks and rays in addition to scalefish, of which `r TDGDLF_processors` processed mostly sharks and rays, which were all sourced from the TDGDLF.
 ```{r, echo=FALSE}
 path=paste(PA.socio.econ,'Vertical_integration.tiff',sep='/')
 
 ```
-![Figure 76. Percentage of TDGLDF 2019-20 catch for fishers that only catch fish ('Fisher only') and catch and process fish ('Fisher & Processor'.](`r path`){width=800px,height=800px}
+![Figure 77. Percentage of TDGLDF 2019-20 catch for fishers that only caught fish ('Fisher only') and caught and processed fish ('Fisher & Processor'.](`r path`){width=800px,height=800px}
 
 <br>
 
 # Discussion
 The current report summarized historical information and generated novel information on the catch, relative efficiency, habitat impacts and economics of demersal gillnets and demersal longlines in southwestern Australia. In addition, this study used a range of different cameras to collect novel information not previously available for these fishing methods. The key findings originating from this study are summarized in the following dot points:
 
-* Demersal Gillnets and demersal longlines have different species compositions across the different zones that comprise the TDGDLF. Overall, most of the main commercial species were captured by both fishing methods though in different proportions with gillnets catching a greater number of species (retained and discarded) and showing a higher probability of retaining a caught-individual. Overall comparisons (i.e. all years and spatial blocks combined) from monthly returns showed a higher proportion of sharks in the catch composition of both fishing methods. However, this differed for ‘comparable records’, daily logbooks and the fishing survey which all showed a higher proportion of scalefish in the longline catch. The shift from monthly returns to daily logbooks coincided with the prohibition of metal tracers so a relatively lower proportion of sharks (which can bite through monofilament) in the longline catch composition derived from daily logbooks was expected. In contrast, the analysis of ‘comparable records’ (which for monthly returns included records using wire tracers) and fishing survey data (which included records using both mono and wire tracers) still showed a higher proportion of scalefish in the longline catch despite the use of wire tracers. It must be noted, however, that the catch rates of sharks collected during the fishing survey, particularly for those species with serrated triangular teeth like dusky, copper and sandbar sharks, may be underestimated due to the loss of hooks/snoods if those hooks/snoods were lost due to shark biting through the snood or bending the hook. Finally, all chartered fishing vessels that took part of the survey have traditionally fished with gillnets and a learning stage is expected for the use of longlines. Hence, a lower catchability could be expected therefore influencing longline catch rates. 
+* Demersal gillnets and demersal longlines have different species compositions across the different zones that comprise the TDGDLF. Overall, most of the main commercial species were captured by both fishing methods though in different proportions with gillnets catching a greater number of species (retained and discarded) and showing a higher probability of retaining a caught-individual. Overall comparisons (i.e. all years and spatial blocks combined) from monthly returns showed a higher proportion of sharks in the catch composition of both fishing methods. However, this differed for ‘comparable records’, daily logbooks and the fishing survey which all showed a higher proportion of scalefish in the longline catch. The shift from monthly returns to daily logbooks coincided with the prohibition of metal tracers so a relatively lower proportion of sharks (which can bite through monofilament) in the longline catch composition derived from daily logbooks was expected. In contrast, the analysis of ‘comparable records’ (which for monthly returns included records using wire tracers) and fishing survey data (which included records using both mono and wire tracers) still showed a higher proportion of scalefish in the longline catch despite the use of wire tracers. It must be noted, however, that the catch rates of sharks collected during the fishing survey, particularly for those species with serrated triangular teeth like dusky, copper and sandbar sharks, may be underestimated due to the loss of hooks/snoods if those hooks/snoods were lost due to shark biting through the snood or bending the hook. Finally, all chartered fishing vessels that took part of the survey have traditionally fished with gillnets and a learning stage is expected for the use of longlines. Hence, a lower catchability could be expected therefore influencing longline catch rates. 
 * Although demersal gillnets and demersal longlines have different effort units, overall patterns can be inferred. The catch rates of these two fishing methods varied depending on species. Demersal longlines showed higher catch rates of pink snapper, West Australian dhufish and gummy shark but negligible to very low catch rates of blue groper and queen snapper. For other main commercial species, differences in demersal longline and demersal gillnet catch rates were not as evident.
 * Information on the use of wire or monofilament snoods for longline-caught individuals was not available in the commercial catch and effort returns. For the fishing survey, where both wire and monofilament snoods were used, no significant differences in catch rates were found between snood type. This, however, may be an artifact of the relatively low number of individuals caught in the 55 fishing days conducted and the relatively small size of the most-commonly caught shark species which may not be as capable of biting through the monofilament snood as larger individuals. Since the prohibition of metal tracers (i.e. wire snoods), anecdotal information from multiple fishers indicates an increase in snood loss due to bite-offs by species with serrated triangular teeth and therefore, a reduction in their catch rates. Information on hook/snood loss collected in this study suggests a higher loss of monofilament snoods, however, the information collected cannot distinguish whether the hook was bent or the snood snapped.   
 * There was a clear reduction in fishing effort across the TDGDLF due to management intervention since the historic peak. This translated into a reduction in the number of vessel and ports participating in the TDGDLF. In particular, demersal longline effort has substantially declined, and it is at its historic low.
@@ -1431,7 +1443,7 @@ The current report summarized historical information and generated novel informa
 * Demersal gillnets were mostly set on coarse sand and to a lower extent, macroalgae, and had very limited damage on the different habitats where the gear was deployed.
 * Anecdotal information provided by longline fishers challenges the financial viability of manually-bait longlines, which require longer working hours (e.g., the average baiting time in this study was just under 100 hooks per person-hour), incur in bait losses (31 baits lost per 1000 hook hour observed in this study) and may result in lower shark catch rates due to monofilament bite-offs (although not observed in this study).
 * The socio-economic survey generated novel information not previously available for the TDGDLF.
-# Most of the catch landed by fishers is sold to processors, who, in turn, sell most of the processed catch to local retailers and direct to public, and a lesser extent export the catch interestate.
+* Most of the catch landed by fishers is sold to processors, who, in turn, sell most of the processed catch to local retailers and direct to public, and a lesser extent export the catch interestate.
 * Most of the TDGDLF Fishers and processors costs are spent within local government areas.
 * The TDGDLF employs up to 100 persons and has an overall annual market value through the supply chain of up to AUD 27 million, considerably larger than its GVP.
 * Demersal longlining is comparably less economically efficient than demersal gillneting if hooks are baited manually. If baiting time can be reduced, through for example automatic-baiting, longline performance consdirably increased.   
