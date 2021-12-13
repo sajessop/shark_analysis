@@ -3257,7 +3257,8 @@ Video.net.interaction=Video.net.interaction%>%
 
 Video.net.interaction=Video.net.interaction%>%
                         left_join(Retained.tabl,by='Code')%>%
-                        mutate(Retain.group=
+                        mutate(Method='Gillnet',
+                               Retain.group=
                                  ifelse(retained=='Yes' & SP.group%in% c('Sharks','Rays'),"Retained elasmobranch",
                                  ifelse(retained=='No' & SP.group%in% c('Sharks','Rays'),"Discarded elasmobranch",
                                  ifelse(retained=='Yes' & SP.group%in% c('Scalefish'),"Retained scalefish",   
@@ -5685,7 +5686,7 @@ if(do.events)
   
 }
 
-  #2. Number of individuals
+  #2. Number of individuals  
     #2.1. by gear and species group
 rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
       Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
@@ -5708,7 +5709,7 @@ rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.gr
   xlab('')+ylab('Number of individuals')+
   guides(color = guide_legend(nrow = 1))
 ggsave(le.paste("Video/underwater/Interactions_number.individuals_sqrt.transf_by.group.tiff"),
-       width = 14,height = 10,compression = "lzw")
+       width = 15,height = 10,compression = "lzw")
 
     #2.2. by gear
 rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
@@ -5758,14 +5759,14 @@ dis.cols=dis.cols[match(levels(droplevels(d$Names)),names(dis.cols))]
 d%>%
   ggplot(aes(fill=Names, y=n, x=Interaction)) + 
   geom_bar(position="stack", stat="identity")+
-  coord_flip() + scale_y_sqrt()+ 
+  coord_flip() + 
   facet_wrap(~Method,dir='h',scales='free_x')+ 
   theme_PA(strx.siz=17,leg.siz=18,axs.t.siz=14,axs.T.siz=16)+
   theme(legend.position = "top",
         legend.title = element_blank())+
   xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))+
   scale_fill_manual(values=dis.cols)
-ggsave(le.paste("Video/underwater/Interactions_number.individuals_main.target_sqrt.transf.tiff"),
+ggsave(le.paste("Video/underwater/Interactions_number.individuals_main.target.tiff"),
        width = 12,height = 10,compression = "lzw")
 
   #3. Export data for Abbey
@@ -8330,6 +8331,7 @@ fn.sankey.plot=function(d1,d2,Other,FROM,CL)
     rename(Question=2)%>%
     mutate(Question=tolower(Question),
            Question1=case_when(grepl('processor',Question)~"Other fish processor",
+                               grepl('coopt',Question)~"Fish coopt",
                                TRUE~Question),
            Question="Other")
   
@@ -8747,8 +8749,8 @@ fn.tbl.location.zone=function(d)
 {
   return(d%>%
            mutate(Zone=case_when(Loc%in%c('Lancelin')~"West Coast",
-                                 Loc%in%c('Augusta','Bunbury','Busselton')~"Zone 1",
-                                 Loc%in%c('Albany','Esperance')~"Zone 2"))%>%
+                                 Loc%in%c('Augusta','Bunbury','Busselton','Hamelin Bay','Dunsborough')~"Zone 1",
+                                 Loc%in%c('Albany','Esperance','Esoerance')~"Zone 2"))%>%
            group_by(Zone)%>%tally())
   
 }
@@ -9343,9 +9345,6 @@ if(Do.map.location)
 
 
 #---------Analyse PA economics of Longline vs Gillnet ------------
-#   Missing: 
-#       Update Annual.cost.gear.rep_LL with Markus survey, it should be higher than gillnets due to hook loss
-
 
 #1. Revenue from catching one tonne
   #1.1. catch composition
