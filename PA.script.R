@@ -152,6 +152,7 @@ WA.processors=read_excel(handl_OneDrive("Data/Processors_Matias_2019_20.xlsx"), 
 explr.dat.entry=TRUE
 do.len_len=FALSE
 do.Historic=FALSE
+do.soc.econ.papr=FALSE
 
 distance.roller.spreader.Anthony=4.3  #in metres
 distance.roller.spreader.Tim=NA  #in metres
@@ -1700,6 +1701,11 @@ if(do.Historic)
   ggarrange(p1, p2, ncol = 1, nrow = 2)
   ggsave(le.paste("Historic_catch_effort/Map_ports.tiff"),width = 7,height = 9,compression = "lzw")
   
+  if(do.soc.econ.papr)
+  {
+    p1.map=p1
+    p2.map=p2
+  }
   
     #1.2. Number of departing ports and vessels by year
   a=Data.monthly%>%
@@ -1787,6 +1793,19 @@ if(do.Historic)
   ggarrange(p1, p2, ncol = 1, nrow = 2,common.legend=TRUE)   
   ggsave(le.paste("Historic_catch_effort/Annual number of ports and vessel by zone.tiff"),width = 9,height = 10,compression = "lzw")
   
+  if(do.soc.econ.papr)
+  {
+    p1.N.ports=p1
+    p2.N.vessels=p2
+    
+    ggarrange(p1.map+ggtitle("1988-89 (44 ports)"),
+              p1.N.ports,
+              p2.map+ggtitle("2019-20 (12 ports)"),
+              p2.N.vessels+ theme(legend.position = "none"),
+              ncol = 2, nrow = 2)
+    ggsave(le.paste("Papers/socio_economics/Figure1.tiff"),width = 9,height = 9,compression = "lzw")
+  }
+  
     #1.3. Number of vessels with gillnet or longline by year
   d=Data.monthly%>%
     distinct(Same.return,.keep_all=T)%>%
@@ -1856,8 +1875,7 @@ if(do.Historic)
   
   
   coeff=0.5
-  fn.fig(le.paste("Historic_catch_effort/Annual number of vessels by method"),2400,1800)
-  dd%>%
+  X=dd%>%
     ggplot(aes(YEAR,n))+
     geom_col(aes(fill=group),alpha=0.65)+
     geom_line(data=dd1, aes(YEAR,ktch.per.ves/coeff,color=group),size=1.25)+
@@ -1872,6 +1890,9 @@ if(do.Historic)
           legend.title = element_blank(),
           plot.margin=unit(c(.1,.5,.1,.1),"cm"))+
      guides(fill = guide_legend(nrow = 1),color = guide_legend(nrow = 1))
+   
+  fn.fig(le.paste("Historic_catch_effort/Annual number of vessels by method"),2400,1800)
+  X
   dev.off()
 
   
@@ -1954,6 +1975,16 @@ if(do.Historic)
   ggarrange(P1,P2,ncol=1,common.legend=TRUE)
   dev.off()
   
+  if(do.soc.econ.papr)
+  {
+    ggarrange(X+xlab('')+theme_PA(axs.T.siz=13)+theme(legend.title =element_blank()),
+              P1+theme_PA(axs.T.siz=13),
+              P2+theme_PA(axs.T.siz=13),
+              ncol=1,
+              common.legend=TRUE)
+    ggsave(le.paste("Papers/socio_economics/Figure2.tiff"),width = 7,height = 9,compression = "lzw")
+    
+  }
 
   #3. Catch composition GN and LL
     #3.1. Overall (show 20 top species, aggregate the rest)

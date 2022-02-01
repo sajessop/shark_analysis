@@ -1506,7 +1506,7 @@ The current report summarises historical information and generated novel informa
 
 
 # Acknowledgements
-This research would not have been possible without the invaluable assistance of several DPIRD staff, Curtin University students and professional fishers, in particular Abbey Shuttleworth, Daniela Waltrick, David Oberstein, Nick Breheny, Alissa Tate, Cameron Desfosses, Dion Boddington, Peter Coulson, Fabian Trinnie, Craig Skepper, Taylor Grosse, Oliver Jewel, Jeff and Anthony Cooke, Nils Stokie, Steve McWhirter and crew of fishing vessels Tracey Lea, Elizabeth Maria II and Viking Legend. We are also very grateful to Ian Knuckey for his general advise on demersal longline fishing surveying. This research was funded by Parks Australia (Grant 4-BH9DL76).
+This research would not have been possible without the invaluable assistance of several DPIRD staff, Curtin University students and professional fishers, in particular Abbey Shuttleworth, Daniela Waltrick, David Oberstein, Nick Breheny, Alissa Tate, Cameron Desfosses, Dion Boddington, Peter Coulson, Fabian Trinnie, Craig Skepper, Taylor Grosse, Oliver Jewel, Jeff and Anthony Cooke, Nils Stokke, Steve McWhirter and crew of fishing vessels Tracey Lea, Elizabeth Maria II and Viking Legend. We are also very grateful to Ian Knuckey for his general advise on demersal longline fishing surveying. This research was funded by Parks Australia (Grant 4-BH9DL76).
 
 
 # References
