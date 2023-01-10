@@ -13,8 +13,6 @@
 rm(list=ls(all=TRUE))
 
 
-# user= testing
-# user2 = testin2
 # User="Matias"
 User="Sarah"
 # User="Abbey"
@@ -298,6 +296,20 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       filter(is.na(MaxN))%>%
       dplyr::select(all_of(interaction.names))%>%
       mutate(Number=ifelse(Number=='AD',NA,Number),
+             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged startfish",
+                                   Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   Escape%in%c("squid","SQUID")~"Squid",
+                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+                                   Escape%in%c("australian fur seal","sealion")~"sea lion",
+                                   Escape%in%c("commernat", "comorant")~"commorant",
+                                   is.na(Escape)~"",
+                                   Escape=="garnard"~"gurnard",
+                                   Escape=="Aplysia punctata"~"sea hare",
+                                   Escape%in%DROP~'',
+                                   Escape%in%drop.for.inter~'',
+                                   TRUE~as.character(Escape)),
+             Combine.species=paste(Alt.species, Species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=case_when(Interaction==1 ~'Swim Past',
