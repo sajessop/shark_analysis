@@ -169,7 +169,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                    "too dark form here","Gets Dark","too dark after this point","to dark after this point",                  
                    "too dark - dark haul","gets too dark","too dARK","dark","DARK HAUL","30 sec","3 min","2.5",
                    "10 MINS","1.5","<1","1 min","0.1","3","33","61 min","5 min","1","0.2","5.9","257min","1min",
-                   "no fish seen-end no haul")
+                   "no fish seen-end no haul", " ", " NA","DARK NO HAUL ","5","15","201","1","93","TOO DARK ",
+                   "no fish seen NA","DARK NO HAUL","TOO DARK", "93 min")
   for(i in 1:length(dummy.GN))
   {
     if('escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape.time)
@@ -300,7 +301,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                    Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
                                    Escape%in%c("squid","SQUID")~"Squid",
                                    Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
-                                   Escape%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure ","unknown  school ","fish sp unsure",
+                                               "unknown  school")~"unknown fish",
                                    Escape%in%c("australian fur seal","sealion")~"sea lion",
                                    Escape%in%c("commernat", "comorant")~"commorant",
                                    is.na(Escape)~"",
@@ -345,7 +347,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                    Got.dark=='TRUE'~'',
                                    observation%in%c("squid","SQUID")~"Squid",
                                    observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
-                                   observation%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+                                   observation%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure ","unknown  school ")~"unknown fish",
                                    observation%in%c("australian fur seal","sealion")~"sea lion",
                                    observation=="commernat"~"commorant",
                                    is.na(observation)~"",
