@@ -219,11 +219,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
              No.haul=case_when(Alt.species=="no haul"~"Y",
                               !Alt.species=="no haul"~"N"),
              No.fish=case_when(Alt.species=="no fish"~"Y",
-                               !Alt.species=="no haul"~"N"),
+                              !Alt.species=="no haul"~"N"),
              for.com.sp=case_when(Alt.species=="no haul"~"",
                                   Alt.species=="no fish"~"",
                                   TRUE~as.character(Alt.species)),
              Combine.species=paste(for.com.sp,Species),
+             Species=paste(Combine.species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=case_when(Interaction==1 ~'Swim Past',
@@ -238,7 +239,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                    Interaction==10 ~'Predated on',
                                    Interaction==11 ~'Bait feeding',
                                    Interaction==12 ~'Caught while predating'))
-    
+  
     Video.net.maxN[[i]]=dummy.GN[[i]]%>%
       rename("Time (mins)"="Time..mins.",
              "Period time (mins)"="Period.time..mins.")%>%
@@ -272,8 +273,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     print(i)
     
   }
-  
-  Video.net.interaction=do.call(rbind,Video.net.interaction)
+  Video.net.interaction=do.call(rbind,Video.net.interaction) #%>% 
+    #filter(No.haul="N"|No.fish="N")
   Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
     filter(!is.na(MaxN))
   Video.net.obs=do.call(rbind,Video.net.obs)%>%
