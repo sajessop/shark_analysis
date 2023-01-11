@@ -10,11 +10,12 @@
 #            REVIEW & UPDATE issues
 #    consider manyglm instead of adonis
 
+rm(list = ls(all = TRUE))
+source("functions.R")
 # User="Matias"
 User = "Sarah"
 # User="Abbey"
 
-rm(list = ls(all = TRUE))
 
 if (!exists('handl_OneDrive'))
 {
@@ -298,33 +299,14 @@ if (Event.Mes.data.dump == 'Jack')
   # POPULATE THIS SARAH
   common.columns <- c("Filename", "Frame", "Time (mins)")
   
-  rename.column <- function(df, match_name, match_rename, distance) {
-    all.columns <- names(df)
-    
-    filtered.columns <-
-      all.columns[!(all.columns %in% common.columns)]
-    filtered.columns.lower <- lapply(filtered.columns, tolower)
-    matched.idx <-
-      amatch(match_name, filtered.columns.lower, maxDist = distance)
-    
-    if (is.na(matched.idx))
-      stopifnot(matched.idx > 0)
-    
-    matched.string <- filtered.columns.lower[[matched.idx]]
-    df <- df %>% rename(!!sym(match_rename) := matched.string)
-    return (df)
-  }
   
   for (i in 1:length(dummy.GN))
   {
-    current.df <- dummy.GN[[i]]
+    dummy.GN[[i]] <- rename.column(dummy.GN, "escape", "Escape", 6)
+    dummy.GN[[i]] <- rename.column(dummy.GN, "max.n", "MaxN", 6)
+    dummy.GN[[i]] <- rename.column(dummy.GN, "interaction", "Interaction", 10)
+    #dummy.GN[[i]] <- rename.column(current.df, "method", "Method", 10)
     
-    current.df <- rename.column(current.df, "escape", "Escape", 6)
-    current.df <- rename.column(current.df, "max.n", "MaxN", 6)
-    current.df <- rename.column(current.df, "interaction", "Interaction", 10)
-    current.df <- rename.column(current.df, "method", "Method", 10)
-    
-    dummy.GN[[i]] <- current.df
     
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position = NA
@@ -523,14 +505,12 @@ if (Event.Mes.data.dump == 'Jack')
     vector('list', length(dummy.LL))
   for (i in 1:length(dummy.LL))
   {
-    current.df <- dummy.LL[[i]]
     
-    current.df <- rename.column(current.df, "escape", "Escape", 6)
-    current.df <- rename.column(current.df, "max.n", "MaxN", 6)
-    current.df <- rename.column(current.df, "interaction", "Interaction", 10)
-    current.df <- rename.column(current.df, "method", "Method", 10)
+    dummy.LL[[1]] <- rename.column(current.df, "escape", "Escape", 6)
+    dummy.LL[[1]] <- rename.column(current.df, "max.n", "MaxN", 6)
+    dummy.LL[[1]] <- rename.column(current.df, "interaction", "Interaction", 10)
+    dummy.LL[[1]] <- rename.column(current.df, "method", "Method", 10)
     
-    dummy.LL[[i]] <- current.df
     
     if (!'Position' %in% names(dummy.LL[[i]]))
       dummy.LL[[i]]$Position = NA
