@@ -330,7 +330,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                    Escape%in%c("BIRD DIVING FOR BAIT","bird","birds feeding at surface","sear water",
                                                "bird-diving for bait")~"bird",
                                    Escape%in%c("30 sec","3 min","10 MINS","2.5","<1","1.5","1 min","0.1","3","33","61 min",
-                                               "5 min","1","0.2","5.9","257min","1min","5","15","93 min", "201")~"",
+                                               "5 min","1","0.2","5.9","257min","1min","5","15","93 min", "201","170")~"",
                                    is.na(Escape)~"",
                                    Escape=="garnard"~"gurnard",
                                    Escape=="Aplysia punctata"~"sea hare",
@@ -343,9 +343,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                !Alt.species=="no haul"~"N"),
              for.com.sp=case_when(Alt.species=="no haul"~"",
                                   Alt.species=="no fish"~"",
+                                  is.na(Alt.species)~"",
                                   TRUE~as.character(Alt.species)),
-             Combine.species=paste(for.com.sp,Species),
-             Species=paste(Combine.species),
+             Species=case_when(is.na(Species)~"",
+                               TRUE~as.character(paste(for.com.sp,Species))),
+             #Combine.species=paste(for.com.sp,Species),
+             #Species=paste(Combine.species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=case_when(Interaction==1 ~'Swim Past',
@@ -362,29 +365,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                    Interaction==12 ~'Caught while predating'))
     
 ###RUN THESE CHECKS NEXT > llchecklist <- subset(Video.longline.interaction, Species%in%c(" "," NA","170 brevicaudata","baitfish NA") & No.haul=="N" & No.fish=="N")
-    > llchecklist
-    OpCode Frame Time (mins) Period time (mins) Period TapeReader Depth Comment   Method     Position     Family       Genus
-    518     Albany_Longline_PA0090_Camera_#16 33059    545.6623             4.4027     P3      Abbey  <NA>    <NA> Longline       Albany       <NA>        <NA>
-    1783     albany_Longline_Pa0102_camera_13 48993    167.8529            69.7542     P2       jack    70    <NA> longline     longline Serranidae Caesioperca
-    3855     Albany_Longline_PA0113_Camera_#4 39704    162.6871           112.6432     P2      Abbey  <NA>    <NA> Longline       Albany Dasyatidae Bathytoshia
-    7006   Augusta_longline_PA0014_Camera_#20 38567    267.5103           191.1033     P2       Jack   16M    <NA> Longline     Longline       <NA>        <NA>
-    7007   Augusta_longline_PA0014_Camera_#20  6725    284.9544           208.5474     P2       Jack   16M    <NA> Longline     Longline       <NA>        <NA>
-    7870    Augusta_longline_PA0079_Camera_#6 34578    159.8365           106.1395     P2      Abbey  <NA>    <NA> Longline      Augusta       <NA>        <NA>
-    7871    Augusta_longline_PA0079_Camera_#6 61789    210.1207           156.4236     P2      Abbey  <NA>    <NA> Longline      Augusta       <NA>        <NA>
-    7872    Augusta_longline_PA0079_Camera_#6 61789    210.1207           156.4236     P2      Abbey  <NA>    <NA> Longline      Augusta       <NA>        <NA>
-    20736 Peacfull_Longline_PA0069_Camera_#06 61963    421.1284            10.5300     P3      Abbey  <NA>    <NA> Longline Peaceful Bay       <NA>        <NA>
-    23325    Windy_Longline_PA0044_Camera_#19 13099    429.1069           384.0607     P2       jack    18    <NA>  Gillnet      Gillnet                       
-    Species     Code Number Interaction Escape Alt.species No.haul No.fish for.com.sp  Combine.species
-    518                 NA       NA      1        <NA>   <NA>                   N       N                          NA
-    1783                   37311919      1   Swim Past   <NA>                   N       N                            
-    3855  170 brevicaudata 37035001      1        <NA>    170         170       N       N        170 170 brevicaudata
-    7006       baitfish NA       NA     12   Swim Past   <NA>    baitfish       N       N   baitfish      baitfish NA
-    7007       baitfish NA       NA     12   Swim Past   <NA>    baitfish       N       N   baitfish      baitfish NA
-    7870       baitfish NA       NA      1   Swim Past   <NA>    baitfish       N       N   baitfish      baitfish NA
-    7871       baitfish NA       NA      1   Swim Past   <NA>    baitfish       N       N   baitfish      baitfish NA
-    7872       baitfish NA       NA      1   Swim Past   <NA>    baitfish       N       N   baitfish      baitfish NA
-    20736               NA       NA      1        <NA>   <NA>                   N       N                          NA
-    23325                        NA      1        <NA>   <NA>                   N       N                                
+    #> llchecklist
+    
     Video.longline.maxN[[i]]=dummy.LL[[i]]%>%
       rename("Time (mins)"="Time..mins.",
              "Period time (mins)"="Period.time..mins.")%>%
@@ -418,7 +400,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     print(i)
     
   }
-  Video.longline.interaction=do.call(rbind,Video.longline.interaction)
+  Video.longline.interaction=do.call(rbind,Video.longline.interaction)%>%
+    filter(Species!=" " & No.haul=="N" & No.fish=="N")
   Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
     filter(!is.na(MaxN))%>%
     rename(Max.N=MaxN)
