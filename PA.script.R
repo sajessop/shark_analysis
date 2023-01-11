@@ -276,7 +276,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
   }
   Video.net.interaction=do.call(rbind,Video.net.interaction)%>% 
-    filter(Species!=" " & No.haul=="N" & No.fish=="N")
+    filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
   Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
     filter(!is.na(MaxN))
   Video.net.obs=do.call(rbind,Video.net.obs)%>%
@@ -400,7 +400,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
   }
   Video.longline.interaction=do.call(rbind,Video.longline.interaction)%>%
-    filter(Species!=" " & No.haul=="N" & No.fish=="N")
+    filter(!Species%in%c(" ","") & No.haul=="N" & No.fish=="N")
   Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
     filter(!is.na(MaxN))%>%
     rename(Max.N=MaxN)
