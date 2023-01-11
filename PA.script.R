@@ -18,16 +18,15 @@ rm(list = ls(all = TRUE))
 
 if (!exists('handl_OneDrive'))
 {
-  if (User == "Matias")
+  if (User == "Matias") {
     source(
       'C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R'
     )
-  else if {
-    (User == "Sarah")
+  }  else if (User == "Sarah") {
     handl_OneDrive = function(x)
       paste('C:/Users/S.Jesso/Documents/GitHub', x, sep = '/')
   }
-  else if (User == "Abbey")
+  else if (User == "Abbey") {
     handl_OneDrive = function(x)
       paste(
         'C:/Users',
@@ -36,6 +35,7 @@ if (!exists('handl_OneDrive'))
         x,
         sep = '/'
       )
+  }
   else {
     print("Error: User is not valid")
     quit()
@@ -85,30 +85,24 @@ options(stringsAsFactors = FALSE,
 
 
 #--------- DATA ------------
-#1. Sharks data base
+#1. Sharks data base + species list
 if (User == "Matias")
 {
   source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
+  All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
 } else if (User == "Sarah")
 {
   source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
+  All.species.names = read.csv(handl_OneDrive("Species_code/Species.code.csv"))
 } else if (User == "Abbey")
 {
   source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
+  All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
 } else
 {
   print("Error: User is not valid.")
   quit()
 }
-
-
-#2. Species list
-if (User == "Matias" || User == "Abbey")
-  All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
-else if (User == "Sarah")
-  All.species.names = read.csv(handl_OneDrive("Species_code/Species.code.csv"))
-else if (User == "Abbey")
-  All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
 
 
 #3. PA - TEPS interactions recorded by Observers
@@ -300,39 +294,40 @@ if (Event.Mes.data.dump == 'Jack')
     "attrached to flaot",
     "Attacks camera"
   )
+  
+  # POPULATE THIS SARAH
+  common.columns <- c("Filename", "Frame", "Time (mins)")
+  
+  rename.column <- function(df, match_name, match_rename, distance) {
+    all.columns <- names(df)
+    
+    filtered.columns <-
+      all.columns[!(all.columns %in% common.columns)]
+    filtered.columns.lower <- lapply(filtered.columns, tolower)
+    matched.idx <-
+      amatch(match_name, filtered.columns.lower, maxDist = distance)
+    
+    if (is.na(matched.idx))
+      stopifnot(matched.idx > 0)
+    
+    matched.string <- filtered.columns.lower[[matched.idx]]
+    df <- df %>% rename(!!sym(match_rename) := matched.string)
+    return (df)
+  }
+  
   for (i in 1:length(dummy.GN))
   {
-    if ('escape.time' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Escape = escape.time)
-    if ('escape' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Escape = escape)
-    if ('Escape.time' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Escape = Escape.time)
+    current.df <- dummy.GN[[i]]
     
-    if ('max.n' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(MaxN = max.n)
-    if ('Max.N' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(MaxN = Max.N)
-    if ('maxn' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(MaxN = maxn)
-    if ('Maxn' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(MaxN = Maxn)
-    if ('MAXn' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(MaxN = MAXn)
+    current.df <- rename.column(current.df, "escape", "Escape", 6)
+    current.df <- rename.column(current.df, "max.n", "MaxN", 6)
+    current.df <- rename.column(current.df, "interaction", "Interaction", 10)
+    current.df <- rename.column(current.df, "method", "Method", 10)
     
-    if ('Interactino' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Interaction = Interactino)
-    if ('interaction' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Interaction = interaction)
-    if ('Interactions' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Interaction = Interactions)
+    dummy.GN[[i]] <- current.df
     
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position = NA
-    if ('method.' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Method = method.)
-    if ('method' %in% names(dummy.GN[[i]]))
-      dummy.GN[[i]] = dummy.GN[[i]] %>% rename(Method = method)
     
     Video.net.interaction[[i]] = dummy.GN[[i]] %>%
       rename("Time (mins)" = "Time..mins.",
@@ -528,42 +523,18 @@ if (Event.Mes.data.dump == 'Jack')
     vector('list', length(dummy.LL))
   for (i in 1:length(dummy.LL))
   {
-    if ('escape.time' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Escape = escape.time)
-    if ('escape' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Escape = escape)
-    if ('Escape.time' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Escape = Escape.time)
-    if ("Esape" %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Escape = Esape)
+    current.df <- dummy.LL[[i]]
     
+    current.df <- rename.column(current.df, "escape", "Escape", 6)
+    current.df <- rename.column(current.df, "max.n", "MaxN", 6)
+    current.df <- rename.column(current.df, "interaction", "Interaction", 10)
+    current.df <- rename.column(current.df, "method", "Method", 10)
     
-    if ('max.n' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(MaxN = max.n)
-    if ('Max.N' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(MaxN = Max.N)
-    if ('maxn' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(MaxN = maxn)
-    if ('Maxn' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(MaxN = Maxn)
-    if ('MAXn' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(MaxN = MAXn)
-    
-    if ('Interactino' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Interaction = Interactino)
-    if ('interaction' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Interaction = interaction)
-    if ('Interactions' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Interaction = Interactions)
+    dummy.LL[[i]] <- current.df
     
     if (!'Position' %in% names(dummy.LL[[i]]))
       dummy.LL[[i]]$Position = NA
-    if ('method.' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Method = method.)
-    if ('method' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Method = method)
-    if ('mETHOD' %in% names(dummy.LL[[i]]))
-      dummy.LL[[i]] = dummy.LL[[i]] %>% rename(Method = mETHOD)
+
     
     Video.longline.interaction[[i]] = dummy.LL[[i]] %>%
       rename("Time (mins)" = "Time..mins.",
