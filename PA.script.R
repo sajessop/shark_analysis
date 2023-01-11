@@ -196,7 +196,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       filter(is.na(MaxN))%>%
       dplyr::select(all_of(interaction.names))%>%
       mutate(Number=ifelse(Number=='AD',NA,Number),
-             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged startfish",
+             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged starfish",
                                    Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
                                    Escape%in%c("squid","SQUID")~"Squid",
                                    Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
@@ -313,7 +313,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       filter(is.na(MaxN))%>%
       dplyr::select(all_of(interaction.names))%>%
       mutate(Number=ifelse(Number=='AD',NA,Number),
-             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged startfish",
+             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged starfish",
                                    Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
                                    Escape%in%c("squid","SQUID")~"Squid",
                                    Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
@@ -345,10 +345,9 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                   Alt.species=="no fish"~"",
                                   is.na(Alt.species)~"",
                                   TRUE~as.character(Alt.species)),
-             Species=case_when(is.na(Species)~"",
-                               TRUE~as.character(paste(for.com.sp,Species))),
-             #Combine.species=paste(for.com.sp,Species),
-             #Species=paste(Combine.species),
+             Species=case_when(is.na(Species)~""),
+             Combine.species=paste(for.com.sp,Species),
+             Species=paste(Combine.species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=case_when(Interaction==1 ~'Swim Past',
