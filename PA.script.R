@@ -10,6 +10,10 @@
 #            REVIEW & UPDATE issues
 #    consider manyglm instead of adonis
 
+# User="Matias"
+User = "Sarah"
+# User="Abbey"
+
 rm(list = ls(all = TRUE))
 
 if (!exists('handl_OneDrive'))
@@ -18,10 +22,12 @@ if (!exists('handl_OneDrive'))
     source(
       'C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R'
     )
-  if (User == "Sarah")
+  else if {
+    (User == "Sarah")
     handl_OneDrive = function(x)
       paste('C:/Users/S.Jesso/Documents/GitHub', x, sep = '/')
-  if (User == "Abbey")
+  }
+  else if (User == "Abbey")
     handl_OneDrive = function(x)
       paste(
         'C:/Users',
@@ -30,6 +36,11 @@ if (!exists('handl_OneDrive'))
         x,
         sep = '/'
       )
+  else {
+    print("Error: User is not valid")
+    quit()
+    
+  }
 }
 
 library(tidyverse)
@@ -72,9 +83,6 @@ library(fuzzyjoin)
 options(stringsAsFactors = FALSE,
         dplyr.summarise.inform = FALSE)
 
-# User="Matias"
-User = "Sarah"
-# User="Abbey"
 
 #--------- DATA ------------
 #1. Sharks data base
@@ -95,11 +103,11 @@ if (User == "Matias")
 
 
 #2. Species list
-if (User == "Matias")
+if (User == "Matias" || User == "Abbey")
   All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
-if (User == "Sarah")
+else if (User == "Sarah")
   All.species.names = read.csv(handl_OneDrive("Species_code/Species.code.csv"))
-if (User == "Abbey")
+else if (User == "Abbey")
   All.species.names = read.csv(handl_OneDrive("Data/Species.code.csv"))
 
 
@@ -114,7 +122,8 @@ TEPS <-
 #4. PA - number of hook combinations used and lost in PA project
 Hook.combos <-
   read_excel("Hook count.xlsx", sheet = "Sheet1", skip = 0)
-Lost.snoods <- read_excel("Broken hook specs.xlsx", sheet = "Sheet1")
+Lost.snoods <-
+  read_excel("Broken hook specs.xlsx", sheet = "Sheet1")
 
 
 #5. PA - underwater video
@@ -178,9 +187,7 @@ if (Event.Mes.data.dump == 'Jack')
   Video.subsurface.comments <-
     read_excel(file.name.subsurface, sheet = "comment")
   
-}
-
-if (Event.Mes.data.dump == 'Abbey_Sarah')
+} else if (Event.Mes.data.dump == 'Abbey_Sarah')
 {
   #1. read in  data
   
@@ -188,20 +195,20 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
   setwd(
     'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Gillnet'
   )
-  filenames = list.files(pattern = '*.csv')
+  filenames <-  list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   
   #1.2. longline
   setwd(
     'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Longline'
   )
-  filenames = list.files(pattern = '*.csv')
+  filenames <-  list.files(pattern = '*.csv')
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
   
   #2. put data in standard format
   #2.1. gillnet
   Video.net.interaction = Video.net.maxN = Video.net.obs = vector('list', length(dummy.GN))
-  interaction.names = c(
+  interaction.names <-  c(
     "OpCode",
     "Frame",
     "Time (mins)",
@@ -220,7 +227,7 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
     "Interaction",
     "Escape"
   )
-  video.net.names = c(
+  video.net.names <-  c(
     "OpCode",
     "Frame",
     "Time (mins)",
@@ -234,7 +241,7 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
     "Code",
     "MaxN"
   )
-  Video.net.obs.names = c(
+  Video.net.obs.names <- c(
     "OpCode",
     "Frame",
     "Time (mins)",
@@ -246,7 +253,7 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
     "observation",
     "code"
   )
-  DROP = c(
+  DROP <- c(
     "Camera Onboard",
     "example of swell conditions for fis",
     "looking at camera",
@@ -271,7 +278,7 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
     "?",
     "snoode broke on haul 170"
   )
-  drop.for.inter = c(
+  drop.for.inter <-  c(
     "Camera Onboard",
     "example of swell conditions for fis",
     "looking at camera",
@@ -411,9 +418,9 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
           Escape %in% drop.for.inter ~ '',
           TRUE ~ as.character(Escape)
         ),
-        No.haul = case_when(Alt.species == "no haul" ~ "Y",!Alt.species ==
+        No.haul = case_when(Alt.species == "no haul" ~ "Y", !Alt.species ==
                               "no haul" ~ "N"),
-        No.fish = case_when(Alt.species == "no fish" ~ "Y",!Alt.species ==
+        No.fish = case_when(Alt.species == "no fish" ~ "Y", !Alt.species ==
                               "no haul" ~ "N"),
         for.com.sp = case_when(
           Alt.species == "no haul" ~ "",
@@ -660,9 +667,9 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
           Escape %in% drop.for.inter ~ '',
           TRUE ~ as.character(Escape)
         ),
-        No.haul = case_when(Alt.species == "no haul" ~ "Y",!Alt.species ==
+        No.haul = case_when(Alt.species == "no haul" ~ "Y", !Alt.species ==
                               "no haul" ~ "N"),
-        No.fish = case_when(Alt.species == "no fish" ~ "Y",!Alt.species ==
+        No.fish = case_when(Alt.species == "no fish" ~ "Y", !Alt.species ==
                               "no haul" ~ "N"),
         for.com.sp = case_when(
           Alt.species == "no haul" ~ "",
@@ -1133,7 +1140,7 @@ suppressWarnings({
 })
 
 #Add Codes used by Jack
-Addis = All.species.names[1:3, ] %>%
+Addis = All.species.names[1:3,] %>%
   mutate(
     Species = rep('', 3),
     COMMON_NAME = c('Wobbegongs', 'Whaler sharks', 'Stingrays'),
@@ -1147,7 +1154,8 @@ All.species.names = rbind(All.species.names, Addis)
 
 #---------Manipulate PA hook size, type and snood combinations  ------------
 if ('no of baited hooks' %in% names(Hook.combos))
-  Hook.combos <- Hook.combos %>% dplyr::select(-'no of baited hooks')
+  Hook.combos <-
+  Hook.combos %>% dplyr::select(-'no of baited hooks')
 if ('Total deployed' %in% names(Hook.combos))
   Hook.combos <- Hook.combos %>% dplyr::select(-'Total deployed')
 Hook.combos <- Hook.combos %>%
@@ -1181,7 +1189,7 @@ Hook.combos <- Hook.combos %>%
   )
 
 #---------Basic manipulation of PA observer data------------
-DATA = DATA[grep("PA", DATA$SHEET_NO),] %>%
+DATA = DATA[grep("PA", DATA$SHEET_NO), ] %>%
   filter(year >= 2020)
 DATA = DATA %>%
   dplyr::rename(IDL = TrunkL,
@@ -1468,40 +1476,52 @@ DATA = DATA %>%
     Effort.hook.combo.infered = case_when(
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 10 & wiretrace == 'Yes' ~ soak.time * C10.W.infered,
+        hooksize == 10 &
+        wiretrace == 'Yes' ~ soak.time * C10.W.infered,
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 12 & wiretrace == 'Yes' ~ soak.time * C12.W.infered,
+        hooksize == 12 &
+        wiretrace == 'Yes' ~ soak.time * C12.W.infered,
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 14 & wiretrace == 'Yes' ~ soak.time * C14.W.infered,
+        hooksize == 14 &
+        wiretrace == 'Yes' ~ soak.time * C14.W.infered,
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 10 & wiretrace == 'No' ~ soak.time * C10.M.infered,
+        hooksize == 10 &
+        wiretrace == 'No' ~ soak.time * C10.M.infered,
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 12 & wiretrace == 'No' ~ soak.time * C12.M.infered,
+        hooksize == 12 &
+        wiretrace == 'No' ~ soak.time * C12.M.infered,
       method == "LL" &
         hooktype == 'circular' &
-        hooksize == 14 & wiretrace == 'No' ~ soak.time * C14.M.infered,
+        hooksize == 14 &
+        wiretrace == 'No' ~ soak.time * C14.M.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 10 & wiretrace == 'Yes' ~ soak.time * Eb10.W.infered,
+        hooksize == 10 &
+        wiretrace == 'Yes' ~ soak.time * Eb10.W.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 12 & wiretrace == 'Yes' ~ soak.time * Eb12.W.infered,
+        hooksize == 12 &
+        wiretrace == 'Yes' ~ soak.time * Eb12.W.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 14 & wiretrace == 'Yes' ~ soak.time * Eb14.W.infered,
+        hooksize == 14 &
+        wiretrace == 'Yes' ~ soak.time * Eb14.W.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 10 & wiretrace == 'No' ~ soak.time * Eb10.M.infered,
+        hooksize == 10 &
+        wiretrace == 'No' ~ soak.time * Eb10.M.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 12 & wiretrace == 'No' ~ soak.time * Eb12.M.infered,
+        hooksize == 12 &
+        wiretrace == 'No' ~ soak.time * Eb12.M.infered,
       method == "LL" &
         hooktype == 'Ezb' &
-        hooksize == 14 & wiretrace == 'No' ~ soak.time * Eb14.M.infered,
+        hooksize == 14 &
+        wiretrace == 'No' ~ soak.time * Eb14.M.infered,
       TRUE ~ NA_real_
     )
   ) %>%
@@ -1565,7 +1585,8 @@ DATA = DATA %>%
     net_length.infRD = ifelse(method == 'GN' &
                                 is.na(net_length), round(mean(net_length, na.rm = T)), net_length),
     n.hooks.infRD = ifelse(method == 'LL' &
-                             (is.na(n.hooks) | n.hooks == 0), round(mean(n.hooks, na.rm = T)), n.hooks),
+                             (is.na(n.hooks) |
+                                n.hooks == 0), round(mean(n.hooks, na.rm = T)), n.hooks),
     Effort.infRD = ifelse(
       is.na(Effort) & method == 'LL',
       n.hooks.infRD * soak.time.infRD,
@@ -1624,7 +1645,8 @@ if (explr.dat.entry)
     filter(method == 'GN' &
              (
                n.hooks >= 0 |
-                 !is.na(hooksize) | !is.na(hooktype) | !is.na(wiretrace)
+                 !is.na(hooksize) |
+                 !is.na(hooktype) | !is.na(wiretrace)
              )) %>%
     dplyr::select(sheet_no,
                   line_no,
@@ -1686,7 +1708,7 @@ if (explr.dat.entry)
     write.csv(a, 'Main.commercial.sp_not.retained.csv', row.names = F)
   
   
-  Lat.range = c(-36, -29)
+  Lat.range = c(-36,-29)
   Long.range = c(113, 119)
   
   seq.Lat = seq(Lat.range[1], Lat.range[2])
@@ -1696,7 +1718,7 @@ if (explr.dat.entry)
   data(worldLLhigh)
   Sites = DATA %>% distinct(sheet_no, mid.lat, mid.long, method) %>%
     mutate(Col = ifelse(method == 'GN', "#F8766D", "#00BFC4"))
-  Lat.range = c(-37.6, -29)
+  Lat.range = c(-37.6,-29)
   Long.range = c(114, 120)
   tiff(
     file = "Map issues.tiff",
@@ -1812,7 +1834,7 @@ if (explr.dat.entry)
     Eb12.M,
     Eb14.M
   )
-  no.n.huk.com$Total.hooks = rowSums(no.n.huk.com[, -1])
+  no.n.huk.com$Total.hooks = rowSums(no.n.huk.com[,-1])
   no.n.huk.com = no.n.huk.com %>% filter(is.na(Total.hooks)) %>% pull(sheet_no)
   
   a = unique(DATA %>% filter(method == "LL") %>% pull(sheet_no))
@@ -2031,7 +2053,7 @@ multivariate.fn = function(d,
                            Community[row.names(SIMPER[[n]] %>% filter(cumsum <=
                                                                         simper.cumsum))]) %>%
       filter(!!sym(Show.term) %in% str_split(names(SIMPER)[n], "_", simplify = TRUE)) %>%
-      gather(species, prop, -method.zone, ) %>%
+      gather(species, prop,-method.zone,) %>%
       mutate(groups = names(SIMPER)[n])
   }
   disp.simp = do.call(rbind, disp.simp)
@@ -2057,7 +2079,7 @@ multivariate.fn = function(d,
     ) %>%
     ggplot(aes(x = method, y = prop, fill = species)) +
     geom_bar(stat = "identity", width = 0.5) +
-    facet_wrap( ~ zone, scales = 'free_y') +
+    facet_wrap(~ zone, scales = 'free_y') +
     ylab("Average proportion") + xlab("Method") +
     scale_fill_manual(values = c(n.col.elasmos, n.col.teleos)) +
     theme_PA(
@@ -2202,7 +2224,7 @@ fn.barplot.cpue = function(d,
     geom_errorbar(aes(x, ymin = lower.CL, ymax = upper.CL),
                   colour = 'black',
                   width = 0.25) +
-    facet_wrap( ~ facet, scales = 'free', nrow = NROW) +
+    facet_wrap(~ facet, scales = 'free', nrow = NROW) +
     theme_PA(
       strx.siz = cex - 2,
       leg.siz = cex,
@@ -2242,7 +2264,7 @@ fn.continuous.cpue = function(d, YLAB, XLAB, cex, Relative)
     ggplot(aes(x, y, fill = fill)) +
     geom_line() +
     geom_ribbon(aes(ymin = lower.CL, ymax = upper.CL), alpha = 0.4) +
-    facet_wrap( ~ facet, scales = 'free', nrow = 2) +
+    facet_wrap(~ facet, scales = 'free', nrow = 2) +
     theme_PA(
       strx.siz = cex - 2,
       leg.siz = cex - 2,
@@ -2268,7 +2290,7 @@ plt.map = function(D, Title, Scaler)
 {
   p = ggplot(oz_states) +
     geom_sf(fill = "brown4") +
-    coord_sf(xlim = c(112, 129), ylim = c(-25,-36)) +
+    coord_sf(xlim = c(112, 129), ylim = c(-25, -36)) +
     geom_point(
       data = D,
       mapping = aes(x = lon.port, y = lat.port),
@@ -2448,7 +2470,7 @@ cols.vid.inter = colnames(Video.net.interaction)
 add = cols.vid.inter[which(!cols.vid.inter %in% colnames(Video.net.obs))]
 empty_df = Video.net.obs[, 1:length(add)]
 colnames(empty_df) = add
-empty_df[, ] = NA
+empty_df[,] = NA
 Video.net.obs = cbind(Video.net.obs, empty_df)
 Video.net.obs = Video.net.obs[, colnames(Video.net.interaction)]
 Video.net.interaction = rbind(Video.net.interaction, Video.net.obs)
@@ -2481,7 +2503,7 @@ cols.vid.inter = colnames(Video.longline.interaction)
 add = cols.vid.inter[which(!cols.vid.inter %in% colnames(Video.longline.obs))]
 empty_df = Video.longline.obs[, 1:length(add)]
 colnames(empty_df) = add
-empty_df[, ] = NA
+empty_df[,] = NA
 Video.longline.obs = cbind(Video.longline.obs, empty_df)
 Video.longline.obs = Video.longline.obs[, colnames(Video.longline.interaction)]
 Video.longline.interaction = rbind(Video.longline.interaction, Video.longline.obs)
@@ -2802,7 +2824,7 @@ if (do.map)
   Bathymetry_138 = read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
   Bathymetry = rbind(Bathymetry_120, Bathymetry_138)
   Bathymetry = Bathymetry %>% filter(V2 <= (-26))
-  Bathymetry = Bathymetry[order(Bathymetry$V1, Bathymetry$V2), ]
+  Bathymetry = Bathymetry[order(Bathymetry$V1, Bathymetry$V2),]
   xbat = sort(unique(Bathymetry$V1))
   ybat = sort(unique(Bathymetry$V2))
   reshaped = as.matrix(reshape(
@@ -2824,7 +2846,7 @@ if (do.map)
   #Spatial range
   #Lat.range=round(c(min(DATA$mid.lat)-1,max(DATA$mid.lat)+1))
   #Long.range=round(c(min(DATA$mid.long)-1,max(DATA$mid.long)+1))
-  Lat.range = c(-36, -29)
+  Lat.range = c(-36,-29)
   Long.range = c(113, 119)
   
   seq.Lat = seq(Lat.range[1], Lat.range[2])
@@ -2857,13 +2879,13 @@ if (do.map)
   
   #add zones
   plot(WCDGDLL, add = T, col = "aquamarine3")
-  text(114, -31, "West coast", srt = 90, cex = 1.5)
+  text(114,-31, "West coast", srt = 90, cex = 1.5)
   
   plot(SDGDLL_zone1, add = T, col = "deepskyblue3")
-  text(114.5, -35, "(Zone 1)", cex = 1.5, srt = -45)
+  text(114.5,-35, "(Zone 1)", cex = 1.5, srt = -45)
   
   plot(SDGDLL_zone2, add = T, col = "chartreuse3")
-  text(118, -35.75, "(Zone 2)", cex = 1.5)
+  text(118,-35.75, "(Zone 2)", cex = 1.5)
   
   
   points(
@@ -2882,7 +2904,7 @@ if (do.map)
     reshaped[, 2:ncol(reshaped)],
     ylim = plotlat[[i]],
     xlim = plotlong[[i]],
-    zlim = c(-1, -300),
+    zlim = c(-1,-300),
     nlevels = 3,
     labcex = 1,
     lty = c(1, 2, 3),
@@ -2937,7 +2959,7 @@ if (do.map)
   plotMap(
     worldLLhigh,
     xlim = c(113, 155),
-    ylim = c(-44, -11),
+    ylim = c(-44,-11),
     col = "grey80",
     axes = F,
     xlab = "",
@@ -2947,14 +2969,12 @@ if (do.map)
     plt = NULL
   )
   
-  text(122,
-       -24,
+  text(122,-24,
        "Western",
        col = "black",
        cex = 1,
        font = 2.5)
-  text(122,
-       -27,
+  text(122,-27,
        "Australia",
        col = "black",
        cex = 1,
@@ -2966,7 +2986,7 @@ if (do.map)
     border = "black"
   )
   dummy.ln = c(152.8, 154.6)
-  dummy.la = c(-12.03, -10.94)
+  dummy.la = c(-12.03,-10.94)
   polygon(
     x = c(dummy.ln, rev(dummy.ln)),
     y = c(rep(dummy.la[1], 2), rep(dummy.la[2], 2)),
@@ -2974,7 +2994,7 @@ if (do.map)
     border = 'white'
   )
   lines(x = c(129, 129),
-        y = c(-31.64, -15),
+        y = c(-31.64,-15),
         lty = 2)
   dev.off()
   
@@ -2987,7 +3007,7 @@ Tab.n.sp.gear = DATA %>%
   ungroup() %>%
   spread(method, n, fill = 0) %>%
   mutate(Total = GN + LL) %>%
-  arrange(taxa, -Total) %>%
+  arrange(taxa,-Total) %>%
   dplyr::select(-taxa) %>%
   filter(!common_name == '')
 write.csv(
@@ -3003,8 +3023,8 @@ Tab.n.sp.longline = DATA %>%
   ungroup() %>%
   spread(LL.config, n, fill = 0) %>%
   mutate(Total = rowSums(across(where(is.numeric)))) %>%
-  arrange(taxa, -Total) %>%
-  dplyr::select(-taxa, -Total) %>%
+  arrange(taxa,-Total) %>%
+  dplyr::select(-taxa,-Total) %>%
   filter(!common_name == '')
 write.csv(
   Tab.n.sp.longline,
@@ -3019,7 +3039,8 @@ fn.fig(le.paste("Observer/Barplot Longline configurations"),
        2000)
 DATA %>%
   filter(method == "LL") %>%
-  filter(!is.na(hooktype) & !is.na(hooksize) & !is.na(wiretrace)) %>%
+  filter(!is.na(hooktype) &
+           !is.na(hooksize) & !is.na(wiretrace)) %>%
   group_by(LL.config, hooktype, hooksize, wiretrace) %>%
   tally() %>%
   ggplot(aes(x = LL.config, y = n, fill = wiretrace)) +
@@ -3051,7 +3072,7 @@ Grouped.species.fn = function(METH)
     mutate(CumSum = cumsum(Prop)) %>%
     filter(CumSum > .9) %>%
     pull(COMMON_NAME)
-  x = subset(x, !x %in% Main.species)
+  x = subset(x,!x %in% Main.species)
   return(x)
 }
 Grouped.species.GN = Grouped.species.fn("GN")
@@ -3247,7 +3268,8 @@ dev.off()
 #by LL configuration
 LL.configs = DATA %>%
   filter(method == "LL") %>%
-  filter(!(is.na(hooktype) | is.na(hooksize) | is.na(wiretrace))) %>%
+  filter(!(is.na(hooktype) |
+             is.na(hooksize) | is.na(wiretrace))) %>%
   group_by(LL.config) %>%
   tally() %>% pull(LL.config)
 fn.fig(le.paste("Observer/catch_comp/Catch.comp_by_LL.configuration"),
@@ -3284,7 +3306,8 @@ dev.off()
 #by snood
 nn = DATA %>%
   filter(method == "LL") %>%
-  filter(!(is.na(hooktype) | is.na(hooksize) | is.na(wiretrace))) %>%
+  filter(!(is.na(hooktype) |
+             is.na(hooksize) | is.na(wiretrace))) %>%
   group_by(wiretrace) %>%
   tally() %>% pull(wiretrace)
 fn.fig(le.paste("Observer/catch_comp/Catch.comp_by_snood"),
@@ -3383,7 +3406,7 @@ fn.fig(le.paste("Observer/size/Size.density.dist.main.sp_GN_LL"),
 dumi %>%
   ggplot(aes(x = size, y = common_name, fill = Taxa)) +
   geom_density_ridges(alpha = .8, color = "white") +
-  facet_wrap( ~ method) +
+  facet_wrap(~ method) +
   scale_fill_manual(values = c("steelblue", "firebrick")) +
   ylab('') +
   xlab('Size (cm, FL for elasmobranchs, TL for teleosts)') +
@@ -3425,7 +3448,7 @@ fn.fig(
 dumi %>%
   ggplot(aes(x = size, y = common_name, fill = Taxa)) +
   geom_density_ridges(alpha = .8, color = "white") +
-  facet_wrap( ~ LL.config) +
+  facet_wrap(~ LL.config) +
   scale_fill_manual(values = c("steelblue", "firebrick")) +
   ylab('') +
   xlab('Size (cm, FL for elasmobranchs, TL for teleosts)') +
@@ -3510,7 +3533,7 @@ DATA %>%
     )
   ) %>%
   ggplot(aes(x = Size, fill = method)) +
-  facet_wrap(~ LBL, scales = 'free') +
+  facet_wrap( ~ LBL, scales = 'free') +
   geom_density(alpha = .5) +
   ylab('Density') +
   xlab('Size (cm, FL for elasmobranchs, TL for teleosts)') +
@@ -3822,7 +3845,7 @@ if (do.events)
     ggplot(aes(fill = Method, y = n, x = Interaction)) +
     geom_bar(position = "dodge", stat = "identity") +
     coord_flip() + scale_y_sqrt() +
-    facet_wrap( ~ SP.group, dir = 'h', scales = 'free_x') +
+    facet_wrap(~ SP.group, dir = 'h', scales = 'free_x') +
     theme(
       legend.position = "top",
       strip.text = element_text(size = 16),
@@ -3857,7 +3880,7 @@ if (do.events)
     ggplot(aes(fill = Method, y = n, x = Interaction)) +
     geom_bar(position = "dodge", stat = "identity") +
     coord_flip() + scale_y_sqrt() +
-    facet_wrap( ~ Method, dir = 'h', scales = 'free_x') +
+    facet_wrap(~ Method, dir = 'h', scales = 'free_x') +
     theme(
       legend.position = "top",
       strip.text = element_text(size = 16),
@@ -3897,7 +3920,7 @@ rbind(
   ggplot(aes(fill = Method, y = n, x = Interaction)) +
   geom_bar(position = "dodge", stat = "identity") +
   coord_flip() + scale_y_sqrt() +
-  facet_wrap( ~ SP.group, dir = 'h', scales = 'free_x') +
+  facet_wrap(~ SP.group, dir = 'h', scales = 'free_x') +
   theme_PA(
     strx.siz = 17,
     leg.siz = 18,
@@ -3935,7 +3958,7 @@ rbind(
   ggplot(aes(fill = Method, y = n, x = Interaction)) +
   geom_bar(position = "dodge", stat = "identity") +
   coord_flip() + scale_y_sqrt() +
-  facet_wrap( ~ Method, dir = 'h', scales = 'free_x') +
+  facet_wrap(~ Method, dir = 'h', scales = 'free_x') +
   theme_PA(
     strx.siz = 17,
     leg.siz = 18,
@@ -3994,7 +4017,7 @@ d %>%
   ggplot(aes(fill = Names, y = n, x = Interaction)) +
   geom_bar(position = "stack", stat = "identity") +
   coord_flip() +
-  facet_wrap( ~ Method, dir = 'h', scales = 'free_x') +
+  facet_wrap(~ Method, dir = 'h', scales = 'free_x') +
   theme_PA(
     strx.siz = 17,
     leg.siz = 18,
@@ -4122,7 +4145,7 @@ if (do.loli)
   ggplot(data = Video.net.interaction) +
     geom_mosaic(aes(x = product(SP.group), fill = SP.group), na.rm = TRUE) +
     labs(x = "", y = '', title = 'Gillnet') +
-    facet_wrap( ~ Interaction, labeller = labeller(Interaction = lab)) + labs(fill = "")
+    facet_wrap(~ Interaction, labeller = labeller(Interaction = lab)) + labs(fill = "")
   ggsave(
     le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"),
     width = 12,
@@ -4139,7 +4162,7 @@ if (do.loli)
   ggplot(data = Video.longline.interaction) +
     geom_mosaic(aes(x = product(SP.group), fill = SP.group), na.rm = TRUE) +
     labs(x = "", y = '', title = 'Gillnet') +
-    facet_wrap( ~ Interaction, labeller = labeller(Interaction = lab)) + labs(fill = "")
+    facet_wrap(~ Interaction, labeller = labeller(Interaction = lab)) + labs(fill = "")
   ggsave(
     le.paste("Video/underwater/Interactions_mosaic_longline.tiff"),
     width = 12,
@@ -4154,9 +4177,9 @@ if (do.loli)
 fn.mds = function(tav, COM, SUBT)
 {
   iid = match(c('Method', 'SP.group', 'SPECIES'), names(tav))
-  drop.col = colSums(tav[, -iid])
+  drop.col = colSums(tav[,-iid])
   drop.col = names(drop.col[drop.col == 0])
-  COM = COM[, -match(drop.col, names(COM))]
+  COM = COM[,-match(drop.col, names(COM))]
   MDS <-
     metaMDS(
       comm = COM,
@@ -4198,7 +4221,7 @@ simper.fn = function(COM, tav, SUBT, Sig.pair)
     disp.simp[[n]] = cbind(tav['SP.group'],
                            COM[row.names(SIMPER[[n]] %>% filter(cumsum <= simper.cumsum))]) %>%
       filter(SP.group %in% str_split(names(SIMPER)[n], "_", simplify = TRUE)) %>%
-      gather(species, prop, -SP.group, ) %>%
+      gather(species, prop,-SP.group,) %>%
       mutate(groups = names(SIMPER)[n])
   }
   disp.simp = do.call(rbind, disp.simp)
@@ -4766,8 +4789,8 @@ fn.habitat.damg.deck = function(Gear)
     a = subset(d, SHEET_NO == habitat.sheet[l])
     n.exp = floor(a$net_length[1] / a$Dist.roller.spreader[1])
     Plus.row = n.exp - nrow(a)
-    PLUS = a[1:Plus.row, ]
-    PLUS[, ] = 0
+    PLUS = a[1:Plus.row,]
+    PLUS[,] = 0
     PLUS$SHEET_NO = a$SHEET_NO[1]
     PLUS$Frame = 'dummy'
     PLUS$net_length = a$net_length[1]
@@ -4914,11 +4937,7 @@ fn.habitat.damg.deck = function(Gear)
   
   #Pie chart of different habitat damage categories
   p3 = d.no.zeros %>%
-    dplyr::select(-Frame,
-                  -Total.damage,
-                  -SHEET_NO,
-                  -net_length,
-                  -Dist.roller.spreader) %>%
+    dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader) %>%
     gather(Species, Percent) %>%
     group_by(Species) %>%
     summarise(Percent = sum(Percent)) %>%
@@ -4967,11 +4986,7 @@ fn.habitat.damg.deck = function(Gear)
   
   #Histogram of proportion of net damage
   p4 = d.no.zeros %>%
-    dplyr::select(-Frame,
-                  -Total.damage,
-                  -SHEET_NO,
-                  -net_length,
-                  -Dist.roller.spreader) %>%
+    dplyr::select(-Frame,-Total.damage,-SHEET_NO,-net_length,-Dist.roller.spreader) %>%
     gather(Species, Percent) %>%
     filter(Percent > 0) %>%
     mutate(Percent.bin = 5 * round(Percent / 5)) %>%
@@ -5108,7 +5123,7 @@ fn.plt.dropouts = function(d, TITLE, LegPos, var, MinN)
   
   d = d %>%
     filter(Code %in% these.drop.out.sp) %>%
-    group_by(Code, !!sym(var), Period) %>%
+    group_by(Code,!!sym(var), Period) %>%
     tally() %>%
     mutate(dummy = factor(!!sym(var)),
            Period = capitalize(Period)) %>%
@@ -5124,7 +5139,7 @@ fn.plt.dropouts = function(d, TITLE, LegPos, var, MinN)
     ggplot(aes(fill = dummy, y = n, x = COMMON_NAME)) +
     geom_bar(position = "stack", stat = "identity") +
     coord_flip() +
-    facet_wrap( ~ Period, dir = 'h', scales = 'free_x') +
+    facet_wrap(~ Period, dir = 'h', scales = 'free_x') +
     theme_PA(
       Ttl.siz = 18,
       Sbt.siz = 16,
@@ -5192,7 +5207,7 @@ fn.glm.dropouts = function(d, var, MinN)
   
   d = d %>%
     filter(Code %in% these.drop.out.sp) %>%
-    group_by(Code, !!sym(var), Period) %>%
+    group_by(Code,!!sym(var), Period) %>%
     tally() %>%
     mutate(dummy = !!sym(var),
            Period = capitalize(Period)) %>%
@@ -5329,8 +5344,8 @@ fun.table.ret.disc = function(d)
               by = c('COMMON_NAME' = 'common_name')) %>%
     mutate(n = as.numeric(Retained.Gillnet) + as.numeric(Drop.out.Gillnet)) %>%
     ungroup() %>%
-    arrange(Taxa, -n) %>%
-    dplyr::select(-Taxa, -n)
+    arrange(Taxa,-n) %>%
+    dplyr::select(-Taxa,-n)
   return(TAB)
 }
 write.csv(
@@ -5443,7 +5458,7 @@ Data_water.column %>%
   ggplot(aes(fill = water.column, y = n, x = COMMON_NAME)) +
   geom_bar(position = "stack", stat = "identity") +
   coord_flip() +
-  facet_wrap( ~ Period, dir = 'h', scales = 'free_x') +
+  facet_wrap(~ Period, dir = 'h', scales = 'free_x') +
   theme_PA(
     str.siz = 20,
     strx.siz = 20,
@@ -5781,7 +5796,7 @@ fn.rates_sub_deck2 = function(d, MinN)
       by = c('Method' = 'method')
     ) %>%
     mutate(Rate = n / Effort) %>%
-    dplyr::select(-Code, -n, -Effort) %>%
+    dplyr::select(-Code,-n,-Effort) %>%
     spread(Method, Rate, fill = 0) %>%
     left_join(DATA %>%
                 distinct(common_name, Taxa),
@@ -5797,7 +5812,7 @@ Drop.out.rate_deck2 = fn.rates_sub_deck2(d = Video.camera2.deck %>% rename(sheet
                                          MinN = Min.N.drop.out)
 Drop.out.rate_deck2 = rbind(
   Drop.out.rate_deck2 %>% mutate_if(is.numeric, round, 5),
-  Drop.out.rate_deck2[1, ] %>%
+  Drop.out.rate_deck2[1,] %>%
     mutate(
       COMMON_NAME = "Units",
       Gillnet = "Number of dropouts per 1 m haul-hour",
@@ -5820,7 +5835,7 @@ Drop.out.rate_subsurface = fn.rates_sub_deck2(
 )
 Drop.out.rate_subsurface = rbind(
   Drop.out.rate_subsurface %>% mutate_if(is.numeric, round, 5),
-  Drop.out.rate_subsurface[1, ] %>%
+  Drop.out.rate_subsurface[1,] %>%
     mutate(
       COMMON_NAME = "Units",
       Gillnet = "Number of dropouts per 1 m haul-hour",
@@ -6169,7 +6184,7 @@ fn.obs_cam.barplot = function(n.shots, Cam, Obs, LGN, TITL)
     ggplot(aes(x = COMMON_NAME, y = n, fill = Platform)) +
     geom_bar(position = "dodge", stat = "identity") +
     coord_flip() +
-    facet_wrap( ~ Method.hour, dir = 'h', scales = 'free_x') +
+    facet_wrap(~ Method.hour, dir = 'h', scales = 'free_x') +
     theme_PA(
       Ttl.siz = 20,
       str.siz = 16,
@@ -6320,7 +6335,8 @@ fn.mod = function(dd, SBTL)
   #QuasiPois.mod <- glm(Camera ~ Observer * method, family=quasipoisson(link = "identity"), data=d1)
   #NB.mod <- glm.nb(Camera ~ Observer * method, data=d1, link='identity')
   
-  mod <- glm(Camera ~ Observer + method, family = "gaussian", data = dd)
+  mod <-
+    glm(Camera ~ Observer + method, family = "gaussian", data = dd)
   D2.mod = D2(mod$null.deviance, mod$deviance)
   
   pred = predict(mod, type = 'response', se.fit = T)
@@ -6413,7 +6429,7 @@ lolipop = function(x)
       vjust = -0.5
     ) +
     coord_flip() +
-    facet_wrap( ~ method) +
+    facet_wrap(~ method) +
     theme_PA(
       Ttl.siz = 18,
       Sbt.siz = 17,
@@ -6492,7 +6508,7 @@ fn.compare.obs.cam = function(CAM, OBS, GROUP, Terms, Minobs.per)
     #  stat_poly_eq(formula = my.formula,
     #              aes(label = paste(..eq.label.., ..rr.label.., sep = "~~~")),
     #             label.y = "top",label.x="left",parse = TRUE, size = 5) +
-    facet_wrap( ~ method, ncol = 2, scales = "free") +
+    facet_wrap(~ method, ncol = 2, scales = "free") +
     xlab("Number of individuals reported by observer") +
     ylab("Number of individuals recorded by camera") +
     theme_PA(
@@ -6520,7 +6536,7 @@ fn.compare.obs.cam = function(CAM, OBS, GROUP, Terms, Minobs.per)
     ggplot(aes(x = Observer, y = Camera)) +
     geom_line(aes(Observer, Observer), size = 1.5) +
     geom_jitter(aes(color = method), size = 3, show.legend = F) +
-    facet_wrap( ~ method, ncol = 2, scales = "free_x") +
+    facet_wrap(~ method, ncol = 2, scales = "free_x") +
     xlab("Number of species reported by observer") +
     ylab("Number of species recorded by camera") +
     theme_PA(
@@ -7159,8 +7175,8 @@ Tab.gilled.bagged = Video.camera1.deck %>%
             by = c('COMMON_NAME' = 'common_name')) %>%
   mutate(n = bagged + gilled) %>%
   ungroup() %>%
-  arrange(Taxa, -n) %>%
-  dplyr::select(-Taxa, -n) %>%
+  arrange(Taxa,-n) %>%
+  dplyr::select(-Taxa,-n) %>%
   filter(!is.na(COMMON_NAME))
 write.csv(
   Tab.gilled.bagged,
@@ -7173,7 +7189,7 @@ write.csv(
 #---------Analyses for Abbey ------------
 fn.get.top.1 = function(d, N)
 {
-  d = colSums(d %>% dplyr::select(-sheet_no, -Method, -Interaction, -n.cameras))
+  d = colSums(d %>% dplyr::select(-sheet_no,-Method,-Interaction,-n.cameras))
   out = names(d[d > N])
 }
 fn.explr.Abbey.1 = function(d, vars)
@@ -7185,16 +7201,16 @@ fn.explr.Abbey.1 = function(d, vars)
       Method = d$Method,
       Interaction = d$Interaction
     ) %>%
-    gather("Species", "cpue", -sheet_no, -Method, -Interaction) %>%
+    gather("Species", "cpue",-sheet_no,-Method,-Interaction) %>%
     filter(cpue > 0) %>%
     mutate(log.cpue = log(cpue)) %>%
     ggplot(aes(x = Method, y = log.cpue, fill = Interaction)) +
     geom_boxplot() +
-    facet_wrap( ~ Species, scale = "free")
+    facet_wrap(~ Species, scale = "free")
 }
 fn.get.top.2 = function(d, N)
 {
-  d = colSums(d %>% dplyr::select(-sheet_no, -Method, -Data.set, -Fishing.effort))
+  d = colSums(d %>% dplyr::select(-sheet_no,-Method,-Data.set,-Fishing.effort))
   out = names(d[d > N])
 }
 fn.explr.Abbey.2 = function(d, vars)
@@ -7206,12 +7222,12 @@ fn.explr.Abbey.2 = function(d, vars)
       Method = d$Method,
       Data.set = d$Data.set
     ) %>%
-    gather("Species", "cpue", -sheet_no, -Method, -Data.set) %>%
+    gather("Species", "cpue",-sheet_no,-Method,-Data.set) %>%
     filter(cpue > 0) %>%
     mutate(log.cpue = log(cpue)) %>%
     ggplot(aes(x = Method, y = log.cpue, fill = Data.set)) +
     geom_boxplot() +
-    facet_wrap( ~ Species, scale = "free")
+    facet_wrap(~ Species, scale = "free")
 }
 pdf(file = handl_OneDrive(
   'Analyses/Parks Australia/outputs/Data for Abbey/Exploraty.pdf'
@@ -7284,7 +7300,7 @@ fn.TEPS.barplot = function(n.shots,
     ggplot(aes(x = Interaction, y = n, fill = Name)) +
     geom_bar(position = "stack", stat = "identity") +
     coord_flip() +
-    facet_wrap( ~ Method.hour, dir = 'h') +
+    facet_wrap(~ Method.hour, dir = 'h') +
     theme_PA(
       str.siz = 16,
       strx.siz = 16,
@@ -7626,8 +7642,8 @@ if (do.inter.for.each.shot)
     no.teps = all.gn.shots[which(!all.gn.shots %in% unique(d.nets$sheet_no))]
     if (length(no.teps) > 0)
     {
-      add.d = d.nets[1:length(no.teps), ]
-      add.d[, ] = NA
+      add.d = d.nets[1:length(no.teps),]
+      add.d[,] = NA
       add.d$sheet_no = no.teps
       d.nets = rbind(d.nets, add.d)
       Shots = data.frame(sheet_no = sort(unique(d.nets$sheet_no)))
@@ -7639,8 +7655,8 @@ if (do.inter.for.each.shot)
     no.teps = all.ll.shots[which(!all.ll.shots %in% unique(d.ll$sheet_no))]
     if (length(no.teps) > 0)
     {
-      add.d = d.ll[1:length(no.teps), ]
-      add.d[, ] = NA
+      add.d = d.ll[1:length(no.teps),]
+      add.d[,] = NA
       add.d$sheet_no = no.teps
       d.ll = rbind(d.ll, add.d)
       
@@ -7672,7 +7688,7 @@ if (do.inter.for.each.shot)
     p1 = d.nets %>%
       group_by(shot, gear.type, con.code.sp) %>%
       tally() %>%
-      mutate(n = ifelse(is.na(con.code.sp), 0, n), ) %>%
+      mutate(n = ifelse(is.na(con.code.sp), 0, n),) %>%
       ggplot(aes(fill = con.code.sp, y = n, x = shot)) +
       geom_bar(position = "stack", stat = "identity") +
       scale_fill_discrete(na.translate = FALSE) +
@@ -7691,7 +7707,7 @@ if (do.inter.for.each.shot)
     p2 = d.ll %>%
       group_by(shot, gear.type, con.code.sp) %>%
       tally() %>%
-      mutate(n = ifelse(is.na(con.code.sp), 0, n), ) %>%
+      mutate(n = ifelse(is.na(con.code.sp), 0, n),) %>%
       ggplot(aes(fill = con.code.sp, y = n, x = shot)) +
       geom_bar(position = "stack", stat = "identity") +
       scale_fill_discrete(na.translate = FALSE) +
@@ -7865,7 +7881,7 @@ if (check.ASL)
   ASL.tot %>%
     ggplot(aes(mid.long, mid.lat, color = Activity)) +
     geom_jitter(size = 2) +
-    facet_wrap( ~ Method) +
+    facet_wrap(~ Method) +
     theme(legend.position = 'top',
           legend.title = element_blank())
   
