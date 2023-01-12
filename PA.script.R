@@ -58,32 +58,35 @@ library(scales)
 library(igraph)
 library(janitor)
 
+library(stringdist)
+
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
 #--------- DATA ------------
-#1. Sharks data base
-if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
-if(User=="Sarah") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
-if(User=="Abbey") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
 
-# User="Matias"
-User="Sarah"
-# User="Abbey"
+
+# TODO: just put this file in the repo.
+#1. Sharks data base
+# if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
+# if(User=="Sarah") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
+# if(User=="Abbey") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
 
 #2. Species list
 if(User=="Matias") All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
+
+# TODO: just put this file in the repo.
 if(User=="Sarah") All.species.names=read.csv(handl_OneDrive("Species_code/Species.code.csv"))
 if(User=="Abbey") All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
 
 
 #3. PA - TEPS interactions recorded by Observers
-setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
-TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
+#setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
+#TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
 #4. PA - number of hook combinations used and lost in PA project
-Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
-Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
+#Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
+#Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
 
 
 #5. PA - underwater video
@@ -139,13 +142,11 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   
   #1.1. gillnet
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Gillnet')
-  filenames=list.files(pattern='*.csv')
+  filenames=list.files(path="data/Gillnet", pattern='*.csv', full.names= TRUE)
   dummy.GN <- lapply(filenames, read.csv,skip=4)
   
   #1.2. longline
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Longline')
-  filenames=list.files(pattern='*.csv')
+  filenames=list.files(path="data/Longline", pattern='*.csv', full.names=TRUE)
   dummy.LL <- lapply(filenames, read.csv,skip=4)
   
   #2. put data in standard format
