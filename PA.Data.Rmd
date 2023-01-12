@@ -75,12 +75,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   
   #1.1. gillnet
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.2/Gillnet')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.3/Gillnet')
   filenames=list.files(pattern='*.csv')
   dummy.GN <- lapply(filenames, read.csv,skip=4)
   
   #1.2. longline
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.2/Longline')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.3/Longline')
   filenames=list.files(pattern='*.csv')
   dummy.LL <- lapply(filenames, read.csv,skip=4)
   
@@ -392,24 +392,20 @@ gnmaxncheck <- subset(Video.net.maxN, Species==""|is.na(Species))
 gnmaxncheck
 ```
 # check to compare unique sp in inter and maxn dfs
+## Alt species such as snail, turtle, bird are OK.
 ```{r}
 setdiff(sp.in.ll.inter, sp.in.ll.maxn)
 setdiff(sp.in.ll.maxn, sp.in.ll.inter)
 ```
 ```{r}
 check.net.maxn <- setdiff(sp.in.net.inter, sp.in.net.maxn)
-check.net.maxn.2 <- setdiff(sp.in.net.maxn, sp.in.net.inter)
 check.net.maxn
-check.net.maxn.2
-```
-```{r}
 checklist.net.maxn <- Video.net.maxN %>% filter(Species=="mosaica")
 checklist.net.maxn
-#lensubset <- len %>% filter(Taxa != "Kyphosus sydneyanus")
 ```
 ```{r}
-checklist.net.maxn.2 <- Video.net.interaction %>% filter(Species%in%c("aequabilis", "tenuicaudatus"))
-checklist.net.maxn.2
+check.net.maxn.2 <- setdiff(sp.in.net.maxn, sp.in.net.inter)
+check.net.maxn.2
 ```
 
 
