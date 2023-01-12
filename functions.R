@@ -51,6 +51,7 @@ mutate.escape <- function(df) {
       str_detect(Escape, "(?i)garnard") ~ "gurnard",
       str_detect(Escape, "Aplysia punctata") ~ "sea hare",
       str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
+      str_detect(Escape, "(?i)bird|sear water") ~ "bird",
       str_detect(Escape, "(?i)no fish") ~ "no fish",
       str_detect(Escape, "^\\d|\\<|reef") ~ "",
       is.na(Escape) ~ "",
@@ -60,8 +61,6 @@ mutate.escape <- function(df) {
 }
 
 boss.function <- function(df) {
-  res <- list()
-
   df <-
     rename.column(df, "escape", "Escape", 6)
   df <-
@@ -111,11 +110,14 @@ boss.function <- function(df) {
   look <- c("no haul", "before haul", "end", "CAMERA STOPS")
   match.distance <- 0
   
+  obs <- df
+  obs$Camera.stopped <-
+    rowSums(afind(obs$Escape, look)$distance == match.distance)
+  
   obs <-
-    df %>%
+    obs %>%
     mutate.escape() %>%
     mutate(
-      Camera.stopped = rowSums(afind(Escape, look)$distance <= match.distance),
       Got.dark = grepl("dark", Escape),
       observation = Alt.species,
       observation = ifelse(observation %in% DROP, "", observation)
