@@ -9,12 +9,13 @@
 #            There is also depredation data from Cameras 1 & 2 in the comments section (videos reviewed by Sarah and anyone else??)
 #            REVIEW & UPDATE issues
 #    consider manyglm instead of adonis
+rm(list = ls(all = TRUE))
 
 # User="Matias"
 User = "Sarah"
 # User="Abbey"
 
-rm(list = ls(all = TRUE))
+
 
 if (!exists('handl_OneDrive'))
 {
