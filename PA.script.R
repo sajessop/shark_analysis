@@ -80,13 +80,12 @@ if(User=="Abbey") All.species.names=read.csv(handl_OneDrive("Data/Species.code.c
 
 
 #3. PA - TEPS interactions recorded by Observers
-#setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
-#TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
+#TEPS <- read_excel("'M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data/TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
 #4. PA - number of hook combinations used and lost in PA project
-#Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
-#Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
+#Hook.combos <- read_excel("'M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data/Hook count.xlsx", sheet = "Sheet1",skip = 0)
+#Lost.snoods<- read_excel("'M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data/Broken hook specs.xlsx",sheet = "Sheet1")
 
 
 #5. PA - underwater video
@@ -141,17 +140,16 @@ if(Event.Mes.data.dump=='Jack')
 if (Event.Mes.data.dump == 'Abbey_Sarah')
 {
   #1. read in  data
-  
   #1.1. gillnet
-  filenames = list.files(path = "data/Gillnet",
-                         pattern = '*.csv',
-                         full.names = TRUE)
+  filenames <-  list.files(path = "data/Gillnet",
+                           pattern = '*.csv',
+                           full.names = TRUE)
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   
   #1.2. longline
-  filenames = list.files(path = "data/Longline",
-                         pattern = '*.csv',
-                         full.names = TRUE)
+  filenames <-  list.files(path = "data/Longline",
+                           pattern = '*.csv',
+                           full.names = TRUE)
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
   
   #2. put data in standard format
@@ -170,16 +168,16 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
     print(i)
   }
   
+  #review the intended function of this?
   Video.net.interaction.combined <-
     do.call(rbind, Video.net.interaction) %>%
     filter(!Species %in% c("", " ") |
              No.haul == TRUE | No.fish == TRUE)
   
-  Video.net.maxN.combined <-  do.call(rbind, Video.net.maxN) %>%
-    filter(!is.na(MaxN))
+  Video.net.maxN.combined <-  do.call(rbind, Video.net.maxN)
   
   Video.net.obs.combined <-  do.call(rbind, Video.net.obs) %>%
-    filter(!observation == '')
+    filter(!observation == "")
   
   #2.2. longline
   Video.longline.interaction = Video.longline.maxN = Video.longline.obs =

@@ -29,14 +29,9 @@ rename.column <- function(df, match_name, match_rename, distance) {
   return(df)
 }
 
-
-
-
-
 rename.entry <- function(pattern, data, renamed_to, dist) {
   rowSums(afind(data, pattern)$distance <= dist)
 }
-
 
 mutate.escape <- function(df) {
   ret <- df %>% mutate(
@@ -51,7 +46,6 @@ mutate.escape <- function(df) {
       str_detect(Escape, "(?i)garnard") ~ "gurnard",
       str_detect(Escape, "Aplysia punctata") ~ "sea hare",
       str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
-      str_detect(Escape, "(?i)bird|sear water") ~ "bird",
       str_detect(Escape, "(?i)no fish") ~ "no fish",
       str_detect(Escape, "^\\d|\\<|reef") ~ "",
       is.na(Escape) ~ "",
@@ -103,6 +97,7 @@ boss.function <- function(df) {
     )
   
   maxN <- df %>%
+    filter(is.na(MaxN)) %>% 
     dplyr::select(all_of(video.net.names))
   TRUE ~ as.character(Escape)
   

@@ -98,7 +98,7 @@ drop.for.inter <-  c(
 
 common.columns <- c("temp")
 
-interaction.factors <-
+interaction.factors <- as.factor(
   c(
     "Swim Past",
     "Swim Through",
@@ -113,3 +113,4 @@ interaction.factors <-
     "Bait feeding",
     "Caught while predating"
   )
+)
