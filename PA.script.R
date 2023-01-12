@@ -152,6 +152,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #2. put data in standard format
   #2.1. gillnet
   Video.net.interaction=Video.net.maxN=Video.net.obs=vector('list',length(dummy.GN))
+  
   interaction.names = c(
     "OpCode",
     "Frame",
@@ -246,19 +247,9 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   )
   for(i in 1:length(dummy.GN))
   {
-    if('escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape.time)
-    if('escape'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape)
-    if('Escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=Escape.time)
-    
-    if('max.n'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=max.n)
-    if('Max.N'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Max.N)
-    if('maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=maxn)
-    if('Maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Maxn)
-    if('MAXn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=MAXn)
-    
-    if('Interactino'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactino)
-    if('interaction'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=interaction)
-    if('Interactions'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactions)
+    dummy.GN[[i]] <- rename.column(dummy.GN, "escape", "Escape", 6)
+    dummy.GN[[i]] <- rename.column(dummy.GN, "max.n", "MaxN", 6)
+    dummy.GN[[i]] <- rename.column(dummy.GN, "interaction", "Interaction", 10)
     
     if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
     if('method.'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Method=method.)
