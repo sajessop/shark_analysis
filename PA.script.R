@@ -262,8 +262,15 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position <- NA
+    
+    
     Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
-      filter(is.na(MaxN))%>%
+      filter(is.na(MaxN))
+    
+    Video.net.interaction[[i]]$Escape <- Video.net.interaction[[i]]$Escape %>% replace(Video.net.interaction[[i]]$Escape=="gurnard",gurnard )
+    
+    
+    Video.net.interaction[[i]] %>% 
       dplyr::select(all_of(interaction.names)) %>%
       mutate(
         Alt.species = case_when(
@@ -358,31 +365,34 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       dplyr::select(all_of(video.net.names))
     
     look <- c("no haul","before haul", "end","CAMERA STOPS")
+    
     Video.net.obs[[i]] <- dummy.GN[[i]]
-    
-    Video.net.obs[[i]]$Camera.stoppped <-
-      rowSums(afind(Video.net.obs[[i]]$Escape, look)$distance == 0)
-    
+        Video.net.obs[[i]]$Camera.stoppped <-
+      rowSums(afind(Video.net.obs[[i]]$Escape, look)$distance <= 0)
     
     Video.net.obs[[i]]$Got.dark <-
       Video.net.obs[[i]] %>% grepl("dark", 1)
     
-    Video.net.obs[[i]]=dummy.GN[[i]]%>%
-      mutate(observation=Escape,
-             observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
-                                   grepl("\\d", observation)~'',
-                                   Got.dark=='TRUE'~'',
-                                   observation%in%c("squid","SQUID")~"Squid",
-                                   observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
-                                   observation%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
-                                   observation%in%c("australian fur seal","sealion")~"sea lion",
-                                   observation=="commernat"~"commorant",
-                                   is.na(observation)~"",
-                                   observation=="garnard"~"gurnard",
-                                   observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
-                                   observation%in%DROP~'',
-                                   TRUE~as.character(Escape)),
-             code=Code)%>%
+    Video.net.obs[[i]] = dummy.GN[[i]] %>%
+      mutate(
+        observation = Escape,
+        code = Code,
+        observation = case_when(
+          str_detect(observation, "(?i)startfish") ~ "seven legged startfish",
+          str_detect(observation, "(?i)squid") ~ "squid",
+          str_detect(observation, "(?i)cuttlefish") ~ "cuttlefish",
+          str_detect(observation, "(?i)unidentifiable|unknown|UNKNONW") ~ "unknown fish",
+          str_detect(observation, "(?i)seal") ~ "sea lion",
+          str_detect(observation, "(?i)bait|^school") ~ "baitfish",
+          str_detect(observation, "(?i)commernat") ~ "commorant",
+          str_detect(observation, "(?i)garnard") ~ "gurnard",
+          str_detect("\\d", observation) ~ '',
+          is.na(observation) ~ "",
+          observation %in% DROP ~ "",
+          TRUE ~ as.character(Escape)
+        ),
+        
+             )%>%
       dplyr::select(all_of(c(Video.net.obs.names,'Got.dark','Camera.stopped')))
     
     print(i)

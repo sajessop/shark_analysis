@@ -36,8 +36,8 @@ rename.column <- function(df, match_name, match_rename, distance) {
 
 
 
-rename.entry <- function(pattern, data, renamed_to){
+rename.entry <- function(pattern, data, renamed_to, dist){
   
-  afind
+  rowSums(afind(data, pattern)$distance <= dist)
   
 }
