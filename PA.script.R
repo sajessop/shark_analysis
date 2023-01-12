@@ -60,10 +60,11 @@ library(janitor)
 library(stringdist)
 
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
-
+source("functions.R")
+source("constants.R")
 #--------- DATA ------------
 
-common.columns <- c("temp")
+
 # TODO: just put this file in the repo.
 #1. Sharks data base
 # if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
@@ -87,7 +88,7 @@ if(User=="Abbey") All.species.names=read.csv(handl_OneDrive("Data/Species.code.c
 #Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
 #Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
 
-interaction.factors <- c("Swim Past", "Swim Through", "Attracted", "Bounce Off", "Avoid", "Caught-Gilled/hooked", "Caught-bagged", "Escape","Feeding","Predated On", "Bait feeding","Caught while predating")
+
 #5. PA - underwater video
 Event.Mes.data.dump='Abbey_Sarah'
 #Event.Mes.data.dump='Jack'
@@ -157,98 +158,7 @@ if (Event.Mes.data.dump == 'Abbey_Sarah')
   #2.1. gillnet
   Video.net.interaction = Video.net.maxN = Video.net.obs = vector('list', length(dummy.GN))
   
-  interaction.names = c(
-    "OpCode",
-    "Frame",
-    "Time..mins.",
-    "Period.time..mins.",
-    "Period",
-    "TapeReader",
-    "Depth",
-    "Comment",
-    "Method",
-    "Position",
-    "Family",
-    "Genus" ,
-    "Species" ,
-    "Code" ,
-    "Number",
-    "Interaction",
-    "Escape"
-  )
-  video.net.names = c(
-    "OpCode",
-    "Frame",
-    "Time..mins.",
-    "Period.time..mins.",
-    "Period",
-    "TapeReader",
-    "Depth",
-    "Family",
-    "Genus" ,
-    "Species" ,
-    "Code",
-    "MaxN"
-  )
-  Video.net.obs.names = c(
-    "OpCode",
-    "Frame",
-    "Time..mins.",
-    "Period.time..mins.",
-    "Period",
-    "TapeReader",
-    "Depth",
-    "Number",
-    "observation",
-    "Code"
-  )
-  DROP = c(
-    "Camera Onboard",
-    "example of swell conditions for fis",
-    "looking at camera",
-    "no fish",
-    "No Fish Seen",
-    "reef structure 20cm squre rippedup",
-    "Retrevial begins",
-    "Retrevial Started",
-    "retrival start",
-    "ripped up macro algae",
-    "rock dislodged",
-    "rocks dislodged",
-    'end-no haul',
-    "end no haul",
-    "end before haul",
-    'CAMERA STOPS',
-    "end",
-    "ended before haul",
-    "finish before haul",
-    "no haul",
-    " no haul",
-    "?",
-    "snoode broke on haul 170"
-  )
-  drop.for.inter = c(
-    "Camera Onboard",
-    "example of swell conditions for fis",
-    "looking at camera",
-    "reef structure 20cm squre rippedup",
-    "Retrevial begins",
-    "Retrevial Started",
-    "retrival start",
-    "ripped up macro algae",
-    "rock dislodged",
-    "rocks dislodged",
-    "?",
-    "snoode broke on haul 170",
-    "snoode broke on haul 170mins later",
-    "line cut",
-    "attacked camera",
-    "attracted to float",
-    "attacks float",
-    "snoode broke on haul",
-    "attrached to flaot",
-    "Attacks camera"
-  )
+ 
   for (i in 1:length(dummy.GN))
   {
     res <- boss.function(dummy.GN[[i]])
