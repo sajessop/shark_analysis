@@ -41,3 +41,27 @@ rename.entry <- function(pattern, data, renamed_to, dist){
   rowSums(afind(data, pattern)$distance <= dist)
   
 }
+
+
+mutate.escape <- function(df) {
+  ret <- df %>% mutate(
+    Alt.species = case_when(
+      str_detect(Escape, "(?i)startfish") ~ "seven legged startfish",
+      str_detect(Escape, "(?i)squid") ~ "squid",
+      str_detect(Escape, "(?i)cuttlefish") ~ "cuttlefish",
+      str_detect(Escape, "(?i)unidentifiable|unknown|UNKNONW") ~ "unknown fish",
+      str_detect(Escape, "(?i)seal") ~ "sea lion",
+      str_detect(Escape, "(?i)bait|^school") ~ "baitfish",
+      str_detect(Escape, "(?i)commernat") ~ "commorant",
+      str_detect(Escape, "(?i)garnard") ~ "gurnard",
+      str_detect(Escape, "Aplysia punctata") ~ "sea hare",
+      str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
+      str_detect(Escape, "(?i)no fish") ~ "no fish",
+      str_detect(Escape, "^\\d|\\<|reef") ~ "",
+      is.na(Escape) ~ "",
+      #Escape %in% drop.for.inter ~ '',
+      TRUE ~ as.character(Escape)
+    )
+  )
+  return ret
+}

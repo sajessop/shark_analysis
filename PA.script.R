@@ -247,6 +247,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   )
   for(i in 1:length(dummy.GN))
   {
+    tempReturn <- list()
+    
     dummy.GN[[i]] <-
       rename.column(dummy.GN[[i]], "escape", "Escape", 6)
     dummy.GN[[i]] <-
@@ -259,7 +261,6 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     dummy.GN[[i]]$Interaction <-
       factor(dummy.GN[[i]]$Interaction, c(1:12), interaction.factors)
     dummy.GN[[i]]$Number <- as.integer(dummy.GN[[i]]$Number)
-    
     dummy.GN[[i]]$Depth <- as.integer(dummy.GN[[i]]$Depth)
     dummy.GN[[i]]$Escape <- as.character(dummy.GN[[i]]$Escape)
     
@@ -277,43 +278,26 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
       filter(is.na(MaxN))
     
+
+    
     Video.net.interaction[[i]] %>%
       dplyr::select(all_of(interaction.names)) %>%
+      mutate.escape %>%
       mutate(
-        Alt.species = case_when(
-          str_detect(Escape, "(?i)startfish") ~ "seven legged startfish",
-          str_detect(Escape, "(?i)squid") ~ "squid",
-          str_detect(Escape, "(?i)cuttlefish") ~ "cuttlefish",
-          str_detect(Escape, "(?i)unidentifiable|unknown|UNKNONW") ~ "unknown fish",
-          str_detect(Escape, "(?i)seal") ~ "sea lion",
-          str_detect(Escape, "(?i)bait|^school") ~ "baitfish",
-          str_detect(Escape, "(?i)commernat") ~ "commorant",
-          str_detect(Escape, "(?i)garnard") ~ "gurnard",
-          str_detect(Escape, "Aplysia punctata") ~ "sea hare",
-          str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
-          str_detect(Escape, "Aplysia punctata") ~ "sea hare",
-          str_detect(Escape, "(?i)no fish") ~ "no fish",
-          str_detect(Escape, "^\\d|\\<") ~ "",
-          is.na(Escape) ~ "",
-          Escape %in% drop.for.inter ~ '',
-          TRUE ~ as.character(Escape)
-        ),
-        No.haul = ifelse(Alt.species == "no haul", 1, 0),
-        No.fish = ifelse(Alt.species == "no fish", 1, 0),
-        for.com.sp = case_when(
-          Alt.species == "no haul" ~ "",
-          Alt.species == "no fish" ~ "",
-          TRUE ~ as.character(Alt.species)
-        ),
-        Combine.species = paste0(for.com.sp, Species),
-        Species = paste(Combine.species),
-        Escape = ifelse(grepl("\\d", Escape), gsub("([0-9]+).*$", "\\1", Escape), ''),
-        Escape = ifelse(Escape %in% c('', 'reef structure 20', 't00'), NA, Escape),
-        Interaction = case_when(Interaction == 1 ~ 'Swim Past',)
+        No.haul = Alt.species == "no haul",
+        No.fish = Alt.species == "no fish",
+        for.com.sp = ifelse(No.haul == TRUE |
+                              No.fish == TRUE, NA, as.character(Alt.species)),
+        Species.cleaned = paste0(for.com.sp, Species),
       )
-  
-    Video.net.maxN[[i]]=dummy.GN[[i]]%>%
+    
+    append(tempReturn, Video.net.interaction[[i]])
+    
+    
+    Video.net.maxN[[i]] <- dummy.GN[[i]]%>%
       dplyr::select(all_of(video.net.names))
+    
+    append(tempReturn, Video.net.maxN[[i]])
     
     # fuzzy matching for when camera stopped
     look <- c("no haul","before haul", "end","CAMERA STOPS")
@@ -347,6 +331,15 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       dplyr::select(all_of(c(
         Video.net.obs.names, 'Got.dark', 'Camera.stopped'
       )))
+    
+    
+    append(tempReturn,Video.net.obs[[i]])
+    
+    res<- myFunc()
+    
+    Video.net.maxN[[i]] <- res[1]
+    Video.net.interaction[[i]] <- res[2]
+    Video.net.obs[[i]] <- res[3]
     
     print(i)
     
