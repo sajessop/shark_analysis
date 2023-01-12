@@ -139,12 +139,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   
   #1.1. gillnet
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Gillnet')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23/Gillnet')
   filenames=list.files(pattern='*.csv')
   dummy.GN <- lapply(filenames, read.csv,skip=4)
   
   #1.2. longline
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs10-01-23/Longline')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23/Longline')
   filenames=list.files(pattern='*.csv')
   dummy.LL <- lapply(filenames, read.csv,skip=4)
   
@@ -291,7 +291,6 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     if('Escape.time'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=Escape.time)
     if("Esape"%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=Esape)
     
-    
     if('max.n'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=max.n)
     if('Max.N'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=Max.N)
     if('maxn'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=maxn)
@@ -325,8 +324,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                                "END Dark","too dark form here","Gets Dark","too dark after this point",
                                                "to dark after this point","no fish seen-end no haul","too dark - dark haul",
                                                "gets too dark","too dARK","end before haul","ended before haul","dark",
-                                               "DARK HAUL","dark haul","DARK NO HAUL","TOO DARK")~"no haul",
-                                   Escape%in%c("no fish","No Fish Seen","NO FISH SEEN","no fish seen")~"no fish",
+                                               "DARK HAUL","dark haul","DARK NO HAUL","TOO DARK","end haul- dark")~"no haul",
+                                   Escape%in%c("no fish","No Fish Seen","NO FISH SEEN","no fish seen", "No fish")~"no fish",
                                    Escape%in%c("BIRD DIVING FOR BAIT","bird","birds feeding at surface","sear water",
                                                "bird-diving for bait")~"bird",
                                    Escape%in%c("30 sec","3 min","10 MINS","2.5","<1","1.5","1 min","0.1","3","33","61 min",
@@ -344,10 +343,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
              for.com.sp=case_when(Alt.species=="no haul"~"",
                                   Alt.species=="no fish"~"",
                                   is.na(Alt.species)~"",
+                                  is.na(Species)~as.character(Alt.species),
                                   TRUE~as.character(Alt.species)),
-             #Species=case_when(is.na(Species)~""),
+             #Species=case_when(is.na(Species)~"",
+                                  #TRUE~as.character(Species)),
              Combine.species=paste0(for.com.sp,Species),
-             Species=paste(Combine.species),
+             Species=paste0(Combine.species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=case_when(Interaction==1 ~'Swim Past',
