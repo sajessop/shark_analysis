@@ -196,7 +196,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     "Depth",
     "Number",
     "observation",
-    "code"
+    "Code"
   )
   DROP = c(
     "Camera Onboard",
@@ -247,86 +247,13 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   )
   for(i in 1:length(dummy.GN))
   {
-    tempReturn <- list()
-    
-    dummy.GN[[i]] <-
-      rename.column(dummy.GN[[i]], "escape", "Escape", 6)
-    dummy.GN[[i]] <-
-      rename.column(dummy.GN[[i]], "max.n", "MaxN", 6)
-    dummy.GN[[i]] <-
-      rename.column(dummy.GN[[i]], "interaction", "Interaction", 10)
-    dummy.GN[[i]] <-
-      rename.column(dummy.GN[[i]], "method", "Method", 10)
-    
-    dummy.GN[[i]]$Interaction <-
-      factor(dummy.GN[[i]]$Interaction, c(1:12), interaction.factors)
-    dummy.GN[[i]]$Number <- as.integer(dummy.GN[[i]]$Number)
-    dummy.GN[[i]]$Depth <- as.integer(dummy.GN[[i]]$Depth)
-    dummy.GN[[i]]$Escape <- as.character(dummy.GN[[i]]$Escape)
-    
-    
-    if ("Time (mins)" %in% colnames(dummy.GN[[i]])) {
-      dummy.GN[[i]] <- dummy.GN[[i]] %>%
-        rename("Time (mins)" = "Time..mins.",
-               "Period time (mins)" = "Period.time..mins.")
-    }
-    
-    if (!'Position' %in% names(dummy.GN[[i]])
-    )
-      dummy.GN[[i]]$Position <- NA
-    
-    Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
-      filter(is.na(MaxN))
-    
-    Video.net.interaction[[i]] %>%
-      dplyr::select(all_of(interaction.names)) %>%
-      mutate.escape() %>%
-      mutate(
-        Escape = ifelse(Escape %in% drop.for.inter, "", Escape),
-        No.haul = Alt.species == "no haul",
-        No.fish = Alt.species == "no fish",
-        for.com.sp = ifelse(No.haul == TRUE |
-                              No.fish == TRUE, NA, as.character(Alt.species)),
-        Species.cleaned = paste0(for.com.sp, Species),
-      )
-    
-    append(tempReturn, Video.net.interaction[[i]])
-    
-    
-    Video.net.maxN[[i]] <- dummy.GN[[i]]%>%
-      dplyr::select(all_of(video.net.names))
-    
-    append(tempReturn, Video.net.maxN[[i]])
-    
-    # fuzzy matching for when camera stopped
-    look <- c("no haul","before haul", "end","CAMERA STOPS")
-    
-    Video.net.obs[[i]] <- dummy.GN[[i]]
-    Video.net.obs[[i]]$Camera.stopped <-
-      rowSums(afind(Video.net.obs[[i]]$Escape, look)$distance <= 0)
-    
-    Video.net.obs[[i]]$Got.dark <-
-      grepl("dark", Video.net.obs[[i]])
-    
-    Video.net.obs[[i]] <-
-      dummy.GN[[i]] %>%
-      mutate.escape() %>%
-      mutate(observation = Alt.species,
-             observation = ifelse(observation %in% DROP, "", observation)) %>%
-      dplyr::select(all_of(c(
-        Video.net.obs.names, "Got.dark", "Camera.stopped"
-      )))
-    
-    append(tempReturn,Video.net.obs[[i]])
-    
-    res<- myFunc()
+    boss.function(dummy.GN[[i]])
     
     Video.net.maxN[[i]] <- res[1]
     Video.net.interaction[[i]] <- res[2]
     Video.net.obs[[i]] <- res[3]
     
     print(i)
-    
   }
   
   

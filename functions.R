@@ -1,45 +1,40 @@
 rename.column <- function(df, match_name, match_rename, distance) {
   all.columns <- names(df)
-  
+
   filtered.columns <-
     all.columns[!(all.columns %in% common.columns)]
-  
+
   # put to lowercase to get closer matches
   filtered.columns.lower <- lapply(filtered.columns, tolower)
-  
+
   # find the index of the closest match, quit if no match found as probably an error
   matched.idx <-
-    amatch(match_name, filtered.columns.lower, maxDist = distance, nomatch=-1)
-  
-  if (matched.idx < 0)
-  {
+    amatch(match_name, filtered.columns.lower, maxDist = distance, nomatch = -1)
+
+  if (matched.idx < 0) {
     print("No Match Found")
     stopifnot(matched.idx > 0)
   }
-  
+
   matched.string <- filtered.columns[[matched.idx]]
 
   # if exact match, do nothing
   print(match_name)
-  if (stringdist(match_rename, matched.string) > 0)
-  {
-
+  if (stringdist(match_rename, matched.string) > 0) {
     df <- df %>% rename(!!sym(match_rename) := matched.string)
-    print(sprintf("Succesfully changed %s to %s",matched.string, match_rename))
+    print(sprintf("Succesfully changed %s to %s", matched.string, match_rename))
+  } else {
+    print(paste("No column name change for", deparse(substitute(df))))
   }
-  else
-   print(paste("No column name change for", deparse(substitute(df))))
-  return (df)
+  return(df)
 }
 
 
 
 
 
-rename.entry <- function(pattern, data, renamed_to, dist){
-  
+rename.entry <- function(pattern, data, renamed_to, dist) {
   rowSums(afind(data, pattern)$distance <= dist)
-  
 }
 
 
@@ -64,43 +59,39 @@ mutate.escape <- function(df) {
   )
 }
 
-mutate.observation <- function(df) {
-  ret <- df %>% mutate.escape() %>% mutate(observation = Escape,)
-}
+boss.function <- function(df) {
+  res <- list()
 
-boss.function <- function(df){
-  tempReturn <- list()
-  
   df <-
-    rename.column(dummy.GN[[i]], "escape", "Escape", 6)
-  ummy.GN[[i]] <-
-    rename.column(dummy.GN[[i]], "max.n", "MaxN", 6)
-  dummy.GN[[i]] <-
-    rename.column(dummy.GN[[i]], "interaction", "Interaction", 10)
-  dummy.GN[[i]] <-
-    rename.column(dummy.GN[[i]], "method", "Method", 10)
-  
-  dummy.GN[[i]]$Interaction <-
-    factor(dummy.GN[[i]]$Interaction, c(1:12), interaction.factors)
-  dummy.GN[[i]]$Number <- as.integer(dummy.GN[[i]]$Number)
-  dummy.GN[[i]]$Depth <- as.integer(dummy.GN[[i]]$Depth)
-  dummy.GN[[i]]$Escape <- as.character(dummy.GN[[i]]$Escape)
-  
-  
-  if ("Time (mins)" %in% colnames(dummy.GN[[i]])) {
-    dummy.GN[[i]] <- dummy.GN[[i]] %>%
-      rename("Time (mins)" = "Time..mins.",
-             "Period time (mins)" = "Period.time..mins.")
+    rename.column(df, "escape", "Escape", 6)
+  df <-
+    rename.column(df, "max.n", "MaxN", 6)
+  df <-
+    rename.column(df, "interaction", "Interaction", 10)
+  df <-
+    rename.column(df, "method", "Method", 10)
+
+  df$Interaction <- factor(df$Interaction, c(1:12), interaction.factors)
+  df$Number <- as.integer(df$Number)
+  df$Depth <- as.integer(df$Depth)
+  df$Escape <- as.character(df$Escape)
+
+
+  if ("Time (mins)" %in% colnames(df)) {
+    df <- df %>%
+      rename(
+        "Time (mins)" = "Time..mins.",
+        "Period time (mins)" = "Period.time..mins."
+      )
   }
-  
-  if (!'Position' %in% names(dummy.GN[[i]])
-  )
-    dummy.GN[[i]]$Position <- NA
-  
-  Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
-    filter(is.na(MaxN))
-  
-  Video.net.interaction[[i]] %>%
+
+  if (!"Position" %in% names(df)
+  ) {
+    df$Position <- NA
+  }
+
+  interaction <- df %>%
+    filter(is.na(MaxN)) %>%
     dplyr::select(all_of(interaction.names)) %>%
     mutate.escape() %>%
     mutate(
@@ -108,38 +99,32 @@ boss.function <- function(df){
       No.haul = Alt.species == "no haul",
       No.fish = Alt.species == "no fish",
       for.com.sp = ifelse(No.haul == TRUE |
-                            No.fish == TRUE, NA, as.character(Alt.species)),
+        No.fish == TRUE, NA, as.character(Alt.species)),
       Species.cleaned = paste0(for.com.sp, Species),
     )
   
-  append(tempReturn, Video.net.interaction[[i]])
-  
-  
-  Video.net.maxN[[i]] <- dummy.GN[[i]]%>%
+  maxN <- df %>%
     dplyr::select(all_of(video.net.names))
-  
-  append(tempReturn, Video.net.maxN[[i]])
+  TRUE ~ as.character(Escape)
   
   # fuzzy matching for when camera stopped
-  look <- c("no haul","before haul", "end","CAMERA STOPS")
+  look <- c("no haul", "before haul", "end", "CAMERA STOPS")
+  match.distance <- 0
   
-  Video.net.obs[[i]] <- dummy.GN[[i]]
-  Video.net.obs[[i]]$Camera.stopped <-
-    rowSums(afind(Video.net.obs[[i]]$Escape, look)$distance <= 0)
-  
-  Video.net.obs[[i]]$Got.dark <-
-    grepl("dark", Video.net.obs[[i]])
-  
-  Video.net.obs[[i]] <-
-    dummy.GN[[i]] %>%
+  obs <-
+    df %>%
     mutate.escape() %>%
-    mutate(observation = Alt.species,
-           observation = ifelse(observation %in% DROP, "", observation)) %>%
+    mutate(
+      Camera.stopped = rowSums(afind(Escape, look)$distance <= match.distance),
+      Got.dark = grepl("dark", Escape),
+      observation = Alt.species,
+      observation = ifelse(observation %in% DROP, "", observation)
+    ) %>%
     dplyr::select(all_of(c(
       Video.net.obs.names, "Got.dark", "Camera.stopped"
     )))
   
-  append(tempReturn,Video.net.obs[[i]])
-  
-  res<- myFunc()
+  res <- list(interaction, maxN, obs)
+
+  return(res)
 }
