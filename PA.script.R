@@ -156,8 +156,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   interaction.names = c(
     "OpCode",
     "Frame",
-    "Time (mins)",
-    "Period time (mins)",
+    "Time..mins.",
+    "Period.time..mins.",
     "Period",
     "TapeReader",
     "Depth",
@@ -175,8 +175,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   video.net.names = c(
     "OpCode",
     "Frame",
-    "Time (mins)",
-    "Period time (mins)",
+    "Time..mins.",
+    "Period.time..mins.",
     "Period",
     "TapeReader",
     "Depth",
@@ -189,8 +189,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   Video.net.obs.names = c(
     "OpCode",
     "Frame",
-    "Time (mins)",
-    "Period time (mins)",
+    "Time..mins.",
+    "Period.time..mins.",
     "Period",
     "TapeReader",
     "Depth",
@@ -278,12 +278,11 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
       filter(is.na(MaxN))
     
-
-    
     Video.net.interaction[[i]] %>%
       dplyr::select(all_of(interaction.names)) %>%
-      mutate.escape %>%
+      mutate.escape() %>%
       mutate(
+        Escape = ifelse(Escape %in% drop.for.inter, "", Escape),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
         for.com.sp = ifelse(No.haul == TRUE |
@@ -303,35 +302,20 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     look <- c("no haul","before haul", "end","CAMERA STOPS")
     
     Video.net.obs[[i]] <- dummy.GN[[i]]
-        Video.net.obs[[i]]$Camera.stoppped <-
+    Video.net.obs[[i]]$Camera.stopped <-
       rowSums(afind(Video.net.obs[[i]]$Escape, look)$distance <= 0)
     
     Video.net.obs[[i]]$Got.dark <-
-      Video.net.obs[[i]] %>% grepl("dark", 1)
+      grepl("dark", Video.net.obs[[i]])
     
-    Video.net.obs[[i]] = dummy.GN[[i]] %>%
-      mutate(
-        observation = Escape,
-        code = Code,
-        observation = case_when(
-          str_detect(observation, "(?i)startfish") ~ "seven legged startfish",
-          str_detect(observation, "(?i)squid") ~ "squid",
-          str_detect(observation, "(?i)cuttlefish") ~ "cuttlefish",
-          str_detect(observation, "(?i)unidentifiable|unknown|UNKNONW") ~ "unknown fish",
-          str_detect(observation, "(?i)seal") ~ "sea lion",
-          str_detect(observation, "(?i)bait|^school") ~ "baitfish",
-          str_detect(observation, "(?i)commernat") ~ "commorant",
-          str_detect(observation, "(?i)garnard") ~ "gurnard",
-          str_detect("\\d", observation) ~ '',
-          is.na(observation) ~ "",
-          observation %in% DROP ~ "",
-          TRUE ~ as.character(Escape)
-        )
-      ) %>%
+    Video.net.obs[[i]] <-
+      dummy.GN[[i]] %>%
+      mutate.escape() %>%
+      mutate(observation = Alt.species,
+             observation = ifelse(observation %in% DROP, "", observation)) %>%
       dplyr::select(all_of(c(
-        Video.net.obs.names, 'Got.dark', 'Camera.stopped'
+        Video.net.obs.names, "Got.dark", "Camera.stopped"
       )))
-    
     
     append(tempReturn,Video.net.obs[[i]])
     
@@ -344,6 +328,10 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     print(i)
     
   }
+  
+  
+  
+  
   Video.net.interaction=do.call(rbind,Video.net.interaction)%>% 
     filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
   Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
