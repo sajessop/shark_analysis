@@ -68,6 +68,46 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 Event.Mes.data.dump <- 'Abbey_Sarah'
 ```
 
+## Define column rename fn
+```{r}
+rename.column <- function(df, match_name, match_rename, distance) {
+  all.columns <- names(df)
+  
+  filtered.columns <-
+    all.columns[!(all.columns %in% common.columns)]
+  filtered.columns.lower <- lapply(filtered.columns, tolower)
+  matched.idx <-
+    amatch(match_name, filtered.columns.lower, maxDist = distance)
+  
+  if (is.na(matched.idx))
+    stopifnot(matched.idx > 0)
+  
+  matched.string <- filtered.columns.lower[[matched.idx]]
+  df <- df %>% rename(!!sym(match_rename) := matched.string)
+  return (df)
+}
+```
+## Define assign interactions fn
+```{r}
+assign.interactions <- function(numerical.interaction){
+  
+    case_when(numerical.interaction==1 ~'Swim Past',
+              numerical.interaction==2 ~'Swim Through',
+              numerical.interaction==3 ~'Attracted',
+              numerical.interaction==4 ~'Bounce Off',
+              numerical.interaction==5 ~'Avoid',
+              numerical.interaction==6 ~'Caught-Gilled/hooked',
+              numerical.interaction==7 ~'Caught-bagged',
+              numerical.interaction==8 ~'Escape',
+              numerical.interaction==9 ~'Feeding',
+              numerical.interaction==10 ~'Predated on',
+              numerical.interaction==11 ~'Bait feeding',
+              numerical.interaction==12 ~'Caught while predating',
+              TRUE~"No Interaction")
+}
+```
+
+
 ## Loop to read in and clean data
 ```{r}
 if(Event.Mes.data.dump=='Abbey_Sarah') 
@@ -75,12 +115,12 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   
   #1.1. gillnet
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.3/Gillnet')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Gillnet')
   filenames=list.files(pattern='*.csv')
   dummy.GN <- lapply(filenames, read.csv,skip=4)
   
   #1.2. longline
-  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.3/Longline')
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Longline')
   filenames=list.files(pattern='*.csv')
   dummy.LL <- lapply(filenames, read.csv,skip=4)
   
@@ -160,18 +200,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
              Species=ifelse(Species=="",Alt.species,Species),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
-             Interaction=case_when(Interaction==1 ~'Swim Past',
-                                   Interaction==2 ~'Swim Through',
-                                   Interaction==3 ~'Attracted',
-                                   Interaction==4 ~'Bounce Off',
-                                   Interaction==5 ~'Avoid',
-                                   Interaction==6 ~'Caught-Gilled/hooked',
-                                   Interaction==7 ~'Caught-bagged',
-                                   Interaction==8 ~'Escape',
-                                   Interaction==9 ~'Feeding',
-                                   Interaction==10 ~'Predated on',
-                                   Interaction==11 ~'Bait feeding',
-                                   Interaction==12 ~'Caught while predating'))
+             Interaction=assign.interactions(Interaction))
+
   
     Video.net.maxN[[i]]=dummy.GN[[i]]%>%
       rename("Time (mins)"="Time..mins.",
@@ -285,19 +315,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
                                TRUE~as.character(Species)),
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
-             Interaction=case_when(Interaction==1 ~'Swim Past',
-                                   Interaction==2 ~'Swim Through',
-                                   Interaction==3 ~'Attracted',
-                                   Interaction==4 ~'Bounce Off',
-                                   Interaction==5 ~'Avoid',
-                                   Interaction==6 ~'Caught-Gilled/hooked',
-                                   Interaction==7 ~'Caught-bagged',
-                                   Interaction==8 ~'Escape',
-                                   Interaction==9 ~'Feeding',
-                                   Interaction==10 ~'Predated on',
-                                   Interaction==11 ~'Bait feeding',
-                                   Interaction==12 ~'Caught while predating'))
-    
+             Interaction=assign.interactions(Interaction))
     
     Video.longline.maxN[[i]]=dummy.LL[[i]]%>%
       rename("Time (mins)"="Time..mins.",
@@ -407,5 +425,23 @@ checklist.net.maxn
 check.net.maxn.2 <- setdiff(sp.in.net.maxn, sp.in.net.inter)
 check.net.maxn.2
 ```
+## List of points that have no interaction assigned
+```{r}
+gn.no.interaction <- Video.net.interaction %>% filter(Interaction == "No Interaction")
+gn.no.interaction
+unique(gn.no.interaction$Species)
+crap <- gn.no.interaction %>% filter(Species=="baitfish")
+unique(crap$OpCode)
+## Alt species are OK
+```
+```{r}
+ll.no.interaction <- Video.longline.interaction %>% filter(Interaction == "No Interaction")
+ll.no.interaction
+unique(ll.no.interaction$OpCode)
+unique(ll.no.interaction$Species)
+crap1 <- ll.no.interaction %>% filter(Species%in%c("brevicaudata","elongatus","biserialis","spp","baitfish"))
+unique(crap1$OpCode)
+```
+
 
 
