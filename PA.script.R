@@ -152,25 +152,98 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #2. put data in standard format
   #2.1. gillnet
   Video.net.interaction=Video.net.maxN=Video.net.obs=vector('list',length(dummy.GN))
-  interaction.names=c( "OpCode", "Frame", "Time (mins)","Period time (mins)","Period","TapeReader",
-                       "Depth", "Comment","Method", "Position", "Family", "Genus" ,
-                       "Species" , "Code" ,"Number","Interaction","Escape")
-  video.net.names=c("OpCode","Frame","Time (mins)","Period time (mins)","Period","TapeReader",
-                    "Depth","Family","Genus" , "Species" , "Code","MaxN")
-  Video.net.obs.names=c("OpCode", "Frame","Time (mins)","Period time (mins)","Period", "TapeReader",
-                        "Depth","Number","observation","code" )
-  DROP=c("Camera Onboard","example of swell conditions for fis","looking at camera","no fish","No Fish Seen",
-         "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
-         "ripped up macro algae","rock dislodged","rocks dislodged",
-         'end-no haul',"end no haul","end before haul",
-         'CAMERA STOPS',"end","ended before haul",
-         "finish before haul","no haul"," no haul","?",
-         "snoode broke on haul 170")
-  drop.for.inter=c("Camera Onboard","example of swell conditions for fis","looking at camera",
-                   "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
-                   "ripped up macro algae","rock dislodged","rocks dislodged","?","snoode broke on haul 170",
-                   "snoode broke on haul 170mins later","line cut","attacked camera","attracted to float",
-                   "attacks float","snoode broke on haul","attrached to flaot","Attacks camera")
+  interaction.names = c(
+    "OpCode",
+    "Frame",
+    "Time (mins)",
+    "Period time (mins)",
+    "Period",
+    "TapeReader",
+    "Depth",
+    "Comment",
+    "Method",
+    "Position",
+    "Family",
+    "Genus" ,
+    "Species" ,
+    "Code" ,
+    "Number",
+    "Interaction",
+    "Escape"
+  )
+  video.net.names = c(
+    "OpCode",
+    "Frame",
+    "Time (mins)",
+    "Period time (mins)",
+    "Period",
+    "TapeReader",
+    "Depth",
+    "Family",
+    "Genus" ,
+    "Species" ,
+    "Code",
+    "MaxN"
+  )
+  Video.net.obs.names = c(
+    "OpCode",
+    "Frame",
+    "Time (mins)",
+    "Period time (mins)",
+    "Period",
+    "TapeReader",
+    "Depth",
+    "Number",
+    "observation",
+    "code"
+  )
+  DROP = c(
+    "Camera Onboard",
+    "example of swell conditions for fis",
+    "looking at camera",
+    "no fish",
+    "No Fish Seen",
+    "reef structure 20cm squre rippedup",
+    "Retrevial begins",
+    "Retrevial Started",
+    "retrival start",
+    "ripped up macro algae",
+    "rock dislodged",
+    "rocks dislodged",
+    'end-no haul',
+    "end no haul",
+    "end before haul",
+    'CAMERA STOPS',
+    "end",
+    "ended before haul",
+    "finish before haul",
+    "no haul",
+    " no haul",
+    "?",
+    "snoode broke on haul 170"
+  )
+  drop.for.inter = c(
+    "Camera Onboard",
+    "example of swell conditions for fis",
+    "looking at camera",
+    "reef structure 20cm squre rippedup",
+    "Retrevial begins",
+    "Retrevial Started",
+    "retrival start",
+    "ripped up macro algae",
+    "rock dislodged",
+    "rocks dislodged",
+    "?",
+    "snoode broke on haul 170",
+    "snoode broke on haul 170mins later",
+    "line cut",
+    "attacked camera",
+    "attracted to float",
+    "attacks float",
+    "snoode broke on haul",
+    "attrached to flaot",
+    "Attacks camera"
+  )
   for(i in 1:length(dummy.GN))
   {
     if('escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape.time)
