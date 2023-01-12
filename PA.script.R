@@ -11,7 +11,6 @@
 #    consider manyglm instead of adonis
 rm(list = ls(all = TRUE))
 
-rm(list = ls(all = TRUE))
 source("functions.R")
 # User="Matias"
 User = "Sarah"
