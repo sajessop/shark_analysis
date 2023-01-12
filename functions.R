@@ -31,3 +31,13 @@ rename.column <- function(df, match_name, match_rename, distance) {
    print(paste("No column name change for", deparse(substitute(df))))
   return (df)
 }
+
+
+
+
+
+rename.entry <- function(pattern, data, renamed_to){
+  
+  afind
+  
+}
