@@ -1,0 +1,447 @@
+---
+title: "Data_Cleaning"
+output: html_notebook
+---
+# PA Data Cleaning
+
+## Clear environment
+```{r}
+rm(list=ls(all=TRUE))
+```
+
+## Define User
+```{r}
+# User="Matias"
+User="Sarah"
+# User="Abbey"
+
+if(!exists('handl_OneDrive'))
+{
+  if(User=="Matias") source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
+  if(User=="Sarah")    handl_OneDrive=function(x)paste('C:/Users/S.Jesso/Documents/GitHub',x,sep='/')
+  if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users',Usr,'OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+}
+
+```
+
+## Load Packages
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+library(ggrepel)
+library(ggpubr)
+library(rlang)
+library(MASS)
+library(ggmosaic)
+library(Hmisc)
+library(gridExtra)
+library(stringr)
+library(extdplyr)
+library(ggpubr)
+library(ggridges)
+library(vegan)
+#library(pairwiseAdonis)
+library(overlapping)
+library(tweedie)
+library(mgcv)
+library(emmeans)  #for model predictions
+library(doParallel)
+library(flextable)
+library(webshot)
+library(visNetwork)
+library(ozmaps)
+library(sf)
+library(ggpmisc)
+library(forecast)
+library(performance)
+library(ggforce)
+library(scales)
+library(igraph)
+library(janitor)
+
+options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
+```
+
+## Define Data Dump
+```{r}
+Event.Mes.data.dump <- 'Abbey_Sarah'
+```
+
+## Define column rename fn
+```{r}
+rename.column <- function(df, match_name, match_rename, distance) {
+  all.columns <- names(df)
+  
+  filtered.columns <-
+    all.columns[!(all.columns %in% common.columns)]
+  filtered.columns.lower <- lapply(filtered.columns, tolower)
+  matched.idx <-
+    amatch(match_name, filtered.columns.lower, maxDist = distance)
+  
+  if (is.na(matched.idx))
+    stopifnot(matched.idx > 0)
+  
+  matched.string <- filtered.columns.lower[[matched.idx]]
+  df <- df %>% rename(!!sym(match_rename) := matched.string)
+  return (df)
+}
+```
+## Define assign interactions fn
+```{r}
+assign.interactions <- function(numerical.interaction){
+  
+    case_when(numerical.interaction==1 ~'Swim Past',
+              numerical.interaction==2 ~'Swim Through',
+              numerical.interaction==3 ~'Attracted',
+              numerical.interaction==4 ~'Bounce Off',
+              numerical.interaction==5 ~'Avoid',
+              numerical.interaction==6 ~'Caught-Gilled/hooked',
+              numerical.interaction==7 ~'Caught-bagged',
+              numerical.interaction==8 ~'Escape',
+              numerical.interaction==9 ~'Feeding',
+              numerical.interaction==10 ~'Predated on',
+              numerical.interaction==11 ~'Bait feeding',
+              numerical.interaction==12 ~'Caught while predating',
+              TRUE~"No Interaction")
+}
+```
+
+
+## Loop to read in and clean data
+```{r}
+if(Event.Mes.data.dump=='Abbey_Sarah') 
+{
+  #1. read in  data
+  
+  #1.1. gillnet
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Gillnet')
+  filenames=list.files(pattern='*.csv')
+  dummy.GN <- lapply(filenames, read.csv,skip=4)
+  
+  #1.2. longline
+  setwd('C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Longline')
+  filenames=list.files(pattern='*.csv')
+  dummy.LL <- lapply(filenames, read.csv,skip=4)
+  
+  #2. put data in standard format
+  #2.1. gillnet
+  Video.net.interaction=Video.net.maxN=Video.net.obs=vector('list',length(dummy.GN))
+  interaction.names=c( "OpCode", "Frame", "Time (mins)","Period time (mins)","Period","TapeReader",
+                       "Depth", "Comment","Method", "Position", "Family", "Genus" ,
+                       "Species" , "Code" ,"Number","Interaction","Escape")
+  video.net.names=c("OpCode","Frame","Time (mins)","Period time (mins)","Period","TapeReader",
+                    "Depth","Family","Genus" , "Species" , "Code","MaxN","Escape")
+  Video.net.obs.names=c("OpCode", "Frame","Time (mins)","Period time (mins)","Period", "TapeReader",
+                        "Depth","Number","observation","code" )
+  DROP=c("Camera Onboard","example of swell conditions for fis","looking at camera","no fish","No Fish Seen",
+         "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
+         "ripped up macro algae","rock dislodged","rocks dislodged",
+         'end-no haul',"end no haul","end before haul",
+         'CAMERA STOPS',"end","ended before haul",
+         "finish before haul","no haul"," no haul","?",
+         "snoode broke on haul 170")
+  drop.for.inter=c("Camera Onboard","example of swell conditions for fis","looking at camera",
+                   "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
+                   "ripped up macro algae","rock dislodged","rocks dislodged","?","snoode broke on haul 170",
+                   "snoode broke on haul 170mins later","line cut","attacked camera","attracted to float",
+                   "attacks float","snoode broke on haul","attrached to flaot","Attacks camera")
+  for(i in 1:length(dummy.GN))
+  {
+    if('escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape.time)
+    if('escape'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape)
+    if('Escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=Escape.time)
+    
+    if('max.n'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=max.n)
+    if('Max.N'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Max.N)
+    if('maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=maxn)
+    if('Maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Maxn)
+    if('MAXn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=MAXn)
+    
+    if('Interactino'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactino)
+    if('interaction'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=interaction)
+    if('Interactions'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactions)
+    
+    if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
+    if('method.'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Method=method.)
+    if('method'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Method=method)
+    
+    Video.net.interaction[[i]]=dummy.GN[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      filter(is.na(MaxN))%>%
+      dplyr::select(all_of(interaction.names))%>%
+      mutate(Number=ifelse(Number=='AD',NA,Number),
+             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged starfish",
+                                   Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   Escape%in%c("squid","SQUID")~"Squid",
+                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+                                   Escape%in%c("australian fur seal","sealion", "Australian Seal Lion")~"sea lion",
+                                   Escape%in%c("commernat", "comorant")~"commorant",
+                                   Escape%in%c("too dark","end-no haul","finish before haul", "to dark", "end no haul",
+                                               "no haul","CAMERA STOPS","TO DARK","dark no haul","toodark","t00 dark",
+                                               "END Dark","too dark form here","Gets Dark","too dark after this point",
+                                               "to dark after this point","no fish seen-end no haul","too dark - dark haul",
+                                               "gets too dark","too dARK","end before haul","ended before haul","dark",
+                                               "DARK HAUL","dark haul")~"no haul",
+                                   Escape%in%c("no fish","No Fish Seen")~"no fish",
+                                   Escape%in%c("30 sec","3 min","10 MINS","2.5","<1","1.5","1 min","0.1","3","33","61 min",
+                                               "5 min","1","0.2","5.9","257min","1min")~"",
+                                   is.na(Escape)~"",
+                                   Escape=="garnard"~"gurnard",
+                                   Escape=="Aplysia punctata"~"sea hare",
+                                   Escape%in%drop.for.inter~'',
+                                   TRUE~as.character(Escape)),
+             No.haul=case_when(Alt.species=="no haul"~"Y",
+                              !Alt.species=="no haul"~"N"),
+             No.fish=case_when(Alt.species=="no fish"~"Y",
+                              !Alt.species=="no haul"~"N"),
+             Species=ifelse(Species=="",Alt.species,Species),
+             Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
+             Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
+             Interaction=assign.interactions(Interaction))
+
+  
+    Video.net.maxN[[i]]=dummy.GN[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      dplyr::select(all_of(video.net.names)) %>% 
+            mutate(Alt.species=case_when(Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   Escape%in%c("squid","SQUID")~"Squid",
+                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure","unknown  school")~"unknown fish",
+                                   Escape%in%c("australian fur seal","sealion")~"sea lion",
+                                   Escape=="Aplysia punctata"~"sea hare",
+                                   TRUE~as.character(Escape)),
+             Species=case_when(Species==""~as.character(Alt.species),
+                               is.na(Species)~as.character(Alt.species),
+                               TRUE~as.character(Species)))
+    
+    
+    Video.net.obs[[i]]=dummy.GN[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      mutate(observation=Escape,
+             Camera.stopped=ifelse(observation%in%c('end-no haul',"end no haul","end before haul",
+                                                    'CAMERA STOPS',"end","ended before haul",
+                                                    "finish before haul","no haul"," no haul"),'Yes','No'),
+             Got.dark=grepl('dark',tolower(observation)),
+             observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
+                                   grepl("\\d", observation)~'',
+                                   Got.dark=='TRUE'~'',
+                                   observation%in%c("squid","SQUID")~"Squid",
+                                   observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   observation%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+                                   observation%in%c("australian fur seal","sealion")~"sea lion",
+                                   observation=="commernat"~"commorant",
+                                   is.na(observation)~"",
+                                   observation=="garnard"~"gurnard",
+                                   observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   observation%in%DROP~'',
+                                   TRUE~as.character(Escape)),
+             code=Code)%>%
+      dplyr::select(all_of(c(Video.net.obs.names,'Got.dark','Camera.stopped')))
+    
+    print(i)
+    
+  }
+  Video.net.interaction=do.call(rbind,Video.net.interaction)%>% 
+    filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
+  Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
+    filter(!is.na(MaxN))
+  Video.net.obs=do.call(rbind,Video.net.obs)%>%
+    filter(!observation=='')
+  
+  #2.2. longline
+  Video.longline.interaction=Video.longline.maxN=Video.longline.obs=vector('list',length(dummy.LL))
+  for(i in 1:length(dummy.LL))
+  {
+    if('escape.time'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=escape.time)
+    if('escape'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=escape)
+    if('Escape.time'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=Escape.time)
+    if("Esape"%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Escape=Esape)
+    
+    if('max.n'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=max.n)
+    if('Max.N'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=Max.N)
+    if('maxn'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=maxn)
+    if('Maxn'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=Maxn)
+    if('MAXn'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(MaxN=MAXn)
+    
+    if('Interactino'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Interaction=Interactino)
+    if('interaction'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Interaction=interaction)
+    if('Interactions'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Interaction=Interactions)
+    
+    if(!'Position'%in%names(dummy.LL[[i]])) dummy.LL[[i]]$Position=NA
+    if('method.'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Method=method.)
+    if('method'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Method=method)
+    if('mETHOD'%in%names(dummy.LL[[i]])) dummy.LL[[i]]=dummy.LL[[i]]%>%rename(Method=mETHOD)
+    
+    Video.longline.interaction[[i]]=dummy.LL[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      filter(is.na(MaxN))%>%
+      dplyr::select(all_of(interaction.names))%>%
+      mutate(Number=ifelse(Number=='AD',NA,Number),
+             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged starfish",
+                                   Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   Escape%in%c("squid","SQUID")~"Squid",
+                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure","unknown  school")~"unknown fish",
+                                   Escape%in%c("australian fur seal","sealion")~"sea lion",
+                                   Escape%in%c("commernat", "comorant")~"commorant",
+                                   Escape%in%c("too dark","end-no haul","finish before haul", "to dark", "end no haul",
+                                               "no haul","CAMERA STOPS","TO DARK","dark no haul","toodark","t00 dark",
+                                               "END Dark","too dark form here","Gets Dark","too dark after this point",
+                                               "to dark after this point","no fish seen-end no haul","too dark - dark haul",
+                                               "gets too dark","too dARK","end before haul","ended before haul","dark",
+                                               "DARK HAUL","dark haul","DARK NO HAUL","TOO DARK","end haul- dark")~"no haul",
+                                   Escape%in%c("no fish","No Fish Seen","NO FISH SEEN","no fish seen", "No fish")~"no fish",
+                                   Escape%in%c("BIRD DIVING FOR BAIT","bird","birds feeding at surface","sear water",
+                                               "bird-diving for bait")~"bird",
+                                   Escape%in%c("30 sec","3 min","10 MINS","2.5","<1","1.5","1 min","0.1","3","33","61 min",
+                                               "5 min","1","0.2","5.9","257min","1min","5","15","93 min", "201","170")~"",
+                                   is.na(Escape)~"",
+                                   Escape=="garnard"~"gurnard",
+                                   Escape=="Aplysia punctata"~"sea hare",
+                                   Escape%in%drop.for.inter~'',
+                                   TRUE~as.character(Escape)),
+             No.haul=case_when(Alt.species=="no haul"~"Y",
+                               !Alt.species=="no haul"~"N"),
+             No.fish=case_when(Alt.species=="no fish"~"Y",
+                               !Alt.species=="no haul"~"N"),
+             Species=case_when(Species==""~as.character(Alt.species),
+                               is.na(Species)~as.character(Alt.species),
+                               TRUE~as.character(Species)),
+             Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
+             Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
+             Interaction=assign.interactions(Interaction))
+    
+    Video.longline.maxN[[i]]=dummy.LL[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      dplyr::select(all_of(video.net.names)) %>% 
+      mutate(Alt.species=case_when(Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   Escape%in%c("squid","SQUID")~"Squid",
+                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   Escape%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure","unknown  school")~"unknown fish",
+                                   Escape%in%c("australian fur seal","sealion")~"sea lion",
+                                   Escape=="Aplysia punctata"~"sea hare",
+                                   TRUE~as.character(Escape)),
+             Species=case_when(Species==""~as.character(Alt.species),
+                               is.na(Species)~as.character(Alt.species),
+                               TRUE~as.character(Species)))
+    
+    
+    Video.longline.obs[[i]]=dummy.LL[[i]]%>%
+      rename("Time (mins)"="Time..mins.",
+             "Period time (mins)"="Period.time..mins.")%>%
+      mutate(observation=Escape,
+             Camera.stopped=ifelse(observation%in%c('end-no haul',"end no haul","end before haul",
+                                                    'CAMERA STOPS',"end","ended before haul",
+                                                    "finish before haul","no haul"," no haul"),'Yes','No'),
+             Got.dark=grepl('dark',tolower(observation)),
+             observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
+                                   grepl("\\d", observation)~'',
+                                   Got.dark=='TRUE'~'',
+                                   observation%in%c("squid","SQUID")~"Squid",
+                                   observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+                                   observation%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure ","unknown  school ")~"unknown fish",
+                                   observation%in%c("australian fur seal","sealion")~"sea lion",
+                                   observation=="commernat"~"commorant",
+                                   is.na(observation)~"",
+                                   observation=="garnard"~"gurnard",
+                                   observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+                                   observation%in%DROP~'',
+                                   TRUE~as.character(Escape)),
+             code=Code)%>%
+      dplyr::select(all_of(c(Video.net.obs.names,'Got.dark','Camera.stopped')))
+    
+    print(i)
+    
+  }
+  Video.longline.interaction=do.call(rbind,Video.longline.interaction)%>%
+    filter(!Species%in%c(" ","") & No.haul=="N" & No.fish=="N")
+  Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
+    filter(!is.na(MaxN))%>%
+    rename(Max.N=MaxN)
+  Video.longline.obs=do.call(rbind,Video.longline.obs)%>%
+    filter(!observation=='')%>%
+    rename(Observation=observation,
+           optcode=OpCode)
+  
+  
+}
+
+```
+## Checks
+```{r}
+llchecklist <- subset(Video.longline.interaction, Species%in%c(" ","NA","") & No.haul=="N" & No.fish=="N")
+llchecklist
+```
+```{r}
+sp.in.net.inter <- unique(Video.net.interaction$Species)
+sp.in.net.inter
+```
+```{r}
+sp.in.ll.inter <- unique(Video.longline.interaction$Species)
+sp.in.ll.inter
+```
+```{r}
+countopcodesll <- as.list(unique(Video.longline.interaction$OpCode))
+length(countopcodesll)
+### SHOULD BE 156 and unique sp in vli should have octopus
+```
+```{r}
+sp.in.ll.maxn <- unique(Video.longline.maxN$Species)
+sp.in.ll.maxn
+```
+
+```{r}
+llmaxncheck <- subset(Video.longline.maxN, Species==""|is.na(Species))
+llmaxncheck
+```
+```{r}
+sp.in.net.maxn <- unique(Video.net.maxN$Species)
+sp.in.net.maxn
+```
+```{r}
+gnmaxncheck <- subset(Video.net.maxN, Species==""|is.na(Species))
+gnmaxncheck
+```
+# check to compare unique sp in inter and maxn dfs
+## Alt species such as snail, turtle, bird are OK.
+```{r}
+setdiff(sp.in.ll.inter, sp.in.ll.maxn)
+setdiff(sp.in.ll.maxn, sp.in.ll.inter)
+```
+```{r}
+check.net.maxn <- setdiff(sp.in.net.inter, sp.in.net.maxn)
+check.net.maxn
+checklist.net.maxn <- Video.net.maxN %>% filter(Species=="mosaica")
+checklist.net.maxn
+```
+```{r}
+check.net.maxn.2 <- setdiff(sp.in.net.maxn, sp.in.net.inter)
+check.net.maxn.2
+```
+## List of points that have no interaction assigned
+```{r}
+gn.no.interaction <- Video.net.interaction %>% filter(Interaction == "No Interaction")
+gn.no.interaction
+unique(gn.no.interaction$Species)
+crap <- gn.no.interaction %>% filter(Species=="baitfish")
+unique(crap$OpCode)
+## Alt species are OK
+```
+```{r}
+ll.no.interaction <- Video.longline.interaction %>% filter(Interaction == "No Interaction")
+ll.no.interaction
+unique(ll.no.interaction$OpCode)
+unique(ll.no.interaction$Species)
+crap1 <- ll.no.interaction %>% filter(Species%in%c("brevicaudata","elongatus","biserialis","spp","baitfish"))
+unique(crap1$OpCode)
+```
+
+
+
