@@ -95,15 +95,13 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
 
   for(i in 1:length(dummy.GN))
   {
+#Call RenameColumn function to deal with spelling errors and make names same as Jacks import
     dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
-  }}
-    # if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
-    # if('method.'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Method=method.)
-    # if('method'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Method=method)
+    
+#REVIEW:Fix for some dfs in dummy.GN missing position column
+    if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
     
     Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
-      rename("Time (mins)"="Time..mins.",
-             "Period time (mins)"="Period.time..mins.")%>%
       filter(is.na(MaxN))%>%
       dplyr::select(all_of(interaction.names))%>%
       mutate(Number=ifelse(Number=='AD',NA,Number),
@@ -136,7 +134,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
              Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
              Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
              Interaction=AssignInteractions(Interaction))
-
+}}
   
   #   Video.net.maxN[[i]]=dummy.GN[[i]]%>%
   #     rename("Time (mins)"="Time..mins.",
@@ -181,8 +179,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #   print(i)
   #   
    }
-  Video.net.interaction=do.call(rbind,Video.net.interaction)%>% 
-    filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
+  Video.net.interaction <- do.call(rbind,Video.net.interaction)#%>% 
+    #filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
   # Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
   #   filter(!is.na(MaxN))
   # Video.net.obs=do.call(rbind,Video.net.obs)%>%

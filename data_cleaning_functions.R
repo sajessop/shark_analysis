@@ -26,6 +26,9 @@ RenameColumn <- function(df) {
   new.names <- case_when(names(df)%in%wrong.escape~"Escape",
             names(df)%in%wrong.maxn~"MaxN",
             names(df)%in%wrong.interaction~"Interaction",
+            names(df)%in%wrong.method~"Method",
+            names(df)=="Time..mins."~"Time (mins)",
+            names(df)=="Period.time..mins."~"Period time (mins)",
             TRUE~as.character(names(df))
   )
   old.names <- names(df)

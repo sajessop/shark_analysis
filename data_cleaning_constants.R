@@ -75,7 +75,11 @@ wrong.interaction <- c(
   'interaction',
   'Interactions'
 )
-
+## Method
+wrong.method <- c(
+  "method",
+  "method."
+)
 
 # Here you can add comments (from escape column) that we don't want to include in a df
 ## Two different sets. Use in various places
@@ -128,36 +132,4 @@ drop2 <-  c(
   "Attacks camera"
 )
 
-# interaction.names=c( "OpCode", "Frame", "Time (mins)","Period time (mins)","Period","TapeReader",
-#                      "Depth", "Comment","Method", "Position", "Family", "Genus" ,
-#                      "Species" , "Code" ,"Number","Interaction","Escape")
-# video.net.names=c("OpCode","Frame","Time (mins)","Period time (mins)","Period","TapeReader",
-#                   "Depth","Family","Genus" , "Species" , "Code","MaxN","Escape")
-# Video.net.obs.names=c("OpCode", "Frame","Time (mins)","Period time (mins)","Period", "TapeReader",
-#                       "Depth","Number","observation","code" )
-# DROP=c("Camera Onboard","example of swell conditions for fis","looking at camera","no fish","No Fish Seen",
-#        "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
-#        "ripped up macro algae","rock dislodged","rocks dislodged",
-#        'end-no haul',"end no haul","end before haul",
-#        'CAMERA STOPS',"end","ended before haul",
-#        "finish before haul","no haul"," no haul","?",
-#        "snoode broke on haul 170")
-# drop.for.inter=c("Camera Onboard","example of swell conditions for fis","looking at camera",
-#                  "reef structure 20cm squre rippedup","Retrevial begins","Retrevial Started","retrival start",
-#                  "ripped up macro algae","rock dislodged","rocks dislodged","?","snoode broke on haul 170",
-#                  "snoode broke on haul 170mins later","line cut","attacked camera","attracted to float",
-#                  "attacks float","snoode broke on haul","attrached to flaot","Attacks camera")
 
-# if('escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape.time)
-# if('escape'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=escape)
-# if('Escape.time'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Escape=Escape.time)
-# 
-# if('max.n'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=max.n)
-# if('Max.N'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Max.N)
-# if('maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=maxn)
-# if('Maxn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=Maxn)
-# if('MAXn'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(MaxN=MAXn)
-# 
-# if('Interactino'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactino)
-# if('interaction'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=interaction)
-# if('Interactions'%in%names(dummy.GN[[i]])) dummy.GN[[i]]=dummy.GN[[i]]%>%rename(Interaction=Interactions)
