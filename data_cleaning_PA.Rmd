@@ -99,43 +99,21 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
     
 #REVIEW:Fix for some dfs in dummy.GN missing position column
-    if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
+       if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
     
-    Video.net.interaction[[i]] <- dummy.GN[[i]]%>%
-      filter(is.na(MaxN))%>%
-      dplyr::select(all_of(interaction.names))%>%
-      mutate(Number=ifelse(Number=='AD',NA,Number),
-             Alt.species=case_when(Escape=="7 legged startfish"~"seven legged starfish",
-                                   Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
-                                   Escape%in%c("squid","SQUID")~"Squid",
-                                   Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
-                                   Escape%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
-                                   Escape%in%c("australian fur seal","sealion", "Australian Seal Lion")~"sea lion",
-                                   Escape%in%c("commernat", "comorant")~"commorant",
-                                   Escape%in%c("too dark","end-no haul","finish before haul", "to dark", "end no haul",
-                                               "no haul","CAMERA STOPS","TO DARK","dark no haul","toodark","t00 dark",
-                                               "END Dark","too dark form here","Gets Dark","too dark after this point",
-                                               "to dark after this point","no fish seen-end no haul","too dark - dark haul",
-                                               "gets too dark","too dARK","end before haul","ended before haul","dark",
-                                               "DARK HAUL","dark haul")~"no haul",
-                                   Escape%in%c("no fish","No Fish Seen")~"no fish",
-                                   Escape%in%c("30 sec","3 min","10 MINS","2.5","<1","1.5","1 min","0.1","3","33","61 min",
-                                               "5 min","1","0.2","5.9","257min","1min")~"",
-                                   is.na(Escape)~"",
-                                   Escape=="garnard"~"gurnard",
-                                   Escape=="Aplysia punctata"~"sea hare",
-                                   Escape%in%drop2~'',
-                                   TRUE~as.character(Escape)),
-             No.haul=case_when(Alt.species=="no haul"~"Y",
-                              !Alt.species=="no haul"~"N"),
-             No.fish=case_when(Alt.species=="no fish"~"Y",
-                              !Alt.species=="no haul"~"N"),
-             Species=ifelse(Species=="",Alt.species,Species),
-             Escape=ifelse(grepl("\\d", Escape),gsub("([0-9]+).*$", "\\1", Escape),''),
-             Escape=ifelse(Escape%in%c('','reef structure 20','t00'),NA,Escape),
-             Interaction=AssignInteractions(Interaction))
-}}
-  
+    Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
+      filter(is.na(MaxN)) %>%
+      dplyr::select(all_of(interaction.names)) %>%
+      CategoriseComment() %>% 
+      mutate(
+        Number = ifelse(Number == 'AD', NA, Number),
+        No.haul = Alt.species=="no haul",
+        No.fish = Alt.species=="no fish",
+        Species = ifelse(Species == "", Alt.species, Species),
+        Escape = ifelse(grepl("^\\d|^\\<", Escape), gsub("([0-9]+).*$", "\\1", Escape), ''),
+        Interaction = AssignInteractions(Interaction)
+      )
+
   #   Video.net.maxN[[i]]=dummy.GN[[i]]%>%
   #     rename("Time (mins)"="Time..mins.",
   #            "Period time (mins)"="Period.time..mins.")%>%
@@ -179,8 +157,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #   print(i)
   #   
    }
-  Video.net.interaction <- do.call(rbind,Video.net.interaction)#%>% 
-    #filter(!Species%in%c(""," ") & No.haul=="N" & No.fish=="N")
+ Video.net.interaction <- do.call(rbind,Video.net.interaction)%>% 
+  filter(!Species%in%c(""," ") & No.haul==FALSE & No.fish==FALSE)
   # Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
   #   filter(!is.na(MaxN))
   # Video.net.obs=do.call(rbind,Video.net.obs)%>%
