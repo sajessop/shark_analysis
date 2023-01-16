@@ -34,7 +34,6 @@ if (!exists('handl_OneDrive'))
         sep = '/'
       )
 }
-=
 ```
 
 ## Load Packages
@@ -112,18 +111,14 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   
   for (i in 1:length(dummy.GN))
   {
-    #Call RenameColumn function to deal with spelling errors and make names same as Jacks import
     dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
-    
     #REVIEW:Fix for some dfs in dummy.GN missing position column
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position = NA
-    
     Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
       filter(is.na(MaxN)) %>%
       dplyr::select(all_of(interaction.names)) %>%
       CategoriseComment() %>%
-      
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
@@ -144,7 +139,6 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Species=ApplySpecies(Species, Alt.species)
         )
       
-    
     Video.net.obs[[i]] = dummy.GN[[i]] %>%
       RenameColumn() %>%
       CategoriseComment() %>%
@@ -155,10 +149,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         code = Code
       ) %>%
       dplyr::select(all_of(observation.names))
-    
-    print(i)
-    
   }
+  
   Video.net.interaction <- do.call(rbind, Video.net.interaction) %>%
     filter(!Species %in% c("", " ") &
              No.haul == FALSE & No.fish == FALSE)
@@ -204,7 +196,6 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Species=ApplySpecies(Species, Alt.species)
         )
     
-    
     Video.longline.obs[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
       CategoriseComment() %>%
@@ -215,9 +206,6 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         code = Code
       ) %>%
       dplyr::select(all_of(observation.names))
-    
-    print(i)
-    
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
     filter(!Species %in% c(" ", "") &
