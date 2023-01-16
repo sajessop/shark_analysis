@@ -78,7 +78,8 @@ wrong.interaction <- c(
 ## Method
 wrong.method <- c(
   "method",
-  "method."
+  "method.",
+  "mETHOD"
 )
 
 # Here you can add comments (from escape column) that we don't want to include in a df
