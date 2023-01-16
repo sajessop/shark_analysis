@@ -130,7 +130,8 @@ drop2 <-  c(
   "attacks float",
   "snoode broke on haul",
   "attrached to flaot",
-  "Attacks camera"
+  "Attacks camera",
+  "snoode broke during retreival"
 )
 
 
