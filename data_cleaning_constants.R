@@ -1,7 +1,7 @@
 
   ## Constants used in data_cleaning_PA
   ### Variables are defined like.this
-  
+# Underwater  
   # Start with column names that we want
   ## Interaction df
 interaction.names <-  c(
@@ -134,4 +134,106 @@ drop2 <-  c(
   "snoode broke during retreival"
 )
 
-
+# Deck 1
+## Column names that we want
+deck.1.fish.landed <-
+  c(
+    "Region",
+    "DIPRD code",
+    "Position",
+    "Frame",
+    "Period",
+    "Period time (mins)",
+    "TapeReader",
+    "Depth (M)",
+    "Method",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "number",
+    "Condition",
+    "Retained",
+    "Meshed"
+  )
+deck.1.habitat <-
+  c(
+    "Curtin opcode",
+    "Region",
+    "DIPRD code",
+    "Position",
+    "Frame",
+    "Period",
+    "Period time (mins)",
+    "TapeReader",
+    "Depth (M)",
+    "Method",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "Percentage cover"
+  )
+deck.1.observations <- 
+  c(
+    "RegionDIPRDcodePosition",
+    "Region",
+    "DIPRD code",
+    "Position",
+    "Frame",
+    "Period",
+    "Period time (mins)",
+    "TapeReader",
+    "Depth (M)",
+    "Method",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "number",
+    "condition",
+    "retained",
+    "meshed"
+  )
+# Deck 2
+deck.2.fish <-
+  c(
+    "Curtin opcode",
+    "Region",
+    "DPIRD code",
+    "Position",
+    "Frame",
+    "Period",
+    "Period time (mins)",
+    "TapeReader",
+    "Depth",
+    "Method",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "hook distance to float/weight",
+    "dropout",
+    "gaffed"
+  )
+deck.2.observations <-
+  c(
+    "Curtin opcode",
+    "Region",
+    "DPIRD code",
+    "Position",
+    "Frame",
+    "Period",
+    "Period time (mins)",
+    "TapeReader",
+    "Depth",
+    "Method",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "Number",
+    "Stage",
+    "Activity",
+    "comment"
+  )
