@@ -123,34 +123,27 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       filter(is.na(MaxN)) %>%
       dplyr::select(all_of(interaction.names)) %>%
       CategoriseComment() %>%
+      
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        Species = case_when(
-          Species == "" ~ as.character(Alt.species),
-          is.na(Species) ~ as.character(Alt.species),
-          TRUE ~ as.character(Species)
-        ),
+        Species=ApplySpecies(Species, Alt.species),
         Escape = ifelse(
           grepl("^\\d|^\\<", Escape),
           gsub("([0-9]+).*$", "\\1", Escape),
-          ''
-        ),
+          ''),
         Interaction = AssignInteractions(Interaction)
-      )
+      ) 
     
     Video.net.maxN[[i]] <- dummy.GN[[i]] %>%
       RenameColumn() %>%
       dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
       mutate(
-        Species = case_when(
-          Species == "" ~ as.character(Alt.species),
-          is.na(Species) ~ as.character(Alt.species),
-          TRUE ~ as.character(Species)
+        Species=ApplySpecies(Species, Alt.species)
         )
-      )
+      
     
     Video.net.obs[[i]] = dummy.GN[[i]] %>%
       RenameColumn() %>%
@@ -194,11 +187,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        Species = case_when(
-          Species == "" ~ as.character(Alt.species),
-          is.na(Species) ~ as.character(Alt.species),
-          TRUE ~ as.character(Species)
-        ),
+        Species=ApplySpecies(Species, Alt.species),
         Escape = ifelse(
           grepl("\\d", Escape),
           gsub("([0-9]+).*$", "\\1", Escape),
@@ -212,12 +201,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
       mutate(
-        Species = case_when(
-          Species == "" ~ as.character(Alt.species),
-          is.na(Species) ~ as.character(Alt.species),
-          TRUE ~ as.character(Species)
+        Species=ApplySpecies(Species, Alt.species)
         )
-      )
     
     
     Video.longline.obs[[i]] = dummy.LL[[i]] %>%

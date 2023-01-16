@@ -63,5 +63,14 @@ CategoriseComment <- function(df) {
   return(ret)
 }
 
-# Create no haul, no fish columns
+## Apply new species
+ApplySpecies <- function(common.species, alternative.species){
+  Species = case_when(
+    common.species == "" ~ as.character(alternative.species),
+    is.na(common.species) ~ as.character(alternative.species),
+    TRUE ~ as.character(common.species)
+  )
+  return(Species)
+}
+
 
