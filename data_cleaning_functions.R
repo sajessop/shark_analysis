@@ -38,10 +38,11 @@ RenameColumn <- function(df) {
 }
 
 # Categorise Comment Function
+## Using regex notation to capture variation in comments
 CategoriseComment <- function(df) {
   ret <- df %>% mutate(
     Alt.species = case_when(
-      str_detect(Escape, "(?i)startfish") ~ "seven legged startfish",
+      str_detect(Escape, "(?i)startfish") ~ "seven legged starfish",
       str_detect(Escape, "(?i)squid") ~ "squid",
       str_detect(Escape, "(?i)cuttle") ~ "cuttlefish",
       str_detect(Escape, "(?i)unidentifiable|unknown|UNKNONW") ~ "unknown fish",
