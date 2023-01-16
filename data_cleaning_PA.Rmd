@@ -136,40 +136,26 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         is.na(Species) ~ as.character(Alt.species),
         TRUE ~ as.character(Species)
       ))
-    
- #  #   Video.net.obs[[i]]=dummy.GN[[i]]%>%
- #  #     rename("Time (mins)"="Time..mins.",
- #  #            "Period time (mins)"="Period.time..mins.")%>%
- #  #     mutate(observation=Escape,
- #  #            Camera.stopped=ifelse(observation%in%c('end-no haul',"end no haul","end before haul",
- #  #                                                   'CAMERA STOPS',"end","ended before haul",
- #  #                                                   "finish before haul","no haul"," no haul"),'Yes','No'),
- #  #            Got.dark=grepl('dark',tolower(observation)),
- #  #            observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
- #  #                                  grepl("\\d", observation)~'',
- #  #                                  Got.dark=='TRUE'~'',
- #  #                                  observation%in%c("squid","SQUID")~"Squid",
- #  #                                  observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
- #  #                                  observation%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
- #  #                                  observation%in%c("australian fur seal","sealion")~"sea lion",
- #  #                                  observation=="commernat"~"commorant",
- #  #                                  is.na(observation)~"",
- #  #                                  observation=="garnard"~"gurnard",
- #  #                                  observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
- #  #                                  observation%in%DROP~'',
- #  #                                  TRUE~as.character(Escape)),
- #  #            code=Code)%>%
- #  #     dplyr::select(all_of(c(observation.names,'Got.dark','Camera.stopped')))
- #  #   
- #  #   print(i)
- #  #   
+
+  Video.net.obs[[i]]=dummy.GN[[i]]%>%
+    RenameColumn()%>%
+    CategoriseComment() %>%
+    mutate(observation=Alt.species,
+          No.haul = Alt.species == "no haul",
+          No.fish = Alt.species == "no fish",
+          code=Code
+    ) %>% 
+    dplyr::select(all_of(observation.names))
+
+  print(i)
+
     }
   Video.net.interaction <- do.call(rbind,Video.net.interaction)%>% 
    filter(!Species%in%c(""," ") & No.haul==FALSE & No.fish==FALSE)
   Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
    filter(!is.na(MaxN))
-  # Video.net.obs=do.call(rbind,Video.net.obs)%>%
-  #   filter(!observation=='')
+  Video.net.obs=do.call(rbind,Video.net.obs)%>%
+    filter(!observation=='')
   
   #2.2. longline
   Video.longline.interaction = Video.longline.maxN = Video.longline.obs =
@@ -211,42 +197,29 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
       ))
     
 
-    #   Video.longline.obs[[i]]=dummy.LL[[i]]%>%
-    #     rename("Time (mins)"="Time..mins.",
-    #            "Period time (mins)"="Period.time..mins.")%>%
-    #     mutate(observation=Escape,
-    #            Camera.stopped=ifelse(observation%in%c('end-no haul',"end no haul","end before haul",
-    #                                                   'CAMERA STOPS',"end","ended before haul",
-    #                                                   "finish before haul","no haul"," no haul"),'Yes','No'),
-    #            Got.dark=grepl('dark',tolower(observation)),
-    #            observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
-    #                                  grepl("\\d", observation)~'',
-    #                                  Got.dark=='TRUE'~'',
-    #                                  observation%in%c("squid","SQUID")~"Squid",
-    #                                  observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
-    #                                  observation%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure ","unknown  school ")~"unknown fish",
-    #                                  observation%in%c("australian fur seal","sealion")~"sea lion",
-    #                                  observation=="commernat"~"commorant",
-    #                                  is.na(observation)~"",
-    #                                  observation=="garnard"~"gurnard",
-    #                                  observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
-    #                                  observation%in%DROP~'',
-    #                                  TRUE~as.character(Escape)),
-    #            code=Code)%>%
-    #     dplyr::select(all_of(c(Video.net.obs.names,'Got.dark','Camera.stopped')))
-    #
-    #   print(i)
-    #
+    Video.longline.obs[[i]] = dummy.LL[[i]] %>%
+      RenameColumn() %>%
+      CategoriseComment() %>%
+      mutate(
+        observation = Alt.species,
+        No.haul = Alt.species == "no haul",
+        No.fish = Alt.species == "no fish",
+        code = Code
+      ) %>%
+      dplyr::select(all_of(observation.names))
+    
+    print(i)
+    
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
     filter(!Species %in% c(" ", "") & No.haul == FALSE & No.fish == FALSE)
   Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
     filter(!is.na(MaxN))%>%
     rename(Max.N=MaxN)
-  # Video.longline.obs=do.call(rbind,Video.longline.obs)%>%
-  #   filter(!observation=='')%>%
-  #   rename(Observation=observation,
-  #          optcode=OpCode)
+  Video.longline.obs=do.call(rbind,Video.longline.obs)%>%
+    filter(!observation=='')%>%
+    rename(Observation=observation,
+           optcode=OpCode)
   
   
 }
@@ -319,7 +292,17 @@ unique(ll.no.interaction$Species)
 crap1 <- ll.no.interaction %>% filter(Species%in%c("baitfish"))
 unique(crap1$OpCode)
 ```
-List EMobs to check
+# Observation df check
+```{r}
+obs.gn.check <- unique(Video.net.obs$observation)
+obs.gn.check
+```
+```{r}
+obs.ll.check <- unique(Video.longline.obs$Observation)
+obs.ll.check
+```
+
+# List EMobs to check
 ```{r}
 checklist <- c("Peacfull_Gillnet_PA0058_Camera_#20_Pempheris_affins_enedmic_to_eastcoast",
                "Lancerlin_Longline_Pa0143_Camera_#8_Polyprion_americanus_unlikely",
