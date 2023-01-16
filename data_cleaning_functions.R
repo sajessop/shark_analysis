@@ -63,7 +63,7 @@ CategoriseComment <- function(df) {
   return(ret)
 }
 
-## Apply new species
+# Apply species
 ApplySpecies <- function(common.species, alternative.species){
   Species = case_when(
     common.species == "" ~ as.character(alternative.species),
@@ -73,4 +73,14 @@ ApplySpecies <- function(common.species, alternative.species){
   return(Species)
 }
 
-
+# Bind Columns
+BindColumn <- function(interaction){
+Video.net.interaction <- as.data.frame(do.call(rbind, interaction) %>%
+  filter(!Species %in% c("", " ") &
+           No.haul == FALSE & No.fish == FALSE))
+}
+# Video.net.maxN <-  as.data.frame(do.call(rbind, maxn) %>%
+#   dplyr::filter(!is.na(MaxN)))
+# Video.net.obs  <-  as.data.frame(do.call(rbind, observation) %>%
+#   dplyr::filter(!observation == ''))
+# }
