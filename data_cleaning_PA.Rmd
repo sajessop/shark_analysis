@@ -82,20 +82,88 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   #1.1. gillnet
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Gillnet'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Gillnet'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   #1.2. longline
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs12-01-23.4/Longline'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Longline'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
   
   #2. put data in standard format
   #2.1. gillnet
-  # Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
+    Video.net.interaction = Video.net.maxN = Video.net.obs=vector('list',length(dummy.GN))
+
+  for(i in 1:length(dummy.GN))
+  {
+    #Call RenameColumn function to deal with spelling errors and make names same as Jacks import
+    dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
+
+    #REVIEW:Fix for some dfs in dummy.GN missing position column
+    if(!'Position'%in%names(dummy.GN[[i]])) dummy.GN[[i]]$Position=NA
+
+    Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
+      filter(is.na(MaxN)) %>%
+      dplyr::select(all_of(interaction.names)) %>%
+      CategoriseComment() %>%
+      mutate(
+        Number = ifelse(Number == 'AD', NA, Number),
+        No.haul = Alt.species=="no haul",
+        No.fish = Alt.species=="no fish",
+        Species = ifelse(Species == "", Alt.species, Species),
+        Escape = ifelse(grepl("^\\d|^\\<", Escape), gsub("([0-9]+).*$", "\\1", Escape), ''),
+        Interaction = AssignInteractions(Interaction)
+      )
+
+ #   #  Video.net.maxN[[i]] <- dummy.GN[[i]]%>%
+ #  #     rename("Time (mins)"="Time..mins.",
+ #  #            "Period time (mins)"="Period.time..mins.")%>%
+ #  #     dplyr::select(all_of(maxn.names)) %>% 
+ #  #           mutate(Alt.species=case_when(Escape%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+ #  #                                  Escape%in%c("squid","SQUID")~"Squid",
+ #  #                                  Escape%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+ #  #                                  Escape%in%c("unidentifiable school","UNKNONW FISH","fish sp unsure","unknown  school")~"unknown fish",
+ #  #                                  Escape%in%c("australian fur seal","sealion")~"sea lion",
+ #  #                                  Escape=="Aplysia punctata"~"sea hare",
+ #  #                                  TRUE~as.character(Escape)),
+ #  #            Species=case_when(Species==""~as.character(Alt.species),
+ #  #                              is.na(Species)~as.character(Alt.species),
+ #  #                              TRUE~as.character(Species)))
+ #  #   
+ #  #   
+ #  #   Video.net.obs[[i]]=dummy.GN[[i]]%>%
+ #  #     rename("Time (mins)"="Time..mins.",
+ #  #            "Period time (mins)"="Period.time..mins.")%>%
+ #  #     mutate(observation=Escape,
+ #  #            Camera.stopped=ifelse(observation%in%c('end-no haul',"end no haul","end before haul",
+ #  #                                                   'CAMERA STOPS',"end","ended before haul",
+ #  #                                                   "finish before haul","no haul"," no haul"),'Yes','No'),
+ #  #            Got.dark=grepl('dark',tolower(observation)),
+ #  #            observation=case_when(observation=="7 legged startfish"~"seven legged startfish",
+ #  #                                  grepl("\\d", observation)~'',
+ #  #                                  Got.dark=='TRUE'~'',
+ #  #                                  observation%in%c("squid","SQUID")~"Squid",
+ #  #                                  observation%in%c("cuttle fish","CUTTLEFISH","cuttlefish-attrached to camera")~"cuttlefish",
+ #  #                                  observation%in%c("unidentifiable school","UNKNONW FISH")~"unknown fish",
+ #  #                                  observation%in%c("australian fur seal","sealion")~"sea lion",
+ #  #                                  observation=="commernat"~"commorant",
+ #  #                                  is.na(observation)~"",
+ #  #                                  observation=="garnard"~"gurnard",
+ #  #                                  observation%in%c("bait schiool","school","School","bait fish","bait school","larger baitfish")~"baitfish",
+ #  #                                  observation%in%DROP~'',
+ #  #                                  TRUE~as.character(Escape)),
+ #  #            code=Code)%>%
+ #  #     dplyr::select(all_of(c(observation.names,'Got.dark','Camera.stopped')))
+ #  #   
+ #  #   print(i)
+ #  #   
+    }
+  Video.net.interaction <- do.call(rbind,Video.net.interaction)%>% 
+   filter(!Species%in%c(""," ") & No.haul==FALSE & No.fish==FALSE)
+ #  # Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
   #   filter(!is.na(MaxN))
   # Video.net.obs=do.call(rbind,Video.net.obs)%>%
   #   filter(!observation=='')
@@ -112,16 +180,14 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     if (!'Position' %in% names(dummy.LL[[i]]))
       dummy.LL[[i]]$Position = NA
     
-    Video.longline.interaction[[i]] = dummy.LL[[i]] %>%
+    Video.longline.interaction[[i]] <-  dummy.LL[[i]] %>%
       filter(is.na(MaxN)) %>%
       dplyr::select(all_of(interaction.names)) %>%
       CategoriseComment() %>%
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
-        No.haul = case_when(Alt.species == "no haul" ~ "Y", !Alt.species ==
-                              "no haul" ~ "N"),
-        No.fish = case_when(Alt.species == "no fish" ~ "Y", !Alt.species ==
-                              "no haul" ~ "N"),
+        No.haul = Alt.species == "no haul",
+        No.fish = Alt.species == "no fish",
         Species = case_when(
           Species == "" ~ as.character(Alt.species),
           is.na(Species) ~ as.character(Alt.species),
@@ -175,7 +241,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     #
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
-    filter(!Species %in% c(" ", "") & No.haul == "N" & No.fish == "N")
+    filter(!Species %in% c(" ", "") & No.haul == FALSE & No.fish == FALSE)
   # Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
   #   filter(!is.na(MaxN))%>%
   #   rename(Max.N=MaxN)
@@ -190,7 +256,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
 ```
 ## Checks
 ```{r}
-llchecklist <- subset(Video.longline.interaction, Species%in%c(" ","NA","") & No.haul=="N" & No.fish=="N")
+llchecklist <- subset(Video.longline.interaction, is.na(Species) & No.haul==FALSE & No.fish==FALSE)
 llchecklist
 ```
 ```{r}
@@ -241,7 +307,7 @@ check.net.maxn.2
 ```
 ## List of points that have no interaction assigned
 ```{r}
-gn.no.interaction <- Video.net.interaction %>% filter(Interaction == "No Interaction")
+gn.no.interaction <- Video.net.interaction %>% filter(Interaction == "Missing data")
 gn.no.interaction
 unique(gn.no.interaction$Species)
 crap <- gn.no.interaction %>% filter(Species=="baitfish")
@@ -249,12 +315,21 @@ unique(crap$OpCode)
 ## Alt species are OK
 ```
 ```{r}
-ll.no.interaction <- Video.longline.interaction %>% filter(Interaction == "No Interaction")
+ll.no.interaction <- Video.longline.interaction %>% filter(Interaction == "Missing data")
 ll.no.interaction
-unique(ll.no.interaction$OpCode)
 unique(ll.no.interaction$Species)
-crap1 <- ll.no.interaction %>% filter(Species%in%c("brevicaudata","elongatus","biserialis","spp","baitfish"))
+crap1 <- ll.no.interaction %>% filter(Species%in%c("baitfish"))
 unique(crap1$OpCode)
+```
+List EMobs to check
+```{r}
+checklist <- c("Peacfull_Gillnet_PA0058_Camera_#20_Pempheris_affins_enedmic_to_eastcoast",
+               "Lancerlin_Longline_Pa0143_Camera_#8_Polyprion_americanus_unlikely",
+               "Albany_Longline_PA0113_Camera_#8_Plectorhinchus_caeruleonothus_unlikely",
+               "Albany_Longline_PA0118_Camera_#02,Albany_Longline_PA0118_Camera_#05_Caranx_ignobilis_unlikely",
+               "Lancerlin_Gillnet_PA0036_Camera_#8_lata",
+"Augusta_Gillnet_PA0006_Camera_#19_Augusta_Gillnet_PA0006_Camera_#19_Augusta_Gillnet_PA0006_Camera_#19_Augusta_Gillnet_PA0019_Camera_#1_Augusta_Gillnet_PA0019_Camera_#5_Pentapotus_vitta_unlikely"
+               )
 ```
 
 
