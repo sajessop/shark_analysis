@@ -6,22 +6,35 @@ title: "data_cleaning"
 
 ## Clear environment
 ```{r}
-rm(list=ls(all=TRUE))
+rm(list = ls(all = TRUE))
 ```
 
 ## Define User
 ```{r}
 # User="Matias"
-User="Sarah"
+User = "Sarah"
 # User="Abbey"
 
-if(!exists('handl_OneDrive'))
+if (!exists('handl_OneDrive'))
 {
-  if(User=="Matias") source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
-  if(User=="Sarah")    handl_OneDrive=function(x)paste('C:/Users/S.Jesso/Documents/GitHub',x,sep='/')
-  if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users',Usr,'OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+  if (User == "Matias")
+    source(
+      'C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R'
+    )
+  if (User == "Sarah")
+    handl_OneDrive = function(x)
+      paste('C:/Users/S.Jesso/Documents/GitHub', x, sep = '/')
+  if (User == "Abbey")
+    handl_OneDrive = function(x)
+      paste(
+        'C:/Users',
+        Usr,
+        'OneDrive - Department of Primary Industries and Regional Development/Matias',
+        x,
+        sep = '/'
+      )
 }
-
+=
 ```
 
 ## Load Packages
@@ -95,67 +108,71 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   
   #2. put data in standard format
   #2.1. gillnet
-    Video.net.interaction = Video.net.maxN = Video.net.obs=vector('list',length(dummy.GN))
-
-    for (i in 1:length(dummy.GN))
-    {
-      #Call RenameColumn function to deal with spelling errors and make names same as Jacks import
-      dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
-      
-      #REVIEW:Fix for some dfs in dummy.GN missing position column
-      if (!'Position' %in% names(dummy.GN[[i]]))
-        dummy.GN[[i]]$Position = NA
-      
-      Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
-        filter(is.na(MaxN)) %>%
-        dplyr::select(all_of(interaction.names)) %>%
-        CategoriseComment() %>%
-        mutate(
-          Number = ifelse(Number == 'AD', NA, Number),
-          No.haul = Alt.species == "no haul",
-          No.fish = Alt.species == "no fish",
-          Species = case_when(
-            Species == "" ~ as.character(Alt.species),
-            is.na(Species) ~ as.character(Alt.species),
-            TRUE ~ as.character(Species)
-          ),
-          Escape = ifelse(
-            grepl("^\\d|^\\<", Escape),
-            gsub("([0-9]+).*$", "\\1", Escape),
-            ''
-          ),
-          Interaction = AssignInteractions(Interaction)
-        )
-
+  Video.net.interaction = Video.net.maxN = Video.net.obs = vector('list', length(dummy.GN))
+  
+  for (i in 1:length(dummy.GN))
+  {
+    #Call RenameColumn function to deal with spelling errors and make names same as Jacks import
+    dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
+    
+    #REVIEW:Fix for some dfs in dummy.GN missing position column
+    if (!'Position' %in% names(dummy.GN[[i]]))
+      dummy.GN[[i]]$Position = NA
+    
+    Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
+      filter(is.na(MaxN)) %>%
+      dplyr::select(all_of(interaction.names)) %>%
+      CategoriseComment() %>%
+      mutate(
+        Number = ifelse(Number == 'AD', NA, Number),
+        No.haul = Alt.species == "no haul",
+        No.fish = Alt.species == "no fish",
+        Species = case_when(
+          Species == "" ~ as.character(Alt.species),
+          is.na(Species) ~ as.character(Alt.species),
+          TRUE ~ as.character(Species)
+        ),
+        Escape = ifelse(
+          grepl("^\\d|^\\<", Escape),
+          gsub("([0-9]+).*$", "\\1", Escape),
+          ''
+        ),
+        Interaction = AssignInteractions(Interaction)
+      )
+    
     Video.net.maxN[[i]] <- dummy.GN[[i]] %>%
       RenameColumn() %>%
       dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
-      mutate(Species = case_when(
-        Species == "" ~ as.character(Alt.species),
-        is.na(Species) ~ as.character(Alt.species),
-        TRUE ~ as.character(Species)
-      ))
-
-  Video.net.obs[[i]]=dummy.GN[[i]]%>%
-    RenameColumn()%>%
-    CategoriseComment() %>%
-    mutate(observation=Alt.species,
-          No.haul = Alt.species == "no haul",
-          No.fish = Alt.species == "no fish",
-          code=Code
-    ) %>% 
-    dplyr::select(all_of(observation.names))
-
-  print(i)
-
-    }
-  Video.net.interaction <- do.call(rbind,Video.net.interaction)%>% 
-   filter(!Species%in%c(""," ") & No.haul==FALSE & No.fish==FALSE)
-  Video.net.maxN=do.call(rbind,Video.net.maxN)%>%
-   filter(!is.na(MaxN))
-  Video.net.obs=do.call(rbind,Video.net.obs)%>%
-    filter(!observation=='')
+      mutate(
+        Species = case_when(
+          Species == "" ~ as.character(Alt.species),
+          is.na(Species) ~ as.character(Alt.species),
+          TRUE ~ as.character(Species)
+        )
+      )
+    
+    Video.net.obs[[i]] = dummy.GN[[i]] %>%
+      RenameColumn() %>%
+      CategoriseComment() %>%
+      mutate(
+        observation = Alt.species,
+        No.haul = Alt.species == "no haul",
+        No.fish = Alt.species == "no fish",
+        code = Code
+      ) %>%
+      dplyr::select(all_of(observation.names))
+    
+    print(i)
+    
+  }
+  Video.net.interaction <- do.call(rbind, Video.net.interaction) %>%
+    filter(!Species %in% c("", " ") &
+             No.haul == FALSE & No.fish == FALSE)
+  Video.net.maxN = do.call(rbind, Video.net.maxN) %>%
+    filter(!is.na(MaxN))
+  Video.net.obs = do.call(rbind, Video.net.obs) %>%
+    filter(!observation == '')
   
   #2.2. longline
   Video.longline.interaction = Video.longline.maxN = Video.longline.obs =
@@ -182,21 +199,27 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
           is.na(Species) ~ as.character(Alt.species),
           TRUE ~ as.character(Species)
         ),
-        Escape = ifelse(grepl("\\d", Escape), gsub("([0-9]+).*$", "\\1", Escape), ''),
+        Escape = ifelse(
+          grepl("\\d", Escape),
+          gsub("([0-9]+).*$", "\\1", Escape),
+          ''
+        ),
         Interaction = AssignInteractions(Interaction)
       )
-
+    
     Video.longline.maxN[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
       dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
-      mutate(Species = case_when(
-        Species == "" ~ as.character(Alt.species),
-        is.na(Species) ~ as.character(Alt.species),
-        TRUE ~ as.character(Species)
-      ))
+      mutate(
+        Species = case_when(
+          Species == "" ~ as.character(Alt.species),
+          is.na(Species) ~ as.character(Alt.species),
+          TRUE ~ as.character(Species)
+        )
+      )
     
-
+    
     Video.longline.obs[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
       CategoriseComment() %>%
@@ -212,14 +235,15 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
-    filter(!Species %in% c(" ", "") & No.haul == FALSE & No.fish == FALSE)
-  Video.longline.maxN=do.call(rbind,Video.longline.maxN)%>%
-    filter(!is.na(MaxN))%>%
-    rename(Max.N=MaxN)
-  Video.longline.obs=do.call(rbind,Video.longline.obs)%>%
-    filter(!observation=='')%>%
-    rename(Observation=observation,
-           optcode=OpCode)
+    filter(!Species %in% c(" ", "") &
+             No.haul == FALSE & No.fish == FALSE)
+  Video.longline.maxN = do.call(rbind, Video.longline.maxN) %>%
+    filter(!is.na(MaxN)) %>%
+    rename(Max.N = MaxN)
+  Video.longline.obs = do.call(rbind, Video.longline.obs) %>%
+    filter(!observation == '') %>%
+    rename(Observation = observation,
+           optcode = OpCode)
   
   
 }
