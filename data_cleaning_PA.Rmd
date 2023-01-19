@@ -81,7 +81,7 @@ source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
 ```
 
-
+# Underwater
 ## Define Data Dump
 ```{r}
 Event.Mes.data.dump <- 'Abbey_Sarah'
@@ -221,6 +221,11 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   
 }
 
+
+#### METHOD COLUMN NEEDS FIXING LOTS OF VARIATION THAT SHOULDNT EXIST
+# mutate(Video.net.interaction$Method="Gillnet",
+# Video.longline.interaction$Method="Longline",
+# ect)
 ```
 ## Checks
 ```{r}
@@ -310,5 +315,9 @@ checklist <- c("Peacfull_Gillnet_PA0058_Camera_#20_Pempheris_affins_enedmic_to_e
                )
 ```
 
-
+# Deck 2
+```{r}
+if(Event.Mes.data.dump=='Abbey_Sarah')
+{
+```
 
