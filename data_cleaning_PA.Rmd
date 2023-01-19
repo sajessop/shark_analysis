@@ -71,6 +71,7 @@ library(ggforce)
 library(scales)
 library(igraph)
 library(janitor)
+library(stringr)
 
 options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 ```
@@ -316,8 +317,26 @@ checklist <- c("Peacfull_Gillnet_PA0058_Camera_#20_Pempheris_affins_enedmic_to_e
 ```
 
 # Deck 2
+
 ```{r}
-if(Event.Mes.data.dump=='Abbey_Sarah')
-{
+  setwd(
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/19-01-23'
+  )
+dummy.d2 <- list()  
+deck2filenames <- dir(pattern="*.csv")
+  
+  for (i in 1:length(deck2filenames))
+  {
+    dummy.d2[[i]] <- read.csv(deck2filenames[i], skip=4)
+  }
+  # dummy.d2 <- lapply(deck2filenames, read.csv, skip = 4)
+```
+
+```{r}
+Deck.2.fish = Deck.2.obs = vector('list', length(dummy.d2))
+ for (i in 1:length(dummy.d2))
+  {
+    dummy.d2[[i]] <- DeckColumns(dummy.d2[[i]])
+ }
 ```
 

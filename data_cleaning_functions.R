@@ -21,7 +21,7 @@ AssignInteractions <- function(numerical.interaction){
 }
 
 
-# Rename Column Function
+# Rename Column Function (underwater)
 RenameColumn <- function(df) {
   new.names <- case_when(names(df)%in%wrong.escape~"Escape",
             names(df)%in%wrong.maxn~"MaxN",
@@ -84,3 +84,24 @@ Video.net.interaction <- as.data.frame(do.call(rbind, interaction) %>%
 # Video.net.obs  <-  as.data.frame(do.call(rbind, observation) %>%
 #   dplyr::filter(!observation == ''))
 # }
+
+
+
+# Rename Deck Column
+## Using regex notation to capture variation in column names
+DeckColumns <- function(df) {
+  new.names = mutate(
+    case_when(
+    str_detect(names(df), "(?i)prox|dist|mesh")~"hook distance to float/weight",
+    str_detect(names(df), "(?i)drop")~"dropout",
+    str_detect(names(df), "(?i)gaff")~"gaffed",
+    TRUE~"ERROR")
+  )
+  old.names <- names(df)
+  names(df)[names(df)==old.names] <- new.names
+  
+  return(df)
+}
+
+
+
