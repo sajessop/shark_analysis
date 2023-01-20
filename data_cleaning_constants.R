@@ -214,7 +214,8 @@ deck.2.fish <-
     "Code",
     "hook distance to float/weight",
     "dropout",
-    "gaffed"
+    "gaffed",
+    "Filename"
   )
 deck.2.observations <-
   c(

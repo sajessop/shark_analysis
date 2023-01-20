@@ -37,7 +37,7 @@ RenameColumn <- function(df) {
   return(df)
 }
 
-# Categorise Comment Function
+# Categorise Comment Function (Underwater)
 ## Using regex notation to capture variation in comments
 CategoriseComment <- function(df) {
   ret <- df %>% mutate(
@@ -105,3 +105,34 @@ DeckColumns <- function(df) {
 }
 
 
+## Hook distance
+HookDistance <- function(df, varnam) {
+  passvar <- rlang::enquo(varnam)
+  df <- df %>%
+    dplyr::mutate(`hook distance to float/weight` = gsub("\\s+", "", !!passvar))
+  
+  return(df)
+}
+
+
+# ret <- df %>% mutate(
+#   hook distance to float/weight = case_when(
+#     str_detect(Escape, "(?i)startfish") ~ "seven legged starfish",
+#     str_detect(Escape, "(?i)squid") ~ "squid",
+#     str_detect(Escape, "(?i)cuttle") ~ "cuttlefish",
+#     str_detect(Escape, "(?i)unidentifiable|unknown|UNKNONW|unsure") ~ "unknown fish",
+#     str_detect(Escape, "(?i)seal") ~ "sea lion",
+#     str_detect(Escape, "(?i)bird|sear") ~ "bird",
+#     str_detect(Escape, "(?i)bait|^school") ~ "baitfish",
+#     str_detect(Escape, "(?i)commernat|comorant") ~ "commorant",
+#     str_detect(Escape, "(?i)garnard") ~ "gurnard",
+#     str_detect(Escape, "Aplysia punctata") ~ "sea hare",
+#     str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
+#     str_detect(Escape, "(?i)no fish") ~ "no fish",
+#     str_detect(Escape, "^\\d|\\<|reef") ~ "",
+#     is.na(Escape) ~ "",
+#     Escape %in% drop2 ~ '',
+#     TRUE ~ as.character(Escape)
+#   )
+# )
+# return(ret)
