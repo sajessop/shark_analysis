@@ -105,11 +105,13 @@ DeckColumns <- function(df) {
 }
 
 
-## Hook distance
-HookDistance <- function(df, varnam) {
+## Remove Whitespace
+## input dataframe, col in which you want to rm whitespace, new col name
+RemoveWhitespace <- function(df, varnam, outname) {
   passvar <- rlang::enquo(varnam)
   df <- df %>%
-    dplyr::mutate(`hook distance to float/weight` = gsub("\\s+", "", !!passvar))
+    dplyr::mutate(fnoutput = gsub("\\s+", "",!!passvar)) 
+  df <- df %>% rename({{outname}}:=fnoutput)
   
   return(df)
 }
