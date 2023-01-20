@@ -90,18 +90,18 @@ Video.net.interaction <- as.data.frame(do.call(rbind, interaction) %>%
 # Rename Deck Column
 ## Using regex notation to capture variation in column names
 DeckColumns <- function(df) {
-  new.names = mutate(
+  new.names =
     case_when(
-    str_detect(names(df), "(?i)prox|dist|mesh")~"hook distance to float/weight",
+    str_detect(names(df), "(?i)prox|dist|mesh|near")~"hook distance to float/weight",
     str_detect(names(df), "(?i)drop")~"dropout",
     str_detect(names(df), "(?i)gaff")~"gaffed",
-    TRUE~"ERROR")
-  )
+    names(df)=="OpCode"~"Curtin opcode",
+    str_detect(names(df), "Period.time.")~"Period time (mins)",
+    TRUE~as.character(names(df)))
   old.names <- names(df)
   names(df)[names(df)==old.names] <- new.names
   
   return(df)
 }
-
 
 
