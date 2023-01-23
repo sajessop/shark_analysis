@@ -196,7 +196,7 @@ deck.1.observations <-
     "meshed"
   )
 # Deck 2
-deck.2.fish <-
+deck.2.fish.names <-
   c(
     "Curtin opcode",
     "Region",
@@ -215,9 +215,12 @@ deck.2.fish <-
     "hook distance to float/weight",
     "dropout",
     "gaffed",
-    "Filename"
+    "Filename",
+    "hookloc.and.comments",
+    "Alt.species",
+    "depredated"
   )
-deck.2.observations <-
+deck.2.observations.names <-
   c(
     "Curtin opcode",
     "Region",
@@ -237,4 +240,20 @@ deck.2.observations <-
     "Stage",
     "Activity",
     "comment"
+  )
+deck.2.observations <- 
+  c(
+    "depredated",
+    "gilled",
+    "Bagged",
+    "cameratimedout",
+    "2",
+    "caughtfeedingonSargentBaker",
+    "bagged",
+    "taggedandreleased",
+    "Gilled",
+    "4mingapbetweenvidsdidn'tseefishondec",
+    "2W&F",
+    "birdpacificgull",
+    "seahare"
   )

@@ -92,9 +92,9 @@ Video.net.interaction <- as.data.frame(do.call(rbind, interaction) %>%
 DeckColumns <- function(df) {
   new.names =
     case_when(
-    str_detect(names(df), "(?i)prox|dist|mesh|near")~"hook distance to float/weight",
-    str_detect(names(df), "(?i)drop")~"dropout",
-    str_detect(names(df), "(?i)gaff")~"gaffed",
+    str_detect(names(df), "(?i)^prox|^dist|^mesh|^near|^hook")~"hooklocation",
+    str_detect(names(df), "(?i)^drop")~"dropout",
+    str_detect(names(df), "(?i)^gaff")~"gaffed",
     names(df)=="OpCode"~"Curtin opcode",
     str_detect(names(df), "Period.time.")~"Period time (mins)",
     TRUE~as.character(names(df)))
@@ -110,31 +110,56 @@ DeckColumns <- function(df) {
 RemoveWhitespace <- function(df, varnam, outname) {
   passvar <- rlang::enquo(varnam)
   df <- df %>%
-    dplyr::mutate(fnoutput = gsub("\\s+", "",!!passvar)) 
-  df <- df %>% rename({{outname}}:=fnoutput)
-  
+    dplyr::mutate(fnoutput = gsub("\\s+", "",!!passvar)) %>%
+    rename({{outname}} := fnoutput)
   return(df)
 }
 
+# Categorise Hook Location
+## Using regex notation to capture variation in comments
+HookLocation <- function(df) {
+  ret <- df %>% mutate(
+    `hook distance to float/weight` = case_when(
+      hookloc.and.comments %in% deck.2.observations~"",
+      hookloc.and.comments==""~"",
+      is.na(hookloc.and.comments)~"",
+      str_detect(hookloc.and.comments, "(?i)^1w") ~ "1w",
+      str_detect(hookloc.and.comments, "(?i)^2w") ~ "2w",
+      str_detect(hookloc.and.comments, "(?i)^3w") ~ "3w",
+      str_detect(hookloc.and.comments, "(?i)^4w") ~ "4w",
+      str_detect(hookloc.and.comments, "(?i)^1f") ~ "1f",
+      str_detect(hookloc.and.comments, "(?i)^2f") ~ "2f",
+      str_detect(hookloc.and.comments, "(?i)^3f") ~ "3f",
+      str_detect(hookloc.and.comments, "(?i)^4f") ~ "4f",
+      TRUE ~ "ERROR"
+    )
+  )
+  return(ret)
+}
 
-# ret <- df %>% mutate(
-#   hook distance to float/weight = case_when(
-#     str_detect(Escape, "(?i)startfish") ~ "seven legged starfish",
-#     str_detect(Escape, "(?i)squid") ~ "squid",
-#     str_detect(Escape, "(?i)cuttle") ~ "cuttlefish",
-#     str_detect(Escape, "(?i)unidentifiable|unknown|UNKNONW|unsure") ~ "unknown fish",
-#     str_detect(Escape, "(?i)seal") ~ "sea lion",
-#     str_detect(Escape, "(?i)bird|sear") ~ "bird",
-#     str_detect(Escape, "(?i)bait|^school") ~ "baitfish",
-#     str_detect(Escape, "(?i)commernat|comorant") ~ "commorant",
-#     str_detect(Escape, "(?i)garnard") ~ "gurnard",
-#     str_detect(Escape, "Aplysia punctata") ~ "sea hare",
-#     str_detect(Escape, "(?i)haul|dark|stops") ~ "no haul",
-#     str_detect(Escape, "(?i)no fish") ~ "no fish",
-#     str_detect(Escape, "^\\d|\\<|reef") ~ "",
-#     is.na(Escape) ~ "",
-#     Escape %in% drop2 ~ '',
-#     TRUE ~ as.character(Escape)
-#   )
-# )
-# return(ret)
+# Categorise Gaffed
+CategoriseGaffed <- function(df) {
+  df %>% mutate(binary.gaffed = ifelse(str_detect(gaffed, "(?i)^y"), TRUE, FALSE),
+                gaffed = binary.gaffed)
+}
+# Categorise Dropout
+CategoriseDropout <- function(df) {
+  ret <- df %>% mutate(Alt.species = case_when(
+      str_detect(dropout, "(?i)bird|shear") ~ "bird",
+      str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
+      str_detect(dropout, "(?i)cray") ~ "crayfish",
+      str_detect(dropout, "(?i)unknown") ~ "unknown fish",
+      str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
+      str_detect(dropout, "sea hare") ~ "sea hare",
+      str_detect(hookloc.and.comments, "seahare") ~ "sea hare",
+      str_detect(dropout, "^sealion") ~ "sea lion",
+      str_detect(dropout, "^blue manner") ~ "crab",
+      TRUE ~ ""),
+    depredated=case_when(dropout == "depredated" ~ TRUE,
+                         hookloc.and.comments =="depredated" ~ TRUE,
+                         TRUE ~ FALSE),
+    binary.dropout = ifelse(str_detect(dropout, "(?i)^y"), TRUE, FALSE),
+    dropout = binary.dropout
+  )
+  return(ret)
+}
