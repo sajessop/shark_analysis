@@ -21,7 +21,8 @@ interaction.names <-  c(
   "Code" ,
   "Number",
   "Interaction",
-  "Escape"
+  "Escape",
+  "Alt.species"
 )
 ## MaxN df
 maxn.names <-  c(
@@ -37,7 +38,9 @@ maxn.names <-  c(
   "Species" ,
   "Code",
   "MaxN",
-  "Escape"
+  "Escape",
+  "Method",
+  "Alt.species"
 )
 ## Observation df
 observation.names <-  c(
@@ -50,37 +53,11 @@ observation.names <-  c(
   "Depth",
   "Number",
   "observation",
-  "code"
+  "code",
+  "Method",
+  "Alt.species"
 )
 
-# All the possible ways column names have been spelled wrong
-## Escape
-wrong.escape <- c(
-  'escape.time',
-  'escape',
-  'Escape.time',
-  "Esape"
-)
-## MaxN
-wrong.maxn <- c(
-  'max.n',
-  'Max.N',
-  'maxn',
-  'Maxn',
-  'MAXn'
-)
-## Interaction
-wrong.interaction <- c(
-  'Interactino',
-  'interaction',
-  'Interactions'
-)
-## Method
-wrong.method <- c(
-  "method",
-  "method.",
-  "mETHOD"
-)
 
 # Here you can add comments (from escape column) that we don't want to include in a df
 ## Two different sets. Use in various places

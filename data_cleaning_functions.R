@@ -23,10 +23,11 @@ AssignInteractions <- function(numerical.interaction){
 
 # Rename Column Function (underwater)
 RenameColumn <- function(df) {
-  new.names <- case_when(names(df)%in%wrong.escape~"Escape",
-            names(df)%in%wrong.maxn~"MaxN",
-            names(df)%in%wrong.interaction~"Interaction",
-            names(df)%in%wrong.method~"Method",
+  new.names = case_when(
+            str_detect(names(df),"(?i)escape|esape") ~"Escape",
+            str_detect(names(df),"(?i)max") ~"MaxN",
+            str_detect(names(df),"(?i)interact") ~ "Interaction",
+            str_detect(names(df),"(?i)method") ~ "Method",
             names(df)=="Time..mins."~"Time (mins)",
             names(df)=="Period.time..mins."~"Period time (mins)",
             TRUE~as.character(names(df))
@@ -36,6 +37,7 @@ RenameColumn <- function(df) {
   
   return(df)
 }
+
 
 # Categorise Comment Function (Underwater)
 ## Using regex notation to capture variation in comments
@@ -57,9 +59,7 @@ CategoriseComment <- function(df) {
       str_detect(Escape, "^\\d|\\<|reef") ~ "",
       is.na(Escape) ~ "",
       Escape %in% drop2 ~ '',
-      TRUE ~ as.character(Escape)
-    )
-  )
+      TRUE ~ as.character(Escape)))
   return(ret)
 }
 
@@ -72,18 +72,6 @@ ApplySpecies <- function(common.species, alternative.species){
   )
   return(Species)
 }
-
-# Bind Columns
-BindColumn <- function(interaction){
-Video.net.interaction <- as.data.frame(do.call(rbind, interaction) %>%
-  filter(!Species %in% c("", " ") &
-           No.haul == FALSE & No.fish == FALSE))
-}
-# Video.net.maxN <-  as.data.frame(do.call(rbind, maxn) %>%
-#   dplyr::filter(!is.na(MaxN)))
-# Video.net.obs  <-  as.data.frame(do.call(rbind, observation) %>%
-#   dplyr::filter(!observation == ''))
-# }
 
 
 
