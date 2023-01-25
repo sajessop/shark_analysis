@@ -113,8 +113,9 @@ drop2 <-  c(
 
 # Deck 1
 ## Column names that we want
-deck.1.fish.landed <-
+deck.1.fish <-
   c(
+    "curtin opcode",
     "Region",
     "DIPRD code",
     "Position",
@@ -129,9 +130,9 @@ deck.1.fish.landed <-
     "Species",
     "Code",
     "number",
-    "Condition",
-    "Retained",
-    "Meshed"
+    "condition",
+    "retained",
+    "meshed"
   )
 deck.1.habitat <-
   c(

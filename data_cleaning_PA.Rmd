@@ -298,7 +298,7 @@ Deck.2.fish = Deck.2.obs = vector('list', length(dummy.d2))
  for (i in 1:length(dummy.d2))
   {
    Deck.2.fish[[i]] <- dummy.d2[[i]] %>% 
-     DeckColumns() %>% 
+     DeckTwoColumns() %>% 
       RemoveWhitespace(hooklocation, hookloc.and.comments) %>% 
       rename(`hook distance to float/weight`=hooklocation) %>% 
       HookLocation() %>% 

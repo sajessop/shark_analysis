@@ -77,7 +77,7 @@ ApplySpecies <- function(common.species, alternative.species){
 
 # Rename Deck Column
 ## Using regex notation to capture variation in column names
-DeckColumns <- function(df) {
+DeckTwoColumns <- function(df) {
   new.names =
     case_when(
     str_detect(names(df), "(?i)^prox|^dist|^mesh|^near|^hook")~"hooklocation",
@@ -151,3 +151,32 @@ CategoriseDropout <- function(df) {
   )
   return(ret)
 }
+
+# Rename Deck 1 Column
+## Using regex notation to capture variation in column names
+DeckOneColumns <- function(df) {
+  new.names =
+    case_when(
+      str_detect(names(df), "(?i)^condition|^alive")~"condition",
+      str_detect(names(df), "(?i)^retained")~"retained",
+      str_detect(names(df), "(?i)^bag|^mesh|cover")~"meshed",
+      names(df)=="OpCode"~"curtin opcode",
+      str_detect(names(df), "Period.time.")~"Period time (mins)",
+      TRUE~as.character(names(df)))
+  old.names <- names(df)
+  names(df)[names(df)==old.names] <- new.names
+  
+  return(df)
+}
+
+# Define percent cover
+## Make a new col named percent cover that includes all numerical values in the meshed col
+
+# Define condition
+## ^a=alive, ^y=alive
+## ^d=dead, ^n=dead
+
+#Define retained
+## ^y=yes, ^n=no
+
+# Look for unique values in meshed, define bagged and gilled if neccisary, otw just define comments and Alt.species
