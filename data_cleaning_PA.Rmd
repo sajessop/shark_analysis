@@ -40,36 +40,8 @@ if (!exists('handl_OneDrive'))
 ```{r}
 library(tidyverse)
 library(dplyr)
-library(readxl)
-library(ggrepel)
-library(ggpubr)
 library(rlang)
 library(MASS)
-library(ggmosaic)
-library(Hmisc)
-library(gridExtra)
-library(stringr)
-library(extdplyr)
-library(ggpubr)
-library(ggridges)
-library(vegan)
-#library(pairwiseAdonis)
-library(overlapping)
-library(tweedie)
-library(mgcv)
-library(emmeans)  #for model predictions
-library(doParallel)
-library(flextable)
-library(webshot)
-library(visNetwork)
-library(ozmaps)
-library(sf)
-library(ggpmisc)
-library(forecast)
-library(performance)
-library(ggforce)
-library(scales)
-library(igraph)
 library(janitor)
 library(stringr)
 library(lazyeval)
@@ -309,7 +281,6 @@ checklist <- c(
 ```
 
 # Deck 2
-
 ```{r}
   setwd(
     'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/23-01-23'
@@ -360,5 +331,21 @@ table(Deck.2.fish$`hook distance to float/weight`)
 ```
 ```{r}
 unique(Deck.2.fish$Species)
+```
+
+
+# Deck 1
+```{r}
+  setwd(
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
+  )
+# Read in data
+dummy.d1 <- list()  
+deck1filenames <- dir(pattern="*.csv")
+  
+  for (i in 1:length(deck1filenames))
+  {
+    dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
+  }
 ```
 
