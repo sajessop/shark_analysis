@@ -347,5 +347,11 @@ deck1filenames <- dir(pattern="*.csv")
   {
     dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
   }
+Deck.1.fish = Deck.1.obs = vector('list', length(dummy.d2))
+ for (i in 1:length(dummy.d1))
+  {
+   Deck.1.fish[[i]] <- dummy.d1[[i]] %>% 
+     DeckOneColumns() %>% 
+ }
 ```
 
