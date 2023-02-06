@@ -132,7 +132,8 @@ deck.1.fish.names <-
     "number",
     "condition",
     "retained",
-    "meshed"
+    "meshed",
+    "original.meshed"
   )
 deck.1.habitat.names <-
   c(

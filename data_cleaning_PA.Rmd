@@ -342,7 +342,6 @@ unique(Deck.2.fish$Species)
 # Read in data
 dummy.d1 <- list()  
 deck1filenames <- dir(pattern="*.csv")
-  
   for (i in 1:length(deck1filenames))
   {
     dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
@@ -355,6 +354,7 @@ Deck.1.fish <-  Deck.1.obs <-  vector('list', length(dummy.d1))
     separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
      CategoriseCondition() %>% 
      CategoriseRetained() %>% 
+     CategoriseMeshed() %>% 
     dplyr::select(all_of(deck.1.fish.names))
  }
 Deck.1.fish <- do.call(rbind, Deck.1.fish)
