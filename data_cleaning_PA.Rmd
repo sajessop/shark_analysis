@@ -354,6 +354,7 @@ Deck.1.fish <-  Deck.1.obs <-  vector('list', length(dummy.d1))
     DeckOneColumns() %>%
     separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
      CategoriseCondition() %>% 
+     CategoriseRetained() %>% 
     dplyr::select(all_of(deck.1.fish.names))
  }
 Deck.1.fish <- do.call(rbind, Deck.1.fish)

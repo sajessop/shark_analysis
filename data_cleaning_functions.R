@@ -189,5 +189,13 @@ CategoriseCondition <- function(df){
 
 #Define retained
 ## ^y=yes, ^n=no
-
+CategoriseRetained <- function(df){
+  ret <- df %>% mutate(categorise.retained = case_when(
+    str_detect(retained, "(?i)^y") ~ "yes",
+    str_detect(retained, "(?i)^n") ~ "no",
+    TRUE ~ as.character(NA)),
+    retained = categorise.retained
+  )
+  return(ret)
+}
 # Look for unique values in meshed, define bagged and gilled if neccisary, otw just define comments and Alt.species
