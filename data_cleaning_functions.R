@@ -200,7 +200,7 @@ CategoriseRetained <- function(df){
 }
 
 #Define meshed
-# Create ref col to store original meshed data then just keep bagged/gilled in "meshed"
+# Create ref col to store original meshed data then just keep bagged/gilled in "meshed", then create alt.species
 CategoriseMeshed <- function(df){
  ret <- df %>% mutate(
    original.meshed = meshed,
@@ -209,12 +209,19 @@ CategoriseMeshed <- function(df){
      str_detect(meshed, "(?i)bagg") ~ "bagged",
      meshed == "G" ~ "gilled",
      meshed == "B" ~ "bagged",
-     TRUE ~ as.character(NA)
-   )
-   )
+     TRUE ~ as.character(NA)),
+   Alt.species = case_when(
+     str_detect(original.meshed, "(?i)unknown") ~ "unknown fish",
+     str_detect(original.meshed, "(?i)shell|mollusc") ~ "shell",
+     str_detect(original.meshed, "(?i)crab") ~ "crab",
+     str_detect(original.meshed, "(?i)bird") ~ "bird",
+     original.meshed == "crayfish" ~ "crayfish",
+     TRUE ~ as.character(NA))
+   ) %>% 
+   filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
    return(ret)
 }
 
 
 
-# Look for unique values in meshed, define bagged and gilled if neccisary, otw just define comments and Alt.species
+# define comments and Alt.species

@@ -355,6 +355,8 @@ Deck.1.fish <-  Deck.1.obs <-  vector('list', length(dummy.d1))
      CategoriseCondition() %>% 
      CategoriseRetained() %>% 
      CategoriseMeshed() %>% 
+     mutate(Position = "Deck#1",
+            Species=ApplySpecies(Species, Alt.species)) %>%
     dplyr::select(all_of(deck.1.fish.names))
  }
 Deck.1.fish <- do.call(rbind, Deck.1.fish)
