@@ -68,13 +68,13 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   #1. read in  data
   #1.1. gillnet
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Gillnet'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Gillnet'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   #1.2. longline
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Longline'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Longline'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
@@ -294,7 +294,7 @@ deck2filenames <- dir(pattern="*.csv")
     dummy.d2[[i]] <- read.csv(deck2filenames[i], skip=4)
   }
 # Clean with User Defined functions
-Deck.2.fish = Deck.2.obs = vector('list', length(dummy.d2))
+Deck.2.fish <-  Deck.2.obs <-  vector('list', length(dummy.d2))
  for (i in 1:length(dummy.d2))
   {
    Deck.2.fish[[i]] <- dummy.d2[[i]] %>% 
@@ -347,11 +347,14 @@ deck1filenames <- dir(pattern="*.csv")
   {
     dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
   }
-Deck.1.fish = Deck.1.obs = vector('list', length(dummy.d2))
+Deck.1.fish <-  Deck.1.obs <-  vector('list', length(dummy.d1))
  for (i in 1:length(dummy.d1))
   {
-   Deck.1.fish[[i]] <- dummy.d1[[i]] %>% 
-     DeckOneColumns() %>% 
+   Deck.1.fish[[i]] <- dummy.d1[[i]] %>%
+    DeckOneColumns() %>%
+    separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
+    dplyr::select(all_of(deck.1.fish.names))
  }
+Deck.1.fish <- do.call(rbind, Deck.1.fish)
 ```
 

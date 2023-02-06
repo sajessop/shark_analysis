@@ -158,9 +158,11 @@ DeckOneColumns <- function(df) {
   new.names =
     case_when(
       str_detect(names(df), "(?i)^condition|^alive")~"condition",
-      str_detect(names(df), "(?i)^retained")~"retained",
+      str_detect(names(df), "(?i)^reta")~"retained",
       str_detect(names(df), "(?i)^bag|^mesh|cover")~"meshed",
       names(df)=="OpCode"~"curtin opcode",
+      names(df)=="Depth"~"Depth (M)",
+      names(df)=="Number"~"number",
       str_detect(names(df), "Period.time.")~"Period time (mins)",
       TRUE~as.character(names(df)))
   old.names <- names(df)
