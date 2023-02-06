@@ -177,6 +177,15 @@ DeckOneColumns <- function(df) {
 # Define condition
 ## ^a=alive, ^y=alive
 ## ^d=dead, ^n=dead
+CategoriseCondition <- function(df){
+  ret <- df %>% mutate(categorised.condition = case_when(
+    str_detect(condition, "(?i)^a|^y") ~ "alive",
+    str_detect(condition, "(?i)^d|n") ~ "dead",
+    TRUE ~ as.character(condition)),
+    condition = categorised.condition
+  )
+  return(ret)
+}
 
 #Define retained
 ## ^y=yes, ^n=no
