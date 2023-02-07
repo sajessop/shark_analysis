@@ -12,7 +12,9 @@
 
 rm(list=ls(all=TRUE))
 
-
+# Clean data
+source("underwater_clean_loop.R")
+       
 # User="Matias"
 User="Sarah"
 # User="Abbey"
@@ -23,6 +25,7 @@ if(!exists('handl_OneDrive'))
   if(User=="Sarah")    handl_OneDrive=function(x)paste('C:/Users/S.Jesso/Documents/GitHub',x,sep='/')
   if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users',Usr,'OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
 }
+
 
 library(tidyverse)
 library(dplyr)

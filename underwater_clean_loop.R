@@ -1,16 +1,30 @@
+library(tidyverse)
+library(rlang)
+library(MASS)
+library(janitor)
+library(lazyeval)
+
+options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
 source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
- #1. read in  data
+ 
+Event.Mes.data.dump <- 'Abbey_Sarah'
+
+
+# Underwater
+if(Event.Mes.data.dump=='Abbey_Sarah')
+{
+  #1. read in  data
   #1.1. gillnet
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Gillnet'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Gillnet'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   #1.2. longline
   setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Outputs16-01-23/Longline'
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Longline'
   )
   filenames <- list.files(pattern = '*.csv')
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
@@ -22,31 +36,32 @@ source("data_cleaning_constants.R")
   for (i in 1:length(dummy.GN))
   {
     dummy.GN[[i]] <- RenameColumn(dummy.GN[[i]])
-    #REVIEW:Fix for some dfs in dummy.GN missing position column
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position = NA
     Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
       filter(is.na(MaxN)) %>%
-      dplyr::select(all_of(interaction.names)) %>%
       CategoriseComment() %>%
+      dplyr::select(all_of(interaction.names)) %>%
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        Species=ApplySpecies(Species, Alt.species),
+        Species = ApplySpecies(Species, Alt.species),
         Escape = ifelse(
           grepl("^\\d|^\\<", Escape),
           gsub("([0-9]+).*$", "\\1", Escape),
           ''),
+        Method = "Gillnet",
         Interaction = AssignInteractions(Interaction)
       ) 
     
     Video.net.maxN[[i]] <- dummy.GN[[i]] %>%
       RenameColumn() %>%
-      dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
+      dplyr::select(all_of(maxn.names)) %>%
       mutate(
-        Species=ApplySpecies(Species, Alt.species)
+        Species=ApplySpecies(Species, Alt.species),
+        Method = "Gillnet",
       )
     
     Video.net.obs[[i]] = dummy.GN[[i]] %>%
@@ -56,7 +71,8 @@ source("data_cleaning_constants.R")
         observation = Alt.species,
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        code = Code
+        code = Code,
+        Method = "Gillnet"
       ) %>%
       dplyr::select(all_of(observation.names))
   }
@@ -74,22 +90,19 @@ source("data_cleaning_constants.R")
     vector('list', length(dummy.LL))
   for (i in 1:length(dummy.LL))
   {
-    #Call RenameColumn function to deal with spelling errors and make names same as Jacks import
     dummy.LL[[i]] <- RenameColumn(dummy.LL[[i]])
-    
-    #REVIEW:Fix for some dfs in dummy.LL missing position column
     if (!'Position' %in% names(dummy.LL[[i]]))
       dummy.LL[[i]]$Position = NA
-    
     Video.longline.interaction[[i]] <-  dummy.LL[[i]] %>%
       filter(is.na(MaxN)) %>%
-      dplyr::select(all_of(interaction.names)) %>%
       CategoriseComment() %>%
+      dplyr::select(all_of(interaction.names)) %>%
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
         Species=ApplySpecies(Species, Alt.species),
+        Method = "Longline",
         Escape = ifelse(
           grepl("\\d", Escape),
           gsub("([0-9]+).*$", "\\1", Escape),
@@ -100,9 +113,10 @@ source("data_cleaning_constants.R")
     
     Video.longline.maxN[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
-      dplyr::select(all_of(maxn.names)) %>%
       CategoriseComment() %>%
+      dplyr::select(all_of(maxn.names)) %>%
       mutate(
+        Method = "Longline",
         Species=ApplySpecies(Species, Alt.species)
       )
     
@@ -113,7 +127,8 @@ source("data_cleaning_constants.R")
         observation = Alt.species,
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        code = Code
+        code = Code,
+        Method = "Longline"
       ) %>%
       dplyr::select(all_of(observation.names))
   }
@@ -127,3 +142,80 @@ source("data_cleaning_constants.R")
     filter(!observation == '') %>%
     rename(Observation = observation,
            optcode = OpCode)
+  
+  
+}
+
+# Deck 2
+setwd(
+  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/23-01-23'
+)
+# Read in data
+dummy.d2 <- list()  
+deck2filenames <- dir(pattern="*.csv")
+
+for (i in 1:length(deck2filenames))
+{
+  dummy.d2[[i]] <- read.csv(deck2filenames[i], skip=4)
+}
+# Clean with User Defined functions
+Deck.2.fish <-  Deck.2.obs <-  vector('list', length(dummy.d2))
+for (i in 1:length(dummy.d2))
+{
+  Deck.2.fish[[i]] <- dummy.d2[[i]] %>% 
+    DeckTwoColumns() %>% 
+    RemoveWhitespace(hooklocation, hookloc.and.comments) %>% 
+    rename(`hook distance to float/weight`=hooklocation) %>% 
+    HookLocation() %>% 
+    CategoriseGaffed() %>%
+    CategoriseDropout() %>% 
+    separate("Curtin opcode", c("Region", "DPIRD code", "Position"), sep="_", remove=FALSE) %>% 
+    CategoriseRegion() %>% 
+    mutate(Position = "Deck#2",
+           Species=ApplySpecies(Species, Alt.species)) %>% 
+    dplyr::select(all_of(deck.2.fish.names)) 
+}
+
+Deck.2.fish <- do.call(rbind, Deck.2.fish)
+
+
+# Deck 1
+setwd(
+  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
+)
+# Read in data
+dummy.d1 <- list()  
+deck1filenames <- dir(pattern="*.csv")
+for (i in 1:length(deck1filenames))
+{
+  dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
+}
+Deck.1.fish <-  Deck.1.habitat <-  vector('list', length(dummy.d1))
+for (i in 1:length(dummy.d1))
+{
+  Deck.1.fish[[i]] <- dummy.d1[[i]] %>%
+    DeckOneColumns() %>%
+    separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
+    CategoriseRegion() %>% 
+    CategoriseCondition() %>% 
+    CategoriseRetained() %>% 
+    CategoriseMeshed() %>% 
+    mutate(Position = "Deck#1",
+           Species=ApplySpecies(Species, Alt.species)) %>%
+    filter(is.na(`Percentage cover`)) %>% 
+    dplyr::select(all_of(deck.1.fish.names))
+  
+  Deck.1.habitat[[i]] <- dummy.d1[[i]] %>%
+    DeckOneColumns() %>%
+    separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
+    CategoriseRegion() %>% 
+    mutate(
+      `Curtin opcode` = `curtin opcode`
+    ) %>% 
+    CategoriseMeshed() %>% 
+    filter(!is.na(`Percentage cover`)) %>%
+    dplyr::select(all_of(deck.1.habitat.names))
+}
+Deck.1.fish <- do.call(rbind, Deck.1.fish)
+Deck.1.habitat <- do.call(rbind, Deck.1.habitat)
+
