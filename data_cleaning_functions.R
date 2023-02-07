@@ -199,29 +199,77 @@ CategoriseRetained <- function(df){
   return(ret)
 }
 
-#Define meshed
-# Create ref col to store original meshed data then just keep bagged/gilled in "meshed", then create alt.species
+# Categorise meshed
+#T wo layers of functions as there is lots of stuff in meshed col
+# Create ref col to store original meshed data 
+OrigMesh <- function(df){
+  ret <- df %>% mutate(
+    original.meshed = meshed
+  )
+  return(ret)
+}
+
+# create just bagged/gilled in "meshed"
+ActualMeshed <- function(df){
+  ret <- df %>% mutate(
+    meshed = case_when(
+      str_detect(meshed, "(?i)illed") ~ "gilled",
+      str_detect(meshed, "(?i)bagg") ~ "bagged",
+      meshed == "G" ~ "gilled",
+      meshed == "B" ~ "bagged")
+  )
+  return(ret)
+}
+
+# create alt.species
+AltSpecies <- function(df){
+  ret <- df %>% mutate(
+    Alt.species = case_when(
+      str_detect(original.meshed, "(?i)unknown") ~ "unknown fish",
+      str_detect(original.meshed, "(?i)shell|mollusc") ~ "shell",
+      str_detect(original.meshed, "(?i)crab") ~ "crab",
+      str_detect(original.meshed, "(?i)bird") ~ "bird",
+      original.meshed == "crayfish" ~ "crayfish",
+      TRUE ~ as.character(NA))  
+  )
+  return(ret)
+}
+
+# create depredated
+Depredate <- function(df){
+  ret <- df %>% mutate(
+    depredated = ifelse(str_detect(original.meshed, "(?i)depredate"), TRUE, as.character(NA))
+  )
+}
+
+# Create habitat
+Habitat <- function(df){
+  ret <- df %>% mutate(
+    `Percentage cover` = ifelse(str_detect(original.meshed, "\\d"), as.character(original.meshed), as.character(NA))
+  )
+}
+
+# 2 layer function
 CategoriseMeshed <- function(df){
- ret <- df %>% mutate(
-   original.meshed = meshed,
-   meshed = case_when(
-     str_detect(meshed, "(?i)illed") ~ "gilled",
-     str_detect(meshed, "(?i)bagg") ~ "bagged",
-     meshed == "G" ~ "gilled",
-     meshed == "B" ~ "bagged",
-     TRUE ~ as.character(NA)),
-   Alt.species = case_when(
-     str_detect(original.meshed, "(?i)unknown") ~ "unknown fish",
-     str_detect(original.meshed, "(?i)shell|mollusc") ~ "shell",
-     str_detect(original.meshed, "(?i)crab") ~ "crab",
-     str_detect(original.meshed, "(?i)bird") ~ "bird",
-     original.meshed == "crayfish" ~ "crayfish",
-     TRUE ~ as.character(NA))
-   ) %>% 
+  ret <- df %>% 
+    OrigMesh() %>% 
+    ActualMeshed() %>% 
+    AltSpecies() %>% 
+    Depredate() %>% 
+    Habitat() %>% 
    filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
    return(ret)
 }
 
-
-
-# define comments and Alt.species
+# Categorise Region
+CategoriseRegion <- function(df){
+  ret <- df %>% mutate(
+    Region = case_when(
+      str_detect(Region, "(?i)lance") ~ "Lancelin",
+      str_detect(Region, "(?i)peac") ~ "Peacefulbay",
+      TRUE ~ as.character(Region)
+    )
+  )
+  return(ret)
+}
+# define comments 

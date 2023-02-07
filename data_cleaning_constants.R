@@ -134,7 +134,8 @@ deck.1.fish.names <-
     "retained",
     "meshed",
     "original.meshed",
-    "Alt.species"
+    "Alt.species",
+    "depredated"
   )
 deck.1.habitat.names <-
   c(
@@ -152,7 +153,8 @@ deck.1.habitat.names <-
     "Genus",
     "Species",
     "Code",
-    "Percentage cover"
+    "Percentage cover",
+    "original.meshed"
   )
 deck.1.observations.names <- 
   c(
