@@ -386,3 +386,26 @@ Deck.1.habitat <- do.call(rbind, Deck.1.habitat)
 (d1.i <- table(Deck.1.habitat$Species))
 ```
 
+
+
+# Subsurface
+```{r}
+  setwd(
+    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Subsurface'
+  )
+# Read in data
+dummy.ss <- list()  
+ssfilenames <- dir(pattern="*.csv")
+  for (i in 1:length(ssfilenames))
+  {
+    dummy.ss[[i]] <- read.csv(ssfilenames[i], skip=4)
+  }
+SS.fish <- vector('list', length(dummy.ss))
+ for (i in 1:length(dummy.ss)){
+  SS.fish[[i]] <- dummy.ss[[i]] %>% 
+    SSColumns() %>% 
+    dplyr::select(all_of(subsurface.names))
+ }
+SS.fish <- do.call(rbind, SS.fish)
+```
+

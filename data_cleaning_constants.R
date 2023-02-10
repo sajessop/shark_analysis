@@ -239,3 +239,24 @@ deck.2.observations <-
     "birdpacificgull",
     "seahare"
   )
+
+
+# Subsurface
+subsurface.names <- 
+  c(
+    "Region",
+    "DPIRD code",
+    "Position",
+    "Period",
+    "Period time (mins)",
+    "Depth",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "comment",
+    "Drop out",
+    "Dropout condition",
+    "Interaction",
+    "Gaffed"
+  )

@@ -200,7 +200,7 @@ CategoriseRetained <- function(df){
 }
 
 # Categorise meshed
-#T wo layers of functions as there is lots of stuff in meshed col
+# Two layers of functions as there is lots of stuff in meshed col
 # Create ref col to store original meshed data 
 OrigMesh <- function(df){
   ret <- df %>% mutate(
@@ -272,4 +272,24 @@ CategoriseRegion <- function(df){
   )
   return(ret)
 }
-# define comments 
+# define comments
+
+
+
+# Subsurface
+# Rename SS Column
+## Using regex notation to capture variation in column names
+SSColumns <- function(df) {
+  new.names =
+    case_when(
+      str_detect(names(df), "(?i)gaffed")~"Gaffed",
+      str_detect(names(df), "(?i)condition")~"Dropout condition",
+      str_detect(names(df), "(?i)drop")~"Drop out",
+      names(df)=="OpCode"~"DPIRD code",
+      str_detect(names(df), "Period.time.")~"Period time (mins)",
+      TRUE~as.character(names(df)))
+  old.names <- names(df)
+  names(df)[names(df)==old.names] <- new.names
+  
+  return(df)
+}
