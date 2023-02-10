@@ -402,10 +402,12 @@ ssfilenames <- dir(pattern="*.csv")
   }
 SS.fish <- vector('list', length(dummy.ss))
  for (i in 1:length(dummy.ss)){
-  SS.fish[[i]] <- dummy.ss[[i]] %>% 
-    SSColumns() %>% 
-    dplyr::select(all_of(subsurface.names))
+   SS.fish[[i]] <- dummy.ss[[i]] %>%
+     SSColumns() %>% 
+     mutate(Region = str_extract(`DPIRD code`, "[^_]+"))
+    # dplyr::select(all_of(subsurface.names)) %>% 
+    print(i)
  }
-SS.fish <- do.call(rbind, SS.fish)
+#SS.fish <- do.call(rbind, SS.fish)
 ```
 
