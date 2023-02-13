@@ -222,18 +222,19 @@ ActualMeshed <- function(df){
 }
 
 # create alt.species
-AltSpecies <- function(df){
+AltSpecies <- function(df, varnam){
   ret <- df %>% mutate(
     Alt.species = case_when(
-      str_detect(original.meshed, "(?i)unknown") ~ "unknown fish",
-      str_detect(original.meshed, "(?i)shell|mollusc") ~ "shell",
-      str_detect(original.meshed, "(?i)crab") ~ "crab",
-      str_detect(original.meshed, "(?i)bird") ~ "bird",
-      original.meshed == "crayfish" ~ "crayfish",
+      str_detect({{varnam}}, "(?i)unknown") ~ "unknown fish",
+      str_detect({{varnam}}, "(?i)shell|mollusc") ~ "shell",
+      str_detect({{varnam}}, "(?i)crab") ~ "crab",
+      str_detect({{varnam}}, "(?i)bird") ~ "bird",
+      {{varnam}} == "crayfish" ~ "crayfish",
       TRUE ~ as.character(NA))  
   )
   return(ret)
 }
+
 
 # create depredated
 Depredate <- function(df){
@@ -254,7 +255,7 @@ CategoriseMeshed <- function(df){
   ret <- df %>% 
     OrigMesh() %>% 
     ActualMeshed() %>% 
-    AltSpecies() %>% 
+    AltSpecies(original.meshed) %>% 
     Depredate() %>% 
     Habitat() %>% 
    filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
@@ -293,3 +294,42 @@ SSColumns <- function(df) {
   
   return(df)
 }
+
+# Another two layer function
+OrigGaff <- function(df){
+  ret <- df %>% mutate(
+    original.gaffed = Gaffed
+  )
+  return(ret)
+}
+
+ActualGaffed <- function(df){
+  ret <- df %>% mutate(
+    Gaffed = case_when(
+      str_detect(Gaffed, "(?i)^y") ~ "yes",
+      str_detect(Gaffed, "(?i)^n") ~ "no",
+      TRUE ~ as.character(NA)
+    )
+  )
+  return(ret)
+}
+# Categorise interaction
+# from gaffed column
+CategoriseInteraction <- function(df){
+  ret <- df %>% 
+    mutate(
+      Interaction = str_extract(Gaffed, "^[0-9]+$")
+    )
+  return(ret)
+}
+
+# 2 layer function
+# CategoriseGaffedSS <- function(df){
+#   ret <- df %>% 
+#     OrigGaff() %>% 
+#     ActualGaffed %>% 
+#     CategoriseInteraction() %>% 
+#     
+# }
+
+
