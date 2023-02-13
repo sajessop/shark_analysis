@@ -235,7 +235,6 @@ AltSpecies <- function(df, varnam){
   return(ret)
 }
 
-
 # create depredated
 Depredate <- function(df){
   ret <- df %>% mutate(
@@ -318,18 +317,32 @@ ActualGaffed <- function(df){
 CategoriseInteraction <- function(df){
   ret <- df %>% 
     mutate(
-      Interaction = str_extract(Gaffed, "^[0-9]+$")
+      Interaction = str_extract(original.gaffed, "^[0-9]+$")
     )
   return(ret)
 }
 
+CategoriseSSDropout <- function(df){
+  ret <- df %>% mutate(
+    original.dropout = `Drop out`,
+    `Drop out` = case_when(
+      str_detect(original.dropout, "(?i)^y") ~ "yes",
+      str_detect(original.dropout, "^$|^n") ~ "no",
+      TRUE ~ as.character(NA)
+    )
+  )
+  return(ret)
+}
 # 2 layer function
-# CategoriseGaffedSS <- function(df){
-#   ret <- df %>% 
-#     OrigGaff() %>% 
-#     ActualGaffed %>% 
-#     CategoriseInteraction() %>% 
-#     
-# }
+CategoriseSSGaffed <- function(df){
+  ret <- df %>%
+    OrigGaff() %>%
+    ActualGaffed %>%
+    AltSpecies(original.gaffed) %>%
+    CategoriseInteraction() %>%
+    mutate(Position = "subsurface")
+  return(ret)
+
+}
 
 

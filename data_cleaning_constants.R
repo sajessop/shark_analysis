@@ -254,9 +254,11 @@ subsurface.names <-
     "Genus",
     "Species",
     "Code",
-    "comment",
+    # "comment",
     "Drop out",
     "Dropout condition",
     "Interaction",
-    "Gaffed"
+    "Gaffed",
+    "original.gaffed",
+    "original.dropout"
   )
