@@ -174,15 +174,25 @@ DeckOneColumns <- function(df) {
 # Define percent cover
 ## Make a new col named percent cover that includes all numerical values in the meshed col
 
+# Duplicate cols to keep original cols for reference
+OrigD1 <- function(df){
+  ret <- df %>% mutate(
+    original.meshed = meshed,
+    original.condition = condition,
+    original.retained = retained
+  )
+  return(ret)
+}
+
 # Define condition
 ## ^a=alive, ^y=alive
 ## ^d=dead, ^n=dead
-CategoriseCondition <- function(df){
-  ret <- df %>% mutate(categorised.condition = case_when(
-    str_detect(condition, "(?i)^a|^y") ~ "alive",
-    str_detect(condition, "(?i)^d|n") ~ "dead",
-    TRUE ~ as.character(condition)),
-    condition = categorised.condition
+#input dataframe, variable name, and desired output variable name
+CategoriseCondition <- function(df, varnam, outnam){
+  ret <- df %>% mutate({{outnam}} := case_when(
+    str_detect({{varnam}}, "(?i)dead|^d|^n") ~ "dead",
+    str_detect({{varnam}}, "(?i)^a|^y") ~ "alive",
+    TRUE ~ as.character(NA)),
   )
   return(ret)
 }
@@ -228,12 +238,15 @@ AltSpecies <- function(df, varnam){
       str_detect({{varnam}}, "(?i)unknown") ~ "unknown fish",
       str_detect({{varnam}}, "(?i)shell|mollusc") ~ "shell",
       str_detect({{varnam}}, "(?i)crab") ~ "crab",
-      str_detect({{varnam}}, "(?i)bird") ~ "bird",
+      str_detect({{varnam}}, "(?i)bird|shearwater") ~ "bird",
+      str_detect({{varnam}}, "(?i)baitfish") ~ "baitfish",
       {{varnam}} == "crayfish" ~ "crayfish",
       TRUE ~ as.character(NA))  
   )
   return(ret)
 }
+
+
 
 # create depredated
 Depredate <- function(df){
@@ -295,9 +308,12 @@ SSColumns <- function(df) {
 }
 
 # Another two layer function
-OrigGaff <- function(df){
+# Duplicate cols to create ref cols
+OrigSS <- function(df){
   ret <- df %>% mutate(
-    original.gaffed = Gaffed
+    original.gaffed = Gaffed,
+    original.condition = `Dropout condition`,
+    original.dropout = `Drop out`
   )
   return(ret)
 }
@@ -324,7 +340,6 @@ CategoriseInteraction <- function(df){
 
 CategoriseSSDropout <- function(df){
   ret <- df %>% mutate(
-    original.dropout = `Drop out`,
     `Drop out` = case_when(
       str_detect(original.dropout, "(?i)^y") ~ "yes",
       str_detect(original.dropout, "^$|^n") ~ "no",
@@ -336,10 +351,9 @@ CategoriseSSDropout <- function(df){
 # 2 layer function
 CategoriseSSGaffed <- function(df){
   ret <- df %>%
-    OrigGaff() %>%
     ActualGaffed %>%
-    AltSpecies(original.gaffed) %>%
-    CategoriseInteraction() %>%
+    AltSpecies(`Dropout condition`) %>%
+    CategoriseInteraction() %>% 
     mutate(Position = "subsurface")
   return(ret)
 

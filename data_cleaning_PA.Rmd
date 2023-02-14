@@ -351,8 +351,9 @@ Deck.1.fish <-  Deck.1.habitat <-  vector('list', length(dummy.d1))
    Deck.1.fish[[i]] <- dummy.d1[[i]] %>%
     DeckOneColumns() %>%
     separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
+     OrigD1() %>% 
      CategoriseRegion() %>% 
-     CategoriseCondition() %>% 
+     CategoriseCondition(original.condition, condition) %>% 
      CategoriseRetained() %>% 
      CategoriseMeshed() %>% 
      mutate(Position = "Deck#1",
@@ -404,15 +405,17 @@ SS.fish <- vector('list', length(dummy.ss))
  for (i in 1:length(dummy.ss)){
    SS.fish[[i]] <- dummy.ss[[i]] %>%
      SSColumns() %>% 
-     mutate(Region = str_extract(`DPIRD code`, "[^_]+")) %>% 
+     mutate(Region = str_extract(`DPIRD code`, "[^_]+")) %>%
+     OrigSS() %>% 
      CategoriseSSDropout() %>% 
      CategoriseSSGaffed() %>% 
+     CategoriseCondition(original.condition, `Dropout condition`) %>% 
     dplyr::select(all_of(subsurface.names))  
     print(i)
  }
 SS.fish <- do.call(rbind, SS.fish)
 
-## FIX
+## Categorise
 this <- unique(SS.fish$original.gaffed)
 this2 <- unique(SS.fish$`Dropout condition`)
 

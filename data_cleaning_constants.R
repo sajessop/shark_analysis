@@ -135,7 +135,9 @@ deck.1.fish.names <-
     "meshed",
     "original.meshed",
     "Alt.species",
-    "depredated"
+    "depredated",
+    "original.condition",
+    "original.retained"
   )
 deck.1.habitat.names <-
   c(
@@ -260,5 +262,7 @@ subsurface.names <-
     "Interaction",
     "Gaffed",
     "original.gaffed",
-    "original.dropout"
+    "original.dropout",
+    "original.condition",
+    "Alt.species"
   )
