@@ -416,9 +416,6 @@ SS.fish <- vector('list', length(dummy.ss))
  }
 SS.fish <- do.call(rbind, SS.fish)
 
-## Categorise
-this <- unique(SS.fish$original.gaffed)
-this2 <- unique(SS.fish$original.condition)
 
 ```
 

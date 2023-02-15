@@ -196,8 +196,9 @@ for (i in 1:length(dummy.d1))
   Deck.1.fish[[i]] <- dummy.d1[[i]] %>%
     DeckOneColumns() %>%
     separate("curtin opcode", c("Region", "DIPRD code", "Position"), sep="_", remove=FALSE) %>%
+    OrigD1() %>% 
     CategoriseRegion() %>% 
-    CategoriseCondition() %>% 
+    CategoriseCondition(original.condition, condition) %>% 
     CategoriseRetained() %>% 
     CategoriseMeshed() %>% 
     mutate(Position = "Deck#1",
@@ -218,4 +219,32 @@ for (i in 1:length(dummy.d1))
 }
 Deck.1.fish <- do.call(rbind, Deck.1.fish)
 Deck.1.habitat <- do.call(rbind, Deck.1.habitat)
+
+
+# SUbsurface
+setwd(
+  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Subsurface'
+)
+# Read in data
+dummy.ss <- list()  
+ssfilenames <- dir(pattern="*.csv")
+for (i in 1:length(ssfilenames))
+{
+  dummy.ss[[i]] <- read.csv(ssfilenames[i], skip=4)
+}
+SS.fish <- vector('list', length(dummy.ss))
+for (i in 1:length(dummy.ss)){
+  SS.fish[[i]] <- dummy.ss[[i]] %>%
+    SSColumns() %>% 
+    mutate(Region = str_extract(`DPIRD code`, "[^_]+")) %>%
+    OrigSS() %>% 
+    CategoriseSSDropout() %>% 
+    CategoriseSSGaffed() %>% 
+    CategoriseCondition(original.condition, `Dropout condition`) %>% 
+    mutate(Species=ApplySpecies(Species, Alt.species)) %>% 
+    dplyr::select(all_of(subsurface.names))  
+  print(i)
+}
+SS.fish <- do.call(rbind, SS.fish)
+
 
