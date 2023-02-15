@@ -256,7 +256,7 @@ subsurface.names <-
     "Genus",
     "Species",
     "Code",
-    # "comment",
+    "comment",
     "Drop out",
     "Dropout condition",
     "Interaction",
@@ -264,5 +264,6 @@ subsurface.names <-
     "original.gaffed",
     "original.dropout",
     "original.condition",
-    "Alt.species"
+    "Alt.species",
+    "depredated"
   )

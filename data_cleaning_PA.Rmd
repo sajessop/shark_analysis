@@ -410,6 +410,7 @@ SS.fish <- vector('list', length(dummy.ss))
      CategoriseSSDropout() %>% 
      CategoriseSSGaffed() %>% 
      CategoriseCondition(original.condition, `Dropout condition`) %>% 
+      mutate(Species=ApplySpecies(Species, Alt.species)) %>% 
     dplyr::select(all_of(subsurface.names))  
     print(i)
  }
@@ -417,7 +418,7 @@ SS.fish <- do.call(rbind, SS.fish)
 
 ## Categorise
 this <- unique(SS.fish$original.gaffed)
-this2 <- unique(SS.fish$`Dropout condition`)
+this2 <- unique(SS.fish$original.condition)
 
 ```
 

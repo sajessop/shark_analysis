@@ -240,6 +240,7 @@ AltSpecies <- function(df, varnam){
       str_detect({{varnam}}, "(?i)crab") ~ "crab",
       str_detect({{varnam}}, "(?i)bird|shearwater") ~ "bird",
       str_detect({{varnam}}, "(?i)baitfish") ~ "baitfish",
+      str_detect({{varnam}}, "(?i)lion") ~ "sea lion",
       {{varnam}} == "crayfish" ~ "crayfish",
       TRUE ~ as.character(NA))  
   )
@@ -249,9 +250,9 @@ AltSpecies <- function(df, varnam){
 
 
 # create depredated
-Depredate <- function(df){
+Depredate <- function(df, varnam){
   ret <- df %>% mutate(
-    depredated = ifelse(str_detect(original.meshed, "(?i)depredate"), TRUE, as.character(NA))
+    depredated = ifelse(str_detect({{varnam}}, "(?i)depredate"), TRUE, as.character(NA))
   )
 }
 
@@ -268,7 +269,7 @@ CategoriseMeshed <- function(df){
     OrigMesh() %>% 
     ActualMeshed() %>% 
     AltSpecies(original.meshed) %>% 
-    Depredate() %>% 
+    Depredate(original.meshed) %>% 
     Habitat() %>% 
    filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
    return(ret)
@@ -333,7 +334,7 @@ ActualGaffed <- function(df){
 CategoriseInteraction <- function(df){
   ret <- df %>% 
     mutate(
-      Interaction = str_extract(original.gaffed, "^[0-9]+$")
+      Interaction = str_extract(original.gaffed, "\\d{1,2}")
     )
   return(ret)
 }
@@ -342,21 +343,40 @@ CategoriseSSDropout <- function(df){
   ret <- df %>% mutate(
     `Drop out` = case_when(
       str_detect(original.dropout, "(?i)^y") ~ "yes",
-      str_detect(original.dropout, "^$|^n") ~ "no",
+      str_detect(original.dropout, "(?i)^n") ~ "no",
       TRUE ~ as.character(NA)
     )
   )
   return(ret)
 }
+
+# Define comments
+SSComments <- function(df){
+  ret <- df %>% mutate(
+    comment = ifelse(original.gaffed %in% c("LINE BROKE","GN BROKE","TO DARK","LL BROKE",
+                                             "LL picked up again","camera taken out half way",
+                                             "NET SNAPPED","longline snapped","broken line",
+                                             "end before finish","END BEFORE FINISHED","thrown over",
+                                             "THROWN OVER", "VIDEO ENDS BEFORE FINISHING HAUL", "line snapped"), 
+                     as.character(original.gaffed), as.character(NA))
+  )
+}
+
+
 # 2 layer function
 CategoriseSSGaffed <- function(df){
   ret <- df %>%
     ActualGaffed %>%
     AltSpecies(`Dropout condition`) %>%
     CategoriseInteraction() %>% 
-    mutate(Position = "subsurface")
+    Depredate(original.gaffed) %>%
+    SSComments() %>% 
+    mutate(Position = "subsurface",
+           Interaction = AssignInteractions(Interaction),
+           Interaction = ifelse(Interaction == "Missing data", as.character(NA), as.character(Interaction)))
   return(ret)
 
 }
+
 
 
