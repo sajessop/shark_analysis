@@ -8,7 +8,7 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 
 source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
- 
+
 Event.Mes.data.dump <- 'Abbey_Sarah'
 
 
@@ -20,9 +20,11 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   setwd(
     'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Gillnet'
   )
+  #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
   filenames <- list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   #1.2. longline
+  #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Longline')
   setwd(
     'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Longline'
   )
@@ -147,6 +149,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
 }
 
 # Deck 2
+#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck2')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/23-01-23'
 )
@@ -177,9 +180,12 @@ for (i in 1:length(dummy.d2))
 }
 
 Deck.2.fish <- do.call(rbind, Deck.2.fish)
-
+Video.camera2.deck=Deck.2.fish
+Video.camera2.deck=Video.camera2.deck%>%
+  mutate(dropout=ifelse(dropout=='True','Yes',ifelse(dropout=='False','No',dropout)))
 
 # Deck 1
+#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
 )
@@ -218,10 +224,13 @@ for (i in 1:length(dummy.d1))
     dplyr::select(all_of(deck.1.habitat.names))
 }
 Deck.1.fish <- do.call(rbind, Deck.1.fish)
-Deck.1.habitat <- do.call(rbind, Deck.1.habitat)
+Video.camera1.deck=Deck.1.fish
+
+Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
 
 
 # SUbsurface
+#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Subsurface'
 )
@@ -246,5 +255,5 @@ for (i in 1:length(dummy.ss)){
   print(i)
 }
 SS.fish <- do.call(rbind, SS.fish)
-
+Video.subsurface=SS.fish
 

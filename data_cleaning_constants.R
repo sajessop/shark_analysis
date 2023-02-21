@@ -1,9 +1,9 @@
 
-  ## Constants used in data_cleaning_PA
-  ### Variables are defined like.this
+## Constants used in data_cleaning_PA
+### Variables are defined like.this
 # Underwater  
-  # Start with column names that we want
-  ## Interaction df
+# Start with column names that we want
+## Interaction df
 interaction.names <-  c(
   "OpCode",
   "Frame",

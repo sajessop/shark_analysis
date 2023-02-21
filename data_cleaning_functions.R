@@ -1,4 +1,5 @@
 
+
 # Functions used in data_cleaning_PA.Rmd
 
 ### fucntion names are defined LikeThis
@@ -24,13 +25,13 @@ AssignInteractions <- function(numerical.interaction){
 # Rename Column Function (underwater)
 RenameColumn <- function(df) {
   new.names = case_when(
-            str_detect(names(df),"(?i)escape|esape") ~"Escape",
-            str_detect(names(df),"(?i)max") ~"MaxN",
-            str_detect(names(df),"(?i)interact") ~ "Interaction",
-            str_detect(names(df),"(?i)method") ~ "Method",
-            names(df)=="Time..mins."~"Time (mins)",
-            names(df)=="Period.time..mins."~"Period time (mins)",
-            TRUE~as.character(names(df))
+    str_detect(names(df),"(?i)escape|esape") ~"Escape",
+    str_detect(names(df),"(?i)max") ~"MaxN",
+    str_detect(names(df),"(?i)interact") ~ "Interaction",
+    str_detect(names(df),"(?i)method") ~ "Method",
+    names(df)=="Time..mins."~"Time (mins)",
+    names(df)=="Period.time..mins."~"Period time (mins)",
+    TRUE~as.character(names(df))
   )
   old.names <- names(df)
   names(df)[names(df)==old.names] <- new.names
@@ -80,12 +81,12 @@ ApplySpecies <- function(common.species, alternative.species){
 DeckTwoColumns <- function(df) {
   new.names =
     case_when(
-    str_detect(names(df), "(?i)^prox|^dist|^mesh|^near|^hook")~"hooklocation",
-    str_detect(names(df), "(?i)^drop")~"dropout",
-    str_detect(names(df), "(?i)^gaff")~"gaffed",
-    names(df)=="OpCode"~"Curtin opcode",
-    str_detect(names(df), "Period.time.")~"Period time (mins)",
-    TRUE~as.character(names(df)))
+      str_detect(names(df), "(?i)^prox|^dist|^mesh|^near|^hook")~"hooklocation",
+      str_detect(names(df), "(?i)^drop")~"dropout",
+      str_detect(names(df), "(?i)^gaff")~"gaffed",
+      names(df)=="OpCode"~"Curtin opcode",
+      str_detect(names(df), "Period.time.")~"Period time (mins)",
+      TRUE~as.character(names(df)))
   old.names <- names(df)
   names(df)[names(df)==old.names] <- new.names
   
@@ -108,17 +109,17 @@ RemoveWhitespace <- function(df, varnam, outname) {
 HookLocation <- function(df) {
   ret <- df %>% mutate(
     `hook distance to float/weight` = case_when(
-      hookloc.and.comments %in% deck.2.observations~"",
-      hookloc.and.comments==""~"",
-      is.na(hookloc.and.comments)~"",
+      hookloc.and.comments %in% deck.2.observations~ as.character(NA),
+      hookloc.and.comments==""~ as.character(NA),
+      is.na(hookloc.and.comments)~ as.character(NA),
       str_detect(hookloc.and.comments, "(?i)^1w") ~ "1w",
       str_detect(hookloc.and.comments, "(?i)^2w") ~ "2w",
       str_detect(hookloc.and.comments, "(?i)^3w") ~ "3w",
-      str_detect(hookloc.and.comments, "(?i)^4w") ~ "4w",
+      str_detect(hookloc.and.comments, "(?i)^4w") ~ as.character(NA),
       str_detect(hookloc.and.comments, "(?i)^1f") ~ "1f",
       str_detect(hookloc.and.comments, "(?i)^2f") ~ "2f",
       str_detect(hookloc.and.comments, "(?i)^3f") ~ "3f",
-      str_detect(hookloc.and.comments, "(?i)^4f") ~ "4f",
+      str_detect(hookloc.and.comments, "(?i)^4f") ~ as.character(NA),
       TRUE ~ "ERROR"
     )
   )
@@ -127,26 +128,26 @@ HookLocation <- function(df) {
 
 # Categorise Gaffed
 CategoriseGaffed <- function(df) {
-  df %>% mutate(binary.gaffed = ifelse(str_detect(gaffed, "(?i)^y"), TRUE, FALSE),
+  df %>% mutate(binary.gaffed = ifelse(str_detect(gaffed, "(?i)^y"), "yes", "no"),
                 gaffed = binary.gaffed)
 }
 # Categorise Dropout
 CategoriseDropout <- function(df) {
   ret <- df %>% mutate(Alt.species = case_when(
-      str_detect(dropout, "(?i)bird|shear") ~ "bird",
-      str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
-      str_detect(dropout, "(?i)cray") ~ "crayfish",
-      str_detect(dropout, "(?i)unknown") ~ "unknown fish",
-      str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
-      str_detect(dropout, "sea hare") ~ "sea hare",
-      str_detect(hookloc.and.comments, "seahare") ~ "sea hare",
-      str_detect(dropout, "^sealion") ~ "sea lion",
-      str_detect(dropout, "^blue manner") ~ "crab",
-      TRUE ~ ""),
+    str_detect(dropout, "(?i)bird|shear") ~ "bird",
+    str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
+    str_detect(dropout, "(?i)cray") ~ "crayfish",
+    str_detect(dropout, "(?i)unknown") ~ "unknown fish",
+    str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
+    str_detect(dropout, "sea hare") ~ "sea hare",
+    str_detect(hookloc.and.comments, "seahare") ~ "sea hare",
+    str_detect(dropout, "^sealion") ~ "sea lion",
+    str_detect(dropout, "^blue manner") ~ "crab",
+    TRUE ~ ""),
     depredated=case_when(dropout == "depredated" ~ TRUE,
                          hookloc.and.comments =="depredated" ~ TRUE,
                          TRUE ~ FALSE),
-    binary.dropout = ifelse(str_detect(dropout, "(?i)^y"), TRUE, FALSE),
+    binary.dropout = ifelse(str_detect(dropout, "(?i)^y"), "Yes", "No"),
     dropout = binary.dropout
   )
   return(ret)
@@ -271,8 +272,8 @@ CategoriseMeshed <- function(df){
     AltSpecies(original.meshed) %>% 
     Depredate(original.meshed) %>% 
     Habitat() %>% 
-   filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
-   return(ret)
+    filter(!original.meshed %in% c("jack gets stingray barb", "craypot"))
+  return(ret)
 }
 
 # Categorise Region
@@ -354,10 +355,10 @@ CategoriseSSDropout <- function(df){
 SSComments <- function(df){
   ret <- df %>% mutate(
     comment = ifelse(original.gaffed %in% c("LINE BROKE","GN BROKE","TO DARK","LL BROKE",
-                                             "LL picked up again","camera taken out half way",
-                                             "NET SNAPPED","longline snapped","broken line",
-                                             "end before finish","END BEFORE FINISHED","thrown over",
-                                             "THROWN OVER", "VIDEO ENDS BEFORE FINISHING HAUL", "line snapped"), 
+                                            "LL picked up again","camera taken out half way",
+                                            "NET SNAPPED","longline snapped","broken line",
+                                            "end before finish","END BEFORE FINISHED","thrown over",
+                                            "THROWN OVER", "VIDEO ENDS BEFORE FINISHING HAUL", "line snapped"), 
                      as.character(original.gaffed), as.character(NA))
   )
 }
@@ -375,7 +376,7 @@ CategoriseSSGaffed <- function(df){
            Interaction = AssignInteractions(Interaction),
            Interaction = ifelse(Interaction == "Missing data", as.character(NA), as.character(Interaction)))
   return(ret)
-
+  
 }
 
 
