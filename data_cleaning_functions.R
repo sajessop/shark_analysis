@@ -39,7 +39,15 @@ RenameColumn <- function(df) {
   return(df)
 }
 
-
+# Duplicate cols that will be mutated
+OrigUW <- function(df){
+  ret <- df %>% mutate(
+    original.escape = Escape,
+    original.maxn = MaxN,
+    original.interaction = Interaction
+  )
+  return(ret)
+}
 # Categorise Comment Function (Underwater)
 ## Using regex notation to capture variation in comments
 CategoriseComment <- function(df) {
@@ -74,6 +82,12 @@ ApplySpecies <- function(common.species, alternative.species){
   return(Species)
 }
 
+# Categorise escape
+CategoriseEscape <- function(df){
+  ret <- df %>% mutate(
+    Escape = as.numeric(str_extract(original.escape, "(0|[1-9]\\d*)(\\.\\d+)?"))
+  )
+}
 
 
 # Rename Deck Column

@@ -22,7 +22,10 @@ interaction.names <-  c(
   "Number",
   "Interaction",
   "Escape",
-  "Alt.species"
+  "Alt.species",
+  "original.escape",
+  "original.maxn",
+  "original.interaction"
 )
 ## MaxN df
 maxn.names <-  c(
@@ -40,7 +43,8 @@ maxn.names <-  c(
   "MaxN",
   "Escape",
   "Method",
-  "Alt.species"
+  "Alt.species",
+  "original.maxn"
 )
 ## Observation df
 observation.names <-  c(
@@ -55,7 +59,8 @@ observation.names <-  c(
   "observation",
   "code",
   "Method",
-  "Alt.species"
+  "Alt.species",
+  "original.escape"
 )
 
 

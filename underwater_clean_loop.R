@@ -41,24 +41,24 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     if (!'Position' %in% names(dummy.GN[[i]]))
       dummy.GN[[i]]$Position = NA
     Video.net.interaction[[i]] <- dummy.GN[[i]] %>%
+      OrigUW() %>% 
       filter(is.na(MaxN)) %>%
       CategoriseComment() %>%
+      CategoriseEscape() %>% 
       dplyr::select(all_of(interaction.names)) %>%
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
         Species = ApplySpecies(Species, Alt.species),
-        Escape = ifelse(
-          grepl("^\\d|^\\<", Escape),
-          gsub("([0-9]+).*$", "\\1", Escape),
-          ''),
         Method = "Gillnet",
         Interaction = AssignInteractions(Interaction)
-      ) 
+      ) %>% 
+      filter(Alt.species == "")
     
     Video.net.maxN[[i]] <- dummy.GN[[i]] %>%
       RenameColumn() %>%
+      OrigUW() %>% 
       CategoriseComment() %>%
       dplyr::select(all_of(maxn.names)) %>%
       mutate(
@@ -68,6 +68,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
     Video.net.obs[[i]] = dummy.GN[[i]] %>%
       RenameColumn() %>%
+      OrigUW() %>% 
       CategoriseComment() %>%
       mutate(
         observation = Alt.species,
@@ -96,8 +97,10 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     if (!'Position' %in% names(dummy.LL[[i]]))
       dummy.LL[[i]]$Position = NA
     Video.longline.interaction[[i]] <-  dummy.LL[[i]] %>%
+      OrigUW() %>% 
       filter(is.na(MaxN)) %>%
       CategoriseComment() %>%
+      CategoriseEscape() %>% 
       dplyr::select(all_of(interaction.names)) %>%
       mutate(
         Number = ifelse(Number == 'AD', NA, Number),
@@ -105,16 +108,13 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         No.fish = Alt.species == "no fish",
         Species=ApplySpecies(Species, Alt.species),
         Method = "Longline",
-        Escape = ifelse(
-          grepl("\\d", Escape),
-          gsub("([0-9]+).*$", "\\1", Escape),
-          ''
-        ),
         Interaction = AssignInteractions(Interaction)
-      )
+      ) %>% 
+      filter(Alt.species == "")
     
     Video.longline.maxN[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
+      OrigUW() %>% 
       CategoriseComment() %>%
       dplyr::select(all_of(maxn.names)) %>%
       mutate(
@@ -124,6 +124,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
     
     Video.longline.obs[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
+      OrigUW() %>% 
       CategoriseComment() %>%
       mutate(
         observation = Alt.species,
