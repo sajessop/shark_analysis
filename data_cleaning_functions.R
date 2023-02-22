@@ -414,9 +414,15 @@ dfs <- list(
 )
 
 # read in species.code ref csv
+setwd(
+  "~/GitHub/shark_analysis"
+)
+#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
 ref <- read.csv("Species.code.csv") 
 ref$taxa <- str_remove(ref$SCIENTIFIC_NAME, "\\.")
-ref$Code <- as.integer(ref$CAAB_code)
+ref$refCode <- as.integer(ref$CAAB_code)
+ref <- ref %>% filter(!taxa == "", !refCode == "") %>% 
+  dplyr::select(taxa, refCode)
 
 # create one dataframe with all species from project
 mylist <- lapply(X=dfs,FUN=columnselect)
@@ -426,47 +432,35 @@ All.species <- data.table::rbindlist(mylist) %>%
     Genus = ifelse(Genus == "", as.character(Family), Genus)) %>%
   unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
   mutate(taxa = str_trim(taxa, side = "left"))
-  as.data.frame(All.species)
+as.data.frame(All.species)
 
 # Match the ones that have no code with the ref csv
-whereismycode <- All.species %>% filter(is.na(Code))
-matched <- inner_join(whereismycode, ref, by = "taxa")
-non.matched <- anti_join(whereismycode, ref, by = "taxa") #%>% 
-# RemoveWhitespace(taxa, nospaces) %>% 
-#   mutate(taxa = str_remove(nospaces, "NA"))
-# altmatched <- inner_join(non.matched, ref, by = "taxa")
-# stillnotmatched <- anti_join(non.matched, ref, by = "taxa")
-# All species can now be match with code by ref csv
+matched <- left_join(All.species, ref, by = "taxa") %>% 
+  mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
+
 
 # Write a 2 level function to apply code to species
 MutateForCAAB <- function(df){
   ret <- df %>% mutate(
     Species = ifelse(Species %in% c("sp2", "sp", "sp1"), as.character("spp"), as.character(Species)),
-    Genus = ifelse(Genus == "", as.character(Family), as.character(Genus))) %>% 
-    unite(taxa, Genus, Species, sep = " ", remove = FALSE)
-  return(ret)
+    Genus = ifelse(Genus == "", as.character(Family), Genus)) %>%
+    unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
+    mutate(taxa = str_trim(taxa, side = "left"))
+  return(as.data.frame(ret))
 }
 
 
-columnselect2<-function(df){
-  df %>% dplyr::select(Family, Genus, Species.x, Code.y)
-}
 MatchCAAB <- function(df){
-  whereismycode <- df %>% filter(is.na(Code)) %>% 
-  inner_join(ref, by = "taxa")
-  non.matched <- anti_join(whereismycode, ref, by = "taxa") %>% 
-    RemoveWhitespace(taxa, nospaces) %>% 
-    mutate(taxa = str_remove(nospaces, "NA"))
-  altmatched <- inner_join(non.matched, ref, by = "taxa")
-  matched <- list(whereismycode,
-                  altmatched)
-  lama <- lapply(X=matched,FUN=columnselect2)
-  return(data.table::rbindlist(lama))
+ ret <- left_join(df, ref, by = "taxa") %>% 
+    mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
+ return(ret)
 }
 
-Magic <- function(df){
-  ret <- df %>% MutateForCAAB() %>% 
-  MatchCAAB()
-  return(ret)
-}
+
+# Returns a list of dfs, the first is matches and the second is non-matched which should have 0 rows if all sp are matched with CAAB codes
+  MatchCAABFUN <- function(df){
+    ret <- df %>% MutateForCAAB() %>% 
+      MatchCAAB()
+    return(ret)
+  }
 

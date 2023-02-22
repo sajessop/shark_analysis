@@ -80,7 +80,6 @@ PD,Dogfish (piked),Squalus megalops,Elasmobranch,20006,20006
 ,Greeneye dogfish,Squalus chloroculus,Elasmobranch,,20048
 ,Cookiecutter shark,Isistius brasiliensis,Elasmobranch,,20014
 GU,Gulper shark,Centrophorus granulosus,Elasmobranch,20023,20023
-,Roughskin dogfish,Centroscymnus spp.,Elasmobranch,,20904
 ,Brier dogshark,Deania calceus,Elasmobranch,,20905
 ,Roughskin shark,Centroscymnus spp.,Elasmobranch,,20906
 DF,Dogfishes,Family Squalidae,Elasmobranch,20923,20923
@@ -143,7 +142,6 @@ HA.T,Hapuku,Polyprion oxygeneios,Teleost,311006,311006
 CT.T,Coral trout,Plectropomus leopardus,Teleost,311012,311078
 ,Chinaman rockcod,Epinephelus rivulatus,Teleost,311022,311022
 RC.T,Rankin cod,Epinephelus multinotatus,Teleost,311058,311010
-,Grey Banded rockcod,Hyporthodus octofasciatus,Teleost,311060,311060
 BC.T,Breaksea cod,Epinephelides armatus,Teleost,311100,311100
 CG.T,Grey Banded rockcod,Hyporthodus octofasciatus,Teleost,311152,311152
 ,Goldspotted rockcod,Epinephelus coioides,Teleost,311903,311007
@@ -207,7 +205,6 @@ BE.T,Bigeye tuna,Thunnus obesus,Teleost,441011,441011
 ,Northern bluefin tuna,Thunnus orientalis,Teleost,441013,441026
 ,Grey mackerel ,Scomberomorus semifasciatus,Teleost,441018,441018
 BO.T,Bonito,Sarda orientalis,Teleost,441020,441006
-TU.T,Tunas,Family Scombridae,Teleost,441900,441000
 DT.T,Deepsea trevalla,Hyperoglyphe antarctica,Teleost,445001,445001
 FL.T,Flounders,Families Bothidae & Pleuronectidae,Teleost,460000,460000
 LJ.T,Leatherjackets,Family Monacanthidae,Teleost,465000,465903
@@ -239,7 +236,6 @@ SK.T,Sergeant Baker,Latropiscis purpurissatus,Teleost,,117001
 SL.T,Spotted sweetlip,Plectorhinchus flavomaculatus,Teleost,,350007
 SM.T,Stripped marlin,Kajikia audax,Teleost,,444002
 SS.T,Sea sweep,Scorpis aequipinnis,Teleost,,361004
-ST.T,Swallow tail,Centroberyx lineatus,Teleost,,258005
 TR.T,Triggerfishes,Family Balistidae,Teleost,,465900
 XG.T,Broadbill swordfish,Xiphias gladius,Teleost,,442001
 XX.T,Unidentified,,Teleost,,990020
@@ -256,39 +252,12 @@ QF.T,queenfish,Caranx ignobilis,Teleost,,337027
 TB.T,Blue threadfin,Eleutheronema tetradactylum,Teleost,,383004
 TF.T,Giant threadfin,Polydactylus macrochir,Teleost,,383005
 TT.T,Triple tail,Lobotes surinamensis,Teleost,,348001
-CC,Unknown,,,,
-GS,Unknown,,,,
-PF,Unknown,,,,
-WK,Unknown,,,,
-AC.T,,,,,
-BK.T,,,,,
-CC.T,,,,,
-CJ.T,,,,,
-CR.T,,,,,
-CW.T,,,,,
-DW,,,,,
-EL.T,,,,,
-FF.T,,,,,
-FS.T,,,,,
-GS,,,,,
-HM.T,,,,,
-HT,,,,,
-KN.T,,,,,
-LP.T,,,,,
-LS.T,,,,,
-MD.T,,,,,
-NB.T,,,,,
-PP.T,,,,,
-RR,,,,,
-SR.T,,,,,
-SX,,,,,
 XX,Other sharks,,Elasmobranch,22999,990082
 ,Rockcod,Plectropomus spp,Teleost,,311940
 ,Drummers,Kyphosus spp,Teleost,,361903
 ,Grey drummer,Kyphosus bigibbus,Teleost,,361021
 ,Bluebarred parrotfish,Scarus ghobban,Teleost,,386001
 ,Leaping bonito,Cybiosarda elegans,Teleost,,441008
-,Silver toadfish,Lagocephalus sceleratus,Teleost,,467007
 ,Western rock blackfish,Girella tephraeops,Teleost,,361017
 ,Sixspine leatherjacket,Meuschenia freycineti,Teleost,,465036
 ME.T,Moray eel,Muraenidae,Teleost,,60000
@@ -360,8 +329,4 @@ ME.T,Moray eel,Muraenidae,Teleost,,60000
 ,,unknown fish,Teleost,,990078
 ,,shell,Mollusc,,207072
 ,,turtle,Reptile,,20002
-,,,,,
-,,,,,
-,,,,,
-,,,,,
 ,,Undifferentiated sponge,,,
