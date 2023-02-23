@@ -418,11 +418,16 @@ setwd(
   "~/GitHub/shark_analysis"
 )
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
-ref <- read.csv("Species.code.csv") 
-ref$taxa <- str_remove(ref$SCIENTIFIC_NAME, "\\.")
-ref$refCode <- as.integer(ref$CAAB_code)
-ref <- ref %>% filter(!taxa == "", !refCode == "") %>% 
+
+# Import ref df 
+ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>% 
+  unite(taxa, GENUS, SPECIES, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
+  mutate(
+    refCode = as.integer(CAAB.CODE),
+    taxa = str_trim(taxa, side = "left")) %>% 
   dplyr::select(taxa, refCode)
+
+
 
 # create one dataframe with all species from project
 mylist <- lapply(X=dfs,FUN=columnselect)
@@ -451,16 +456,16 @@ MutateForCAAB <- function(df){
 
 
 MatchCAAB <- function(df){
- ret <- left_join(df, ref, by = "taxa") %>% 
+  ret <- left_join(df, ref, by = "taxa") %>% 
     mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
- return(ret)
+  return(ret)
 }
 
 
 # Returns a list of dfs, the first is matches and the second is non-matched which should have 0 rows if all sp are matched with CAAB codes
-  MatchCAABFUN <- function(df){
-    ret <- df %>% MutateForCAAB() %>% 
-      MatchCAAB()
-    return(ret)
-  }
+MatchCAABFUN <- function(df){
+  ret <- df %>% MutateForCAAB() %>% 
+    MatchCAAB()
+  return(ret)
+}
 

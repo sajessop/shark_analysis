@@ -9,10 +9,17 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
 
+# Ref sheet for CAAB code matching
+ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>% 
+  unite(taxa, GENUS, SPECIES, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
+  mutate(
+    refCode = as.integer(CAAB.CODE),
+    taxa = str_trim(taxa, side = "left")) %>% 
+  dplyr::select(taxa, refCode)
 Event.Mes.data.dump <- 'Abbey_Sarah'
 
 
-# Underwater
+###########################-------------Underwater----------------###################################
 if(Event.Mes.data.dump=='Abbey_Sarah')
 {
   #1. read in  data
@@ -149,7 +156,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   
 }
 
-# Deck 2
+###########################-------------Deck2----------------###################################
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck2')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/23-01-23'
@@ -185,7 +192,7 @@ Video.camera2.deck=Deck.2.fish
 Video.camera2.deck=Video.camera2.deck%>%
   mutate(dropout=ifelse(dropout=='True','Yes',ifelse(dropout=='False','No',dropout)))
 
-# Deck 1
+###########################-------------Deck1----------------###################################
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
@@ -230,7 +237,7 @@ Video.camera1.deck=Deck.1.fish
 Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
 
 
-# SUbsurface
+###########################-------------Subsurface----------------###################################
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
 setwd(
   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Subsurface'
