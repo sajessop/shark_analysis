@@ -198,10 +198,7 @@ for (i in 1:length(dummy.d2))
     dplyr::select(all_of(deck.2.fish.names)) 
 }
 
-Deck.2.fish <- do.call(rbind, Deck.2.fish)
-Video.camera2.deck=Deck.2.fish
-Video.camera2.deck=Video.camera2.deck%>%
-  mutate(dropout=ifelse(dropout=='True','Yes',ifelse(dropout=='False','No',dropout)))
+Video.camera2.deck <- do.call(rbind, Deck.2.fish)
 
 ###########################-------------Deck1----------------###################################
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
