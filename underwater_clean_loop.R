@@ -10,6 +10,7 @@ source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
 
 # Ref sheet for CAAB code matching
+setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019')
 ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>% 
   unite(taxa, GENUS, SPECIES, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
   mutate(
@@ -82,18 +83,23 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
         code = Code,
-        Method = "Gillnet"
+        Method = "Gillnet",
+        Species=ApplySpecies(Species, Alt.species)
       ) %>%
       dplyr::select(all_of(observation.names))
   }
   
   Video.net.interaction <- do.call(rbind, Video.net.interaction) %>%
+    MatchCAABFUN() %>% 
     filter(!Species %in% c("", " ") &
              No.haul == FALSE & No.fish == FALSE)
   Video.net.maxN = do.call(rbind, Video.net.maxN) %>%
+    MatchCAABFUN() %>% 
     filter(!is.na(MaxN))
   Video.net.obs = do.call(rbind, Video.net.obs) %>%
-    filter(!observation == '')
+    MatchCAABFUN() %>% 
+    filter(!observation == '') %>% 
+    mutate(code = Code)
   
   #2.2. longline
   Video.longline.interaction = Video.longline.maxN = Video.longline.obs =
@@ -138,20 +144,25 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
         code = Code,
-        Method = "Longline"
+        Method = "Longline",
+        Species=ApplySpecies(Species, Alt.species)
       ) %>%
       dplyr::select(all_of(observation.names))
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
+    MatchCAABFUN() %>%
     filter(!Species %in% c(" ", "") &
              No.haul == FALSE & No.fish == FALSE)
   Video.longline.maxN = do.call(rbind, Video.longline.maxN) %>%
+    MatchCAABFUN() %>%
     filter(!is.na(MaxN)) %>%
     rename(Max.N = MaxN)
   Video.longline.obs = do.call(rbind, Video.longline.obs) %>%
+    MatchCAABFUN() %>%
     filter(!observation == '') %>%
     rename(Observation = observation,
-           optcode = OpCode)
+           optcode = OpCode) %>% 
+    mutate(code = Code)
   
   
 }

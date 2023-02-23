@@ -8112,3 +8112,5 @@ Trygonorrhinidae	Aptychotrema	vincentiana	37027001
 		unknown fish	99999999
 		shell	24388000
 		turtle	39020002
+	Blenniidae	spp	37408000
+	Pleuronectidae	spp	37461916

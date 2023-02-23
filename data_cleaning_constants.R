@@ -58,9 +58,13 @@ observation.names <-  c(
   "Number",
   "observation",
   "code",
+  "Code",
   "Method",
   "Alt.species",
-  "original.escape"
+  "original.escape",
+  "Family",
+  "Genus" ,
+  "Species"
 )
 
 
