@@ -186,6 +186,7 @@ for (i in 1:length(dummy.d2))
 {
   Deck.2.fish[[i]] <- dummy.d2[[i]] %>% 
     DeckTwoColumns() %>% 
+    OrigD2() %>% 
     RemoveWhitespace(hooklocation, hookloc.and.comments) %>% 
     rename(`hook distance to float/weight`=hooklocation) %>% 
     HookLocation() %>% 
@@ -194,17 +195,21 @@ for (i in 1:length(dummy.d2))
     separate("Curtin opcode", c("Region", "DPIRD code", "Position"), sep="_", remove=FALSE) %>% 
     CategoriseRegion() %>% 
     mutate(Position = "Deck#2",
-           Species=ApplySpecies(Species, Alt.species)) %>% 
+           Species=ApplySpecies(Species, Alt.species)) %>%
+    filter(Alt.species == "") %>% 
     dplyr::select(all_of(deck.2.fish.names)) 
 }
 
-Video.camera2.deck <- do.call(rbind, Deck.2.fish)
+Video.camera2.deck <- do.call(rbind, Deck.2.fish) %>% 
+  MatchCAABFUN()
+
+#MAKE DECK 2 OBS
 
 ###########################-------------Deck1----------------###################################
-#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
-setwd(
-  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
-)
+setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
+# setwd(
+#   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
+# )
 # Read in data
 dummy.d1 <- list()  
 deck1filenames <- dir(pattern="*.csv")
@@ -226,6 +231,7 @@ for (i in 1:length(dummy.d1))
     mutate(Position = "Deck#1",
            Species=ApplySpecies(Species, Alt.species)) %>%
     filter(is.na(`Percentage cover`)) %>% 
+    filter(is.na(Alt.species)) %>% 
     dplyr::select(all_of(deck.1.fish.names))
   
   Deck.1.habitat[[i]] <- dummy.d1[[i]] %>%
@@ -239,11 +245,11 @@ for (i in 1:length(dummy.d1))
     filter(!is.na(`Percentage cover`)) %>%
     dplyr::select(all_of(deck.1.habitat.names))
 }
-Deck.1.fish <- do.call(rbind, Deck.1.fish)
-Video.camera1.deck=Deck.1.fish
-
+Video.camera1.deck <- do.call(rbind, Deck.1.fish) %>% 
+  MatchCAABFUN()
 Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
 
+### MAKE DECK 1 OBS
 
 ###########################-------------Subsurface----------------###################################
 #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
@@ -270,6 +276,7 @@ for (i in 1:length(dummy.ss)){
     dplyr::select(all_of(subsurface.names))  
   print(i)
 }
-SS.fish <- do.call(rbind, SS.fish)
-Video.subsurface=SS.fish
+Video.subsurface <- do.call(rbind, SS.fish) %>%
+  MatchCAABFUN()
+#MAKE SS OBS
 

@@ -107,6 +107,15 @@ DeckTwoColumns <- function(df) {
   return(df)
 }
 
+## duplicate original cols for reference
+OrigD2 <- function(df){
+  ret <- df %>% mutate(
+    original.hooklocation = hooklocation,
+    original.dropout = dropout,
+    original.gaffed = gaffed
+  )
+  return(ret)
+}
 
 ## Remove Whitespace
 ## input dataframe, col in which you want to rm whitespace, new col name
@@ -161,9 +170,11 @@ CategoriseDropout <- function(df) {
     depredated=case_when(dropout == "depredated" ~ TRUE,
                          hookloc.and.comments =="depredated" ~ TRUE,
                          TRUE ~ FALSE),
-    binary.dropout = ifelse(str_detect(dropout, "(?i)^y"), "Yes", "No"),
-    dropout = binary.dropout
-  )
+    dropout = case_when(
+      str_detect(dropout, "(?i)^y") ~ "Yes",
+      is.na(dropout) ~ "No",
+      TRUE ~ "No"
+  ))
   return(ret)
 }
 

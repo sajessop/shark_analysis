@@ -211,7 +211,10 @@ deck.2.fish.names <-
     "Filename",
     "hookloc.and.comments",
     "Alt.species",
-    "depredated"
+    "depredated",
+    "original.hooklocation",
+    "original.dropout",
+    "original.gaffed"
   )
 deck.2.observations.names <-
   c(
