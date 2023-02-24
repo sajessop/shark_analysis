@@ -409,7 +409,7 @@ CategoriseSSGaffed <- function(df){
 
 
 
-# #### Assigning codes to species
+#### Assigning codes to species
 # columnselect<-function(df){
 #   df %>% dplyr::select(Family, Genus, Species, Code)
 # }
@@ -480,3 +480,41 @@ MatchCAABFUN <- function(df){
   return(ret)
 }
 
+
+
+# Assess and combine species groups
+columnselect<-function(df){
+  df %>% dplyr::select(Family, Genus, Species, Code)
+}
+# List data frames
+dfs <- list(
+  Video.longline.interaction,
+  Video.longline.maxN,
+  Video.net.interaction,
+  Video.net.maxN,
+  Video.camera2.deck,
+  Video.camera1.deck,
+  Video.subsurface
+)
+
+# MAke all species list
+mylist <- lapply(X = dfs, FUN = columnselect)
+All.species <- data.table::rbindlist(mylist) %>%
+  mutate(
+    Species = ifelse(
+      Species %in% c("sp2", "sp", "sp1"),
+      as.character("spp"),
+      as.character(Species)
+    ),
+    Genus = ifelse(Genus == "", as.character(Family), Genus)
+  ) %>%
+  unite(taxa,
+        Genus,
+        Species,
+        sep = " ",
+        remove = FALSE,
+        na.rm = TRUE) %>%
+  mutate(taxa = str_trim(taxa, side = "left"))
+as.data.frame(All.species)
+myspecieslist <- sort(table(All.species$taxa))
+x <- All.species %>% filter(str_detect(taxa, "(?i)sp"))
