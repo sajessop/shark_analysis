@@ -25,17 +25,11 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
 {
   #1. read in  data
   #1.1. gillnet
-  setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Gillnet'
-  )
-  #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
+  setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
   filenames <- list.files(pattern = '*.csv')
   dummy.GN <- lapply(filenames, read.csv, skip = 4)
   #1.2. longline
-  #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Longline')
-  setwd(
-    'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMOutputs/Longline'
-  )
+  setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Longline')
   filenames <- list.files(pattern = '*.csv')
   dummy.LL <- lapply(filenames, read.csv, skip = 4)
   
@@ -58,11 +52,22 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Number = ifelse(Number == 'AD', NA, Number),
         No.haul = Alt.species == "no haul",
         No.fish = Alt.species == "no fish",
-        Species = ApplySpecies(Species, Alt.species),
         Method = "Gillnet",
         Interaction = AssignInteractions(Interaction)
       ) %>% 
-      filter(Alt.species == "")
+      ASL(Alt.species) %>% 
+      Humpback(Alt.species) %>% 
+      filter(
+        !Alt.species %in% c(
+          "squid",
+          "unknown fish",
+          "cuttlefish",
+          "baitfish",
+          "sea hare",
+          "commorant",
+          "crab",
+          "seven legged starfish"
+        ))
     
     Video.net.maxN[[i]] <- dummy.GN[[i]] %>%
       RenameColumn() %>%
@@ -123,7 +128,17 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Method = "Longline",
         Interaction = AssignInteractions(Interaction)
       ) %>% 
-      filter(Alt.species == "")
+      Turtle(Alt.species) %>% 
+      filter(
+        !Alt.species %in% c(
+          "squid",
+          "Octopus",
+          "cuttlefish",
+          "bird",
+          "snail",
+          "unknown fish",
+          "baitfish"
+        ))
     
     Video.longline.maxN[[i]] = dummy.LL[[i]] %>%
       RenameColumn() %>%
@@ -168,10 +183,8 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
 }
 
 ###########################-------------Deck2----------------###################################
-#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck2')
-setwd(
-  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/Deck/OutputDeck2/23-01-23'
-)
+setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck2')
+
 # Read in data
 dummy.d2 <- list()  
 deck2filenames <- dir(pattern="*.csv")
@@ -196,7 +209,7 @@ for (i in 1:length(dummy.d2))
     CategoriseRegion() %>% 
     mutate(Position = "Deck#2",
            Species=ApplySpecies(Species, Alt.species)) %>%
-    filter(Alt.species == "") %>% 
+    # filter(Alt.species == "") %>% 
     dplyr::select(all_of(deck.2.fish.names)) 
 }
 
@@ -207,9 +220,7 @@ Video.camera2.deck <- do.call(rbind, Deck.2.fish) %>%
 
 ###########################-------------Deck1----------------###################################
 setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
-# setwd(
-#   'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Deck1'
-# )
+
 # Read in data
 dummy.d1 <- list()  
 deck1filenames <- dir(pattern="*.csv")
@@ -231,7 +242,7 @@ for (i in 1:length(dummy.d1))
     mutate(Position = "Deck#1",
            Species=ApplySpecies(Species, Alt.species)) %>%
     filter(is.na(`Percentage cover`)) %>% 
-    filter(is.na(Alt.species)) %>% 
+    # filter(is.na(Alt.species)) %>% 
     dplyr::select(all_of(deck.1.fish.names))
   
   Deck.1.habitat[[i]] <- dummy.d1[[i]] %>%
@@ -252,10 +263,7 @@ Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
 ### MAKE DECK 1 OBS
 
 ###########################-------------Subsurface----------------###################################
-#setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
-setwd(
-  'C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Final_EMobs/EMoutputs/Subsurface'
-)
+setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
 # Read in data
 dummy.ss <- list()  
 ssfilenames <- dir(pattern="*.csv")

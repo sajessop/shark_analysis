@@ -404,57 +404,31 @@ CategoriseSSGaffed <- function(df){
   
 }
 
-
-
-
-
-
-#### Assigning codes to species
-# columnselect<-function(df){
-#   df %>% dplyr::select(Family, Genus, Species, Code)
-# }
-# # List data frames
-# dfs <- list(
-#   Video.longline.interaction,
-#   Video.longline.maxN,
-#   Video.net.interaction,
-#   Video.net.maxN,
-#   Video.camera2.deck,
-#   Video.camera1.deck,
-#   Video.subsurface
-# )
-# 
-# # read in species.code ref csv
-# setwd(
-#   "~/GitHub/shark_analysis"
-# )
-# #setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Gillnet')
-# 
-# # Import ref df 
-# ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>% 
-#   unite(taxa, GENUS, SPECIES, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
-#   mutate(
-#     refCode = as.integer(CAAB.CODE),
-#     taxa = str_trim(taxa, side = "left")) %>% 
-#   dplyr::select(taxa, refCode)
-# 
-# 
-# 
-# # create one dataframe with all species from project
-# mylist <- lapply(X=dfs,FUN=columnselect)
-# All.species <- data.table::rbindlist(mylist) %>% 
-#   mutate(
-#     Species = ifelse(Species %in% c("sp2", "sp", "sp1"), as.character("spp"), as.character(Species)),
-#     Genus = ifelse(Genus == "", as.character(Family), Genus)) %>%
-#   unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
-#   mutate(taxa = str_trim(taxa, side = "left"))
-# as.data.frame(All.species)
-# 
-# # Match the ones that have no code with the ref csv
-# matched <- left_join(All.species, ref, by = "taxa") %>% 
-#   mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
-
-
+# Assign ASL and Humpback Family Genus Species
+ASL <- function(df, varnam){
+  ret <- df %>% mutate(
+    Family = ifelse({{varnam}} == "sea lion", as.character("Otariidae"), as.character(Family)),
+    Genus = ifelse({{varnam}} == "sea lion", as.character("Neophoca"), as.character(Genus)),
+    Species = ifelse({{varnam}} == "sea lion", as.character("cinerea"), as.character(Species))
+  )
+  return(ret)
+}
+Humpback <- function(df, varnam){
+  ret <- df %>% mutate(
+    Family = ifelse({{varnam}} == "Whale", as.character("Balaenopteridae"), as.character(Family)),
+    Genus = ifelse({{varnam}} == "Whale", as.character("Megaptera"), as.character(Genus)),
+    Species = ifelse({{varnam}} == "Whale", as.character("novaeangliae"), as.character(Species))
+  )
+  return(ret)
+}
+Turtle <- function(df, varnam){
+  ret <- df %>% mutate(
+    Family = ifelse({{varnam}} == "turtle", as.character("Cheloniidae"), as.character(Family)),
+    Genus = ifelse({{varnam}} == "turtle", as.character("Cheloniidae"), as.character(Genus)),
+    Species = ifelse({{varnam}} == "turtle", as.character("spp"), as.character(Species))
+  )
+  return(ret)
+}
 # Write a 2 level function to apply code to species
 MutateForCAAB <- function(df){
   ret <- df %>% mutate(
@@ -482,39 +456,39 @@ MatchCAABFUN <- function(df){
 
 
 
-# Assess and combine species groups
-columnselect<-function(df){
-  df %>% dplyr::select(Family, Genus, Species, Code)
-}
-# List data frames
-dfs <- list(
-  Video.longline.interaction,
-  Video.longline.maxN,
-  Video.net.interaction,
-  Video.net.maxN,
-  Video.camera2.deck,
-  Video.camera1.deck,
-  Video.subsurface
-)
+# # Assess and combine species groups
+# columnselect<-function(df){
+#   df %>% dplyr::select(Family, Genus, Species, Code)
+# }
+# # List data frames
+# dfs <- list(
+#   Video.longline.interaction,
+#   Video.longline.maxN,
+#   Video.net.interaction,
+#   Video.net.maxN,
+#   Video.camera2.deck,
+#   Video.camera1.deck,
+#   Video.subsurface
+# )
 
 # MAke all species list
-mylist <- lapply(X = dfs, FUN = columnselect)
-All.species <- data.table::rbindlist(mylist) %>%
-  mutate(
-    Species = ifelse(
-      Species %in% c("sp2", "sp", "sp1"),
-      as.character("spp"),
-      as.character(Species)
-    ),
-    Genus = ifelse(Genus == "", as.character(Family), Genus)
-  ) %>%
-  unite(taxa,
-        Genus,
-        Species,
-        sep = " ",
-        remove = FALSE,
-        na.rm = TRUE) %>%
-  mutate(taxa = str_trim(taxa, side = "left"))
-as.data.frame(All.species)
-myspecieslist <- sort(table(All.species$taxa))
-x <- All.species %>% filter(str_detect(taxa, "(?i)sp"))
+# mylist <- lapply(X = dfs, FUN = columnselect)
+# All.species <- data.table::rbindlist(mylist) %>%
+#   mutate(
+#     Species = ifelse(
+#       Species %in% c("sp2", "sp", "sp1"),
+#       as.character("spp"),
+#       as.character(Species)
+#     ),
+#     Genus = ifelse(Genus == "", as.character(Family), Genus)
+#   ) %>%
+#   unite(taxa,
+#         Genus,
+#         Species,
+#         sep = " ",
+#         remove = FALSE,
+#         na.rm = TRUE) %>%
+#   mutate(taxa = str_trim(taxa, side = "left"))
+# as.data.frame(All.species)
+# myspecieslist <- sort(table(All.species$taxa))
+# x <- All.species %>% filter(str_detect(taxa, "(?i)sp"))
