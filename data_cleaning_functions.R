@@ -164,14 +164,14 @@ CategoriseDropout <- function(df) {
     str_detect(dropout, "(?i)cuttle") ~ "cuttlefish",
     str_detect(dropout, "sea hare") ~ "sea hare",
     str_detect(hookloc.and.comments, "seahare") ~ "sea hare",
-    str_detect(dropout, "^sealion") ~ "sea lion",
+    str_detect(dropout, "^sealion|^Sea Lion") ~ "sea lion",
     str_detect(dropout, "^blue manner") ~ "crab",
     TRUE ~ ""),
     depredated=case_when(dropout == "depredated" ~ TRUE,
                          hookloc.and.comments =="depredated" ~ TRUE,
                          TRUE ~ FALSE),
     dropout = case_when(
-      str_detect(dropout, "(?i)^y") ~ "Yes",
+      str_detect(dropout, "(?i)^y|Sea Lion y") ~ "Yes",
       is.na(dropout) ~ "No",
       TRUE ~ "No"
   ))
@@ -314,7 +314,17 @@ CategoriseRegion <- function(df){
 }
 # define comments
 
-
+# Categorise Periods
+CategorisePeriod <- function(df, varnam){
+  ret <- df %>% mutate(
+    Period = case_when(
+      str_detect({{varnam}}, "(?i)^l") ~ "Longline",
+      str_detect({{varnam}}, "(?i)^g") ~ "Gillnet",
+      TRUE ~ as.character({{varnam}})
+    )
+  )
+  return(ret)
+}
 
 # Subsurface
 # Rename SS Column
@@ -404,7 +414,7 @@ CategoriseSSGaffed <- function(df){
   
 }
 
-# Assign ASL and Humpback Family Genus Species
+# Assign ASL, turtle and Humpback Family Genus Species
 ASL <- function(df, varnam){
   ret <- df %>% mutate(
     Family = ifelse({{varnam}} == "sea lion", as.character("Otariidae"), as.character(Family)),
@@ -429,7 +439,8 @@ Turtle <- function(df, varnam){
   )
   return(ret)
 }
-# Write a 2 level function to apply code to species
+
+# Write a 2 level function to apply CAAB code to species
 MutateForCAAB <- function(df){
   ret <- df %>% mutate(
     Species = ifelse(Species %in% c("sp2", "sp", "sp1"), as.character("spp"), as.character(Species)),
@@ -447,7 +458,7 @@ MatchCAAB <- function(df){
 }
 
 
-# Returns a list of dfs, the first is matches and the second is non-matched which should have 0 rows if all sp are matched with CAAB codes
+# Returns df with macthed CAAB codes and a new "refCode" col
 MatchCAABFUN <- function(df){
   ret <- df %>% MutateForCAAB() %>% 
     MatchCAAB()

@@ -207,16 +207,40 @@ for (i in 1:length(dummy.d2))
     CategoriseDropout() %>% 
     separate("Curtin opcode", c("Region", "DPIRD code", "Position"), sep="_", remove=FALSE) %>% 
     CategoriseRegion() %>% 
+    CategorisePeriod(Period) %>% 
     mutate(Position = "Deck#2",
-           Species=ApplySpecies(Species, Alt.species)) %>%
-    # filter(Alt.species == "") %>% 
+           Species=ApplySpecies(Species, Alt.species),
+           comment = as.character(Alt.species),
+           Activity = as.character(NA),
+           Stage = as.character(NA),
+           Number = as.integer(NA)) %>%
+    ASL(Alt.species) %>% 
     dplyr::select(all_of(deck.2.fish.names)) 
-}
+  
+  Deck.2.obs[[i]] <- Deck.2.fish[[i]] %>% 
+    mutate(
+      comment = case_when(!Alt.species == "" ~ as.character(Alt.species),
+                          original.hooklocation %in% deck.2.observations ~ as.character(original.hooklocation),
+                          TRUE ~ as.character(NA)),
+      Activity = as.character("Passing"),
+      Stage = as.character("AD"),
+      Number = as.integer(1)) %>% 
+    filter(!is.na(comment)) %>% 
+  dplyr::select(all_of(deck.2.observations.names))
+  
+  }
 
 Video.camera2.deck <- do.call(rbind, Deck.2.fish) %>% 
+  filter(!Alt.species %in% c(
+    "bird",
+    "sea hare",
+    "crab",
+    "crayfish",
+    "unknown fish",
+    "cuttlefish")) %>%
   MatchCAABFUN()
-
-#MAKE DECK 2 OBS
+Video.camera2.deck_observations <- do.call(rbind, Deck.2.obs) %>%
+  MatchCAABFUN()
 
 ###########################-------------Deck1----------------###################################
 setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Deck1')
@@ -241,8 +265,9 @@ for (i in 1:length(dummy.d1))
     CategoriseMeshed() %>% 
     mutate(Position = "Deck#1",
            Species=ApplySpecies(Species, Alt.species)) %>%
-    filter(is.na(`Percentage cover`)) %>% 
-    # filter(is.na(Alt.species)) %>% 
+    filter(is.na(`Percentage cover`)) %>%
+    CategorisePeriod(Period) %>% 
+    filter(is.na(Alt.species)) %>%
     dplyr::select(all_of(deck.1.fish.names))
   
   Deck.1.habitat[[i]] <- dummy.d1[[i]] %>%
@@ -252,8 +277,11 @@ for (i in 1:length(dummy.d1))
     mutate(
       `Curtin opcode` = `curtin opcode`
     ) %>% 
+    mutate(Position = "Deck#1") %>%
+    CategorisePeriod(Period) %>% 
     CategoriseMeshed() %>% 
     filter(!is.na(`Percentage cover`)) %>%
+    filter(!Period == "Longline") %>% 
     dplyr::select(all_of(deck.1.habitat.names))
 }
 Video.camera1.deck <- do.call(rbind, Deck.1.fish) %>% 

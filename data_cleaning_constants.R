@@ -68,7 +68,7 @@ observation.names <-  c(
 )
 
 
-# Here you can add comments (from escape column) that we don't want to include in a df
+# comments (from underwater escape column) that we don't want to include in a df
 ## Two different sets. Use in various places
 ## drop1
 drop1 <- c(
@@ -214,7 +214,10 @@ deck.2.fish.names <-
     "depredated",
     "original.hooklocation",
     "original.dropout",
-    "original.gaffed"
+    "original.gaffed",
+    "Number",
+    "Stage",
+    "Activity"
   )
 deck.2.observations.names <-
   c(
@@ -235,25 +238,19 @@ deck.2.observations.names <-
     "Number",
     "Stage",
     "Activity",
-    "comment"
-  )
-deck.2.observations <- 
-  c(
-    "depredated",
-    "gilled",
-    "Bagged",
-    "cameratimedout",
-    "2",
-    "caughtfeedingonSargentBaker",
-    "bagged",
-    "taggedandreleased",
-    "Gilled",
-    "4mingapbetweenvidsdidn'tseefishondec",
-    "2W&F",
-    "birdpacificgull",
-    "seahare"
+    "comment",
+    "original.hooklocation",
+    "original.dropout",
+    "original.gaffed",
+    "Alt.species"
   )
 
+deck.2.observations <-
+  c(
+    "caught feeding on Sargent Baker",
+    "tagged and released",
+    "4min gap between vidsdidn't see fish on dec"
+  )
 
 # Subsurface
 subsurface.names <- 
