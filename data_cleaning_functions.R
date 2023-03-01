@@ -1,8 +1,8 @@
-
-
 # Functions used in data_cleaning_PA.Rmd
-
 ### fucntion names are defined LikeThis
+
+####################################Underwater#####################################
+{
 # Assign Interactions Function
 AssignInteractions <- function(numerical.interaction){
   
@@ -89,7 +89,11 @@ CategoriseEscape <- function(df){
   )
 }
 
+}
 
+
+##################################Deck2###########################################
+{
 # Rename Deck Column
 ## Using regex notation to capture variation in column names
 DeckTwoColumns <- function(df) {
@@ -178,6 +182,11 @@ CategoriseDropout <- function(df) {
   return(ret)
 }
 
+}
+
+
+##################################Deck1##########################################
+{
 # Rename Deck 1 Column
 ## Using regex notation to capture variation in column names
 DeckOneColumns <- function(df) {
@@ -326,7 +335,11 @@ CategorisePeriod <- function(df, varnam){
   return(ret)
 }
 
-# Subsurface
+}
+
+
+#########################Subsurface######################################
+{
 # Rename SS Column
 ## Using regex notation to capture variation in column names
 SSColumns <- function(df) {
@@ -414,6 +427,11 @@ CategoriseSSGaffed <- function(df){
   
 }
 
+}
+
+
+###########################################ASL,Humpback,Turtle#########################
+{
 # Assign ASL, turtle and Humpback Family Genus Species
 ASL <- function(df, varnam){
   ret <- df %>% mutate(
@@ -440,6 +458,11 @@ Turtle <- function(df, varnam){
   return(ret)
 }
 
+}
+
+
+###################################CAAB Macth#########################################
+{
 # Write a 2 level function to apply CAAB code to species
 MutateForCAAB <- function(df){
   ret <- df %>% mutate(
@@ -465,7 +488,7 @@ MatchCAABFUN <- function(df){
   return(ret)
 }
 
-
+}
 
 # # Assess and combine species groups
 # columnselect<-function(df){

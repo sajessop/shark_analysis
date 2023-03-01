@@ -19,6 +19,8 @@ ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>%
   dplyr::select(taxa, refCode)
 Event.Mes.data.dump <- 'Abbey_Sarah'
 
+#### NOTE: CAAB codes are assigned based on MatchCAABFUN() which does a left_join with a reference .CSV
+#### unknown fish are given dummy CAAB code: 99999999
 
 ###########################-------------Underwater----------------###################################
 if(Event.Mes.data.dump=='Abbey_Sarah')
@@ -267,7 +269,6 @@ for (i in 1:length(dummy.d1))
            Species=ApplySpecies(Species, Alt.species)) %>%
     filter(is.na(`Percentage cover`)) %>%
     CategorisePeriod(Period) %>% 
-    filter(is.na(Alt.species)) %>%
     dplyr::select(all_of(deck.1.fish.names))
   
   Deck.1.habitat[[i]] <- dummy.d1[[i]] %>%
@@ -283,8 +284,16 @@ for (i in 1:length(dummy.d1))
     filter(!is.na(`Percentage cover`)) %>%
     filter(!Period == "Longline") %>% 
     dplyr::select(all_of(deck.1.habitat.names))
+  
+  Deck.1.obs[[i]] <- Deck.1.fish[[i]] %>% 
+    mutate(
+      number = as.integer(1)
+    ) %>% 
+    filter(!is.na(Alt.species))
+  ### Need to add comments from meshed to obs df
 }
 Video.camera1.deck <- do.call(rbind, Deck.1.fish) %>% 
+  filter(is.na(Alt.species))
   MatchCAABFUN()
 Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
 
