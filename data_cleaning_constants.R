@@ -1,7 +1,7 @@
 
 ## Constants used in data_cleaning_PA
 ### Variables are defined like.this
-# Underwater  
+################################################Underwater############################################  
 # Start with column names that we want
 ## Interaction df
 interaction.names <-  c(
@@ -120,7 +120,7 @@ drop2 <-  c(
   "snoode broke during retreival"
 )
 
-# Deck 1
+##########################################################Deck 1############################################
 ## Column names that we want
 deck.1.fish.names <-
   c(
@@ -169,7 +169,7 @@ deck.1.habitat.names <-
   )
 deck.1.observations.names <- 
   c(
-    "RegionDIPRDcodePosition",
+    "RegionDIPRD codePosition",
     "Region",
     "DIPRD code",
     "Position",
@@ -188,7 +188,17 @@ deck.1.observations.names <-
     "retained",
     "meshed"
   )
-# Deck 2
+
+deck.1.observations <-
+  c(
+    "gilled not measured",
+    "not measured",
+    "measured twice",
+    "depredated not measured",
+    "caught inside mako shark gill"
+  )
+
+#########################################################Deck 2#############################################################
 deck.2.fish.names <-
   c(
     "Curtin opcode",
@@ -252,7 +262,7 @@ deck.2.observations <-
     "4min gap between vidsdidn't see fish on dec"
   )
 
-# Subsurface
+######################################################Subsurface################################################
 subsurface.names <- 
   c(
     "Region",

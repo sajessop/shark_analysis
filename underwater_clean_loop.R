@@ -254,7 +254,7 @@ for (i in 1:length(deck1filenames))
 {
   dummy.d1[[i]] <- read.csv(deck1filenames[i], skip=4)
 }
-Deck.1.fish <-  Deck.1.habitat <-  vector('list', length(dummy.d1))
+Deck.1.fish <-  Deck.1.habitat <- Deck.1.obs <-  vector('list', length(dummy.d1))
 for (i in 1:length(dummy.d1))
 {
   Deck.1.fish[[i]] <- dummy.d1[[i]] %>%
@@ -285,19 +285,24 @@ for (i in 1:length(dummy.d1))
     filter(!Period == "Longline") %>% 
     dplyr::select(all_of(deck.1.habitat.names))
   
-  Deck.1.obs[[i]] <- Deck.1.fish[[i]] %>% 
+  Deck.1.obs[[i]] <- Deck.1.fish[[i]] %>%
     mutate(
-      number = as.integer(1)
-    ) %>% 
-    filter(!is.na(Alt.species))
-  ### Need to add comments from meshed to obs df
+      number = as.integer(1),
+      meshed = case_when(!is.na(Alt.species) ~ as.character(Alt.species),
+                          original.meshed %in% deck.1.observations ~ as.character(original.meshed),
+                          TRUE ~ as.character(NA))) %>%
+    filter(!is.na(meshed)) %>% 
+    unite(`RegionDIPRD codePosition`, remove = FALSE) %>% 
+    dplyr::select(all_of(deck.1.observations.names))
 }
+
+
 Video.camera1.deck <- do.call(rbind, Deck.1.fish) %>% 
-  filter(is.na(Alt.species))
+  filter(is.na(Alt.species)) %>% 
   MatchCAABFUN()
 Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
-
-### MAKE DECK 1 OBS
+Video.camera1.deck_observations <- do.call(rbind, Deck.1.obs) %>% 
+  MatchCAABFUN()
 
 ###########################-------------Subsurface----------------###################################
 setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019/EMOutputs/Subsurface')
