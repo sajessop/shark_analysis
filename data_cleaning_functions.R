@@ -277,7 +277,7 @@ AltSpecies <- function(df, varnam){
       str_detect({{varnam}}, "(?i)baitfish") ~ "baitfish",
       str_detect({{varnam}}, "(?i)lion") ~ "sea lion",
       {{varnam}} == "crayfish" ~ "crayfish",
-      TRUE ~ as.character(NA))  
+      TRUE ~ as.character(""))  
   )
   return(ret)
 }

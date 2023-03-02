@@ -298,10 +298,10 @@ for (i in 1:length(dummy.d1))
 
 
 Video.camera1.deck <- do.call(rbind, Deck.1.fish) %>% 
-  filter(is.na(Alt.species)) %>% 
+  filter(Alt.species == "") %>% 
   MatchCAABFUN()
 Video.habitat.deck <- do.call(rbind, Deck.1.habitat)
-Video.camera1.deck_observations <- do.call(rbind, Deck.1.obs) %>% 
+Video.camera1.deck_extra.records <- do.call(rbind, Deck.1.obs) %>% 
   MatchCAABFUN()
 
 ###########################-------------Subsurface----------------###################################
@@ -313,20 +313,39 @@ for (i in 1:length(ssfilenames))
 {
   dummy.ss[[i]] <- read.csv(ssfilenames[i], skip=4)
 }
-SS.fish <- vector('list', length(dummy.ss))
+SS.fish <- SS.obs <-  vector('list', length(dummy.ss))
 for (i in 1:length(dummy.ss)){
   SS.fish[[i]] <- dummy.ss[[i]] %>%
     SSColumns() %>% 
-    mutate(Region = str_extract(`DPIRD code`, "[^_]+")) %>%
+    mutate(Region = str_extract(`DPIRD code`, "[^_]+"))%>%
     OrigSS() %>% 
     CategoriseSSDropout() %>% 
     CategoriseSSGaffed() %>% 
-    CategoriseCondition(original.condition, `Dropout condition`) %>% 
-    mutate(Species=ApplySpecies(Species, Alt.species)) %>% 
-    dplyr::select(all_of(subsurface.names))  
-  print(i)
+    CategoriseCondition(original.condition, `Dropout condition`) %>%
+    mutate(Species=ApplySpecies(Species, Alt.species)) %>%
+    separate(`DPIRD code`, into = str_c("meta", 1:4), sep="_", remove = FALSE) %>%
+    mutate(
+      `DPIRD code` = ifelse(meta2 == "bay", as.character(meta3), as.character(meta2))) %>%
+    ASL(Alt.species) %>%
+    dplyr::select(all_of(subsurface.names))
+  
+  SS.obs[[i]] <- SS.fish[[i]] %>%
+    mutate(
+      comment = case_when(!Alt.species == "" ~ as.character(Alt.species),
+                          original.gaffed %in% subsurface.observations ~ as.character(original.gaffed),
+                          TRUE ~ as.character(NA)),
+      interaction = as.character(Interaction)) %>% 
+    unite(OpCode, c("Region", "DPIRD code", "Position"), sep = "_", remove = FALSE) %>% 
+    filter(!is.na(comment)) %>% 
+    dplyr::select(all_of(subsurface.observations.names))
+    
 }
 Video.subsurface <- do.call(rbind, SS.fish) %>%
+  filter(!Alt.species %in% c(
+    "unknown fish",
+    "bird",
+    "baitfish")) %>%
   MatchCAABFUN()
-#MAKE SS OBS
+Video.subsurface.comments <- do.call(rbind, SS.obs) %>% 
+  MatchCAABFUN()
 

@@ -286,3 +286,45 @@ subsurface.names <-
     "Alt.species",
     "depredated"
   )
+
+subsurface.observations.names <- 
+  c(
+    "OpCode",
+    "Region",
+    "DPIRD code",
+    "Position",
+    "Period",
+    "Period time (mins)",
+    "Depth",
+    "Family",
+    "Genus",
+    "Species",
+    "Code",
+    "comment",
+    "Dropout condition",
+    "Drop out",
+    "interaction",
+    "original.gaffed",
+    "original.dropout",
+    "original.condition",
+    "Alt.species"
+  )
+
+subsurface.observations <-
+  c(
+    "LINE BROKE",
+    "GN BROKE",
+    "TO DARK",
+    "LL BROKE",
+    "LL picked up again",
+    "camera taken out half way",
+    "VIDEO ENDS BEFORE FINISHING HAUL",
+    "line snapped",
+    "NET SNAPPED",
+    "longline snapped",
+    "broken line",
+    "end before finish",
+    "END BEFORE FINISHED",
+    "thrown over",
+    "THROWN OVER"
+  )
