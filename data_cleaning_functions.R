@@ -502,15 +502,15 @@ columnselect<-function(df){
   df %>% dplyr::select(Family, Genus, Species, Code)
 }
 # # List data frames
-dfs <- list(
-  Video.longline.interaction,
-  Video.longline.maxN,
-  Video.net.interaction,
-  Video.net.maxN,
-  Video.camera2.deck,
-  Video.camera1.deck,
-  Video.subsurface
-)
+# dfs <- list(
+#   Video.longline.interaction,
+#   Video.longline.maxN,
+#   Video.net.interaction,
+#   Video.net.maxN,
+#   Video.camera2.deck,
+#   Video.camera1.deck,
+#   Video.subsurface
+# )
 # 
 # # MAke all species list
 # mylist <- lapply(X = dfs, FUN = columnselect)
