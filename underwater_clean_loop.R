@@ -9,7 +9,8 @@ options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE)
 source("data_cleaning_functions.R")
 source("data_cleaning_constants.R")
 
-# Ref sheet for CAAB code matching
+#########################Ref sheet for CAAB code matching
+{
 setwd('//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019')
 ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>% 
   unite(taxa, GENUS, SPECIES, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
@@ -18,8 +19,9 @@ ref <- read.delim("CodeMatchingPA19.txt", sep = "\t") %>%
     taxa = str_trim(taxa, side = "left")) %>% 
   dplyr::select(taxa, refCode)
 Event.Mes.data.dump <- 'Abbey_Sarah'
+}
 
-#### NOTE: CAAB codes are assigned based on MatchCAABFUN() which does a left_join with a reference .CSV
+#### NOTE: CAAB codes are assigned based on MatchCAABFUN() which does a left_join() with a reference .CSV
 #### unknown fish are given dummy CAAB code: 99999999
 
 ###########################-------------Underwater----------------###################################
@@ -106,6 +108,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
   Video.net.obs = do.call(rbind, Video.net.obs) %>%
     MatchCAABFUN() %>% 
     filter(!observation == '') %>% 
+    filter(!Species %in% c("sea lion", "Whale")) %>% 
     mutate(code = Code)
   
   #2.2. longline
@@ -164,6 +167,7 @@ if(Event.Mes.data.dump=='Abbey_Sarah')
         Method = "Longline",
         Species=ApplySpecies(Species, Alt.species)
       ) %>%
+      filter(!Species == "turtle") %>% 
       dplyr::select(all_of(observation.names))
   }
   Video.longline.interaction = do.call(rbind, Video.longline.interaction) %>%
@@ -266,7 +270,8 @@ for (i in 1:length(dummy.d1))
     CategoriseRetained() %>% 
     CategoriseMeshed() %>% 
     mutate(Position = "Deck#1",
-           Species=ApplySpecies(Species, Alt.species)) %>%
+           Species=ApplySpecies(Species, Alt.species),
+           number = as.integer(1)) %>%
     filter(is.na(`Percentage cover`)) %>%
     CategorisePeriod(Period) %>% 
     dplyr::select(all_of(deck.1.fish.names))
@@ -340,6 +345,7 @@ for (i in 1:length(dummy.ss)){
     dplyr::select(all_of(subsurface.observations.names))
     
 }
+print("NOTE: There were 35 warnings THIS IS FINE AND EXPECTED")
 Video.subsurface <- do.call(rbind, SS.fish) %>%
   filter(!Alt.species %in% c(
     "unknown fish",

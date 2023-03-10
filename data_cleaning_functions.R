@@ -464,15 +464,20 @@ Turtle <- function(df, varnam){
 ###################################CAAB Macth#########################################
 {
 # Write a 2 level function to apply CAAB code to species
-MutateForCAAB <- function(df){
-  ret <- df %>% mutate(
-    Species = ifelse(Species %in% c("sp2", "sp", "sp1"), as.character("spp"), as.character(Species)),
-    Genus = ifelse(Genus == "", as.character(Family), Genus)) %>%
-    unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>% 
-    mutate(taxa = str_trim(taxa, side = "left"))
-  return(as.data.frame(ret))
-}
-
+  MutateForCAAB <- function(df) {
+    ret <- df %>% unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>%
+      mutate(
+      Species = case_when(
+        taxa %in% c("Carcharhinus brachyurus", "Carcharhinus spp","Carcharhinus obscurus") ~ "obscurus",
+        Species %in% c("sp2", "sp", "sp1") ~ "spp",
+        taxa == "Centroberyx affinis" ~ "gerrardi",
+        taxa %in% c("Kyphosus sydneyanus", "Kyphosus bigibbus") ~ "sydneyanus",
+        TRUE ~ as.character(Species))) %>%
+      unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>%
+      mutate(taxa = str_trim(taxa, side = "left"))
+    return(as.data.frame(ret))
+  }
+  
 
 MatchCAAB <- function(df){
   ret <- left_join(df, ref, by = "taxa") %>% 
@@ -490,22 +495,24 @@ MatchCAABFUN <- function(df){
 
 }
 
-# # Assess and combine species groups
-# columnselect<-function(df){
-#   df %>% dplyr::select(Family, Genus, Species, Code)
-# }
-# # List data frames
-# dfs <- list(
-#   Video.longline.interaction,
-#   Video.longline.maxN,
-#   Video.net.interaction,
-#   Video.net.maxN,
-#   Video.camera2.deck,
-#   Video.camera1.deck,
-#   Video.subsurface
-# )
 
-# MAke all species list
+  
+# Assess and combine species groups
+columnselect<-function(df){
+  df %>% dplyr::select(Family, Genus, Species, Code)
+}
+# # List data frames
+dfs <- list(
+  Video.longline.interaction,
+  Video.longline.maxN,
+  Video.net.interaction,
+  Video.net.maxN,
+  Video.camera2.deck,
+  Video.camera1.deck,
+  Video.subsurface
+)
+# 
+# # MAke all species list
 # mylist <- lapply(X = dfs, FUN = columnselect)
 # All.species <- data.table::rbindlist(mylist) %>%
 #   mutate(
@@ -523,6 +530,6 @@ MatchCAABFUN <- function(df){
 #         remove = FALSE,
 #         na.rm = TRUE) %>%
 #   mutate(taxa = str_trim(taxa, side = "left"))
-# as.data.frame(All.species)
+# All.taxa <- as.data.frame(distinct(All.species, taxa))
 # myspecieslist <- sort(table(All.species$taxa))
-# x <- All.species %>% filter(str_detect(taxa, "(?i)sp"))
+# myspp <- All.species %>% filter(str_detect(taxa, "(?i)spp")) %>% distinct(taxa)
