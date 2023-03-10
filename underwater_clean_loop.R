@@ -232,6 +232,7 @@ for (i in 1:length(dummy.d2))
       Stage = as.character("AD"),
       Number = as.integer(1)) %>% 
     filter(!is.na(comment)) %>% 
+    filter(!comment == "sea lion") %>% 
   dplyr::select(all_of(deck.2.observations.names))
   
   }
@@ -294,9 +295,10 @@ for (i in 1:length(dummy.d1))
     mutate(
       number = as.integer(1),
       meshed = case_when(!is.na(Alt.species) ~ as.character(Alt.species),
+                         Alt.species == "" ~ as.character(NA),
                           original.meshed %in% deck.1.observations ~ as.character(original.meshed),
                           TRUE ~ as.character(NA))) %>%
-    filter(!is.na(meshed)) %>% 
+    filter(!meshed =="") %>% 
     unite(`RegionDIPRD codePosition`, remove = FALSE) %>% 
     dplyr::select(all_of(deck.1.observations.names))
 }

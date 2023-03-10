@@ -186,7 +186,9 @@ deck.1.observations.names <-
     "number",
     "condition",
     "retained",
-    "meshed"
+    "meshed",
+    "original.meshed",
+    "Alt.species"
   )
 
 deck.1.observations <-
