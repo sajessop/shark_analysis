@@ -465,13 +465,13 @@ Turtle <- function(df, varnam){
 {
 # Write a 2 level function to apply CAAB code to species
   MutateForCAAB <- function(df) {
-    ret <- df %>% unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>%
+    ret <- df %>% unite(taxa.to.mutate, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>%
       mutate(
       Species = case_when(
-        taxa %in% c("Carcharhinus brachyurus", "Carcharhinus spp","Carcharhinus obscurus") ~ "obscurus",
+        taxa.to.mutate %in% c("Carcharhinus brachyurus", "Carcharhinus spp","Carcharhinus obscurus", "Carcharhinus sp1") ~ "obscurus",
         Species %in% c("sp2", "sp", "sp1") ~ "spp",
-        taxa == "Centroberyx affinis" ~ "gerrardi",
-        taxa %in% c("Kyphosus sydneyanus", "Kyphosus bigibbus") ~ "sydneyanus",
+        taxa.to.mutate == "Centroberyx affinis" ~ "gerrardi",
+        taxa.to.mutate %in% c("Kyphosus sydneyanus", "Kyphosus bigibbus") ~ "sydneyanus",
         TRUE ~ as.character(Species))) %>%
       unite(taxa, Genus, Species, sep = " ", remove = FALSE, na.rm = TRUE) %>%
       mutate(taxa = str_trim(taxa, side = "left"))
@@ -481,7 +481,8 @@ Turtle <- function(df, varnam){
 
 MatchCAAB <- function(df){
   ret <- left_join(df, ref, by = "taxa") %>% 
-    mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
+    mutate(Code = as.integer(refCode))
+    # mutate(Code = ifelse(is.na(Code), as.integer(refCode), as.integer(Code)))
   return(ret)
 }
 
