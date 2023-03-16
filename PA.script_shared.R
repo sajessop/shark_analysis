@@ -3230,7 +3230,7 @@ write.csv(Drop.out.rate_subsurface,
 #           Consider EM analysis to discuss potential bias (Abbey and Jack could remember species from when onboard).
 #     For duskies-coppers, group as 'whalers' for gummy-whiskery, also group.
 #     
-#AKA
+#AKA   STILL NEED TO CHECK FOR CODES THAT ARE IN METADATA CHECK BUT NOT DATAFRAME
 # Get video shots with bull battery life 
 D1.good.ones <- D1.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
   mutate(
