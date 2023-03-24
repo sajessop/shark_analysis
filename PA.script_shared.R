@@ -139,7 +139,6 @@ if(User=="Matias")  HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
 if(User=="Abbey")  HNDL=handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/')
 if(User=="Sarah")  HNDL=handl_OneDrive('Outputs/')
 le.paste=function(x) paste(HNDL,x,sep='')
-#AKA
 #---------CONTROL SECTION------------
 explr.dat.entry=FALSE
 do.len_len=FALSE
@@ -4649,5 +4648,41 @@ if(check.ASL)
   }
   plot(ASL_shape.file,col="chartreuse3")
   
+}
+
+
+########################SJ Testing Stuff For LL##########################
+# ANOVA to test for sig difference in number of fish caught on different hooks
+## Dependent var = number of fish caught per shot
+## Independent var = hooktype
+## Hypothesis - The mean number of fish caught on different hooks is not significantly different 
+
+## Consider: was the same amount of the two hooks used in each shot??
+library(car)
+{
+  IndicatorSpecies <- c(
+    "Chrysophrys auratus",
+    "Mustelus antarcticus",
+    "Glaucosoma hebracium",
+    "Carcharhinus obscurus",
+    "Carcharhinus brachyurus",
+    "Carcharhinus plumbeus",
+    "Furgaleus macki",
+    "Heterodontus portusjacksoni"
+  )
+  testDATA <- DATA %>%
+    filter(scientific_name %in% IndicatorSpecies) %>%
+    filter(!is.na(hooktype)) %>% 
+    dplyr::select("hooktype", "scientific_name", "sheet_no") %>%
+    group_by(sheet_no, hooktype, scientific_name) %>%
+    summarise(n=n())
+
+lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
+anovas <- lapply(lms$model, anova)
+
+ggplot(testDATA, aes(hooktype)) +
+  geom_bar() + 
+  facet_grid(. ~ scientific_name)
+
 }
 

@@ -1,5 +1,5 @@
 ---
-title: Catch Composition by Position of Hook in Water Column
+title: An Assessment of the Selectivity of Demersal Longline Fishing
 author:
   - name: Sarah A. Jessop
     email: Sarah.Jessop@dpird.wa.gov.au
@@ -54,7 +54,7 @@ Overfishing is a global issue with estimatioins of over 30% of the worlds fish s
 
 Gear selectivity is an important consideration in multispecies fisheries. Different species groups with different life history traits such as growth rates and fecundity can be vulnerable to different types of fishing gear. Brif explination of longline set up and explain position of hook in the water column. Another study in the Algarve showed lower three hooks to have reduced bycatch of elsmobranchs in the semipelagic near-bottom longline fishery in the Algarve. Longlines can also vary in selectivity depending on the specific gear used. Such as wire versus monofillament snoods and different hook sizes.
 
-AIMS - This study assessed how the catch composition of longlines in the TDGDLF varied with relative position in the water column and discussed the importance of understanding fishing efficiecy and the ability to minimise bycatch. We hypothesised that catch composition would vary depending on the hook position relative to floats and weights as demersal species would be unlikely to be caught higher in the water column. 
+AIMS - This study aimed to assess the selectivity of demersal longline fishing in the TDGDLF. We assessed how the catch composition vaired with (1) the relative position in the water column, (2) the type of hook used, and (3) the type of snood used. The importance of understanding fishing selectivity and the ability to minimise bycatch was then discussed. We hypothesised that catch composition would vary depending on the hook position relative to floats and weights as demersal species would be unlikely to be caught higher in the water column. We also hypothesied that fewer elasmobranch species would be caught when using monofillament snoods. 
 
 # Methods
 
@@ -77,11 +77,6 @@ Video analysis was completed using the software ‘EventMeasure Stereo’ (https
 Statistical analysis took place using the programming language 'R' in R studio (version and ref).
 
 # Results
-```{r, include=FALSE}
-# setwd("C:/Users/S.Jesso/Documents/GitHub/shark_analysis")
-# source("PA.script_shared.R")
-```
-
 
 Some introductory results such as...A total of blah blah individuals were caught across blah blah longline deployments. Blah blah different species were caught, of which blah blah were defined as bycatch. The most common bycatch species was x and the most common targetted species was y.
 
@@ -89,34 +84,26 @@ Some introductory results such as...A total of blah blah individuals were caught
 Present the longline catch composition with plot showing proportion of total catch of species (grouping minor species). eg (Figure 31 in report).
 Present catch composition of longlines by zone with nMDS. There is a sig diff in comp by zone. Indicates that zone needs to be considered as a factor in the experimental design. 
 
-## Catch Composition by Hook Postion
+### Catch Composition by Hook Postion
 Ideas:
-Multivariate comparison of catch composition by hook location (factor - hook location (7 levels: 1w, 2w, 3w, midwater, 3f, 2f, 1f)). COnsider using zone as a factor also but this may be too much going on.
+PERMANOVA with 2 factors
+- Factor 1: Hook position (3 levels: near float, near weight, midwater)
+- Factor 2: Location (3 levels: west, zone 1, zone 2)
+Present this as nMDS or CAP
+
 Probablity of catch near float or weight. Already done in report
 
+### Catch composition by hook and snood type
+- ANOVA of hook type for indicator species
+- Another ANOVA with snood type as factor also for indicator species
+- Present with bar charts (mean and standard error)
+
+- OR multivariate analysis with PERMANOVAs each with 2 factors (location and hook type, then location and snood type)
+- This would be presented with either nMDS or CAP
 # Discussion
 
 Stuff
 
-
-
-# Figures and tables
-
-Figure \ref{fig2} is generated using an R chunk.
-
-```{r fig2, fig.width = 5, fig.height = 5, fig.align='center', out.width="50%", fig.cap = "\\label{fig2}A meaningless scatterplot.", echo = FALSE}
-plot(runif(25), runif(25))
-```
-
-# Tables coming from R
-
-Tables can also be generated using R chunks, as shown in Table \ref{tab1} for example.
-
-```{r tab1, echo = TRUE}
-knitr::kable(head(mtcars)[,1:4], 
-    caption = "\\label{tab1}Caption centered above table"
-)
-```
 
 # References {-}
 
