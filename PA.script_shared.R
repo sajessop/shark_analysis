@@ -26,7 +26,7 @@ rm(list=ls(all=TRUE))
   library(Hmisc)
   library(gridExtra)
   library(stringr)
-  # library(extdplyr)
+  library(extdplyr)
   library(ggpubr)
   library(ggridges)
   library(vegan)
@@ -139,7 +139,7 @@ if(User=="Matias")  HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
 if(User=="Abbey")  HNDL=handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/')
 if(User=="Sarah")  HNDL=handl_OneDrive('Outputs/')
 le.paste=function(x) paste(HNDL,x,sep='')
-
+#AKA
 #---------CONTROL SECTION------------
 explr.dat.entry=FALSE
 do.len_len=FALSE
@@ -1267,7 +1267,7 @@ N.fshn%>%
 with(subset(N.fshn,zone=="Zone2"),table(method,skipper,useNA = 'ifany'))
 #---------Observer catch composition ------------ 
 # Map of sampling sites
-do.map=FALSE
+do.map=TRUE
 if(do.map)
 {
   library(grDevices)
@@ -1278,6 +1278,12 @@ if(do.map)
     Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
   }
 
+  if(User=='Sarah')
+  {
+    Bathymetry_120=read.table(handl_OneDrive("Mapping/get_data112_120.cgi"))
+    Bathymetry_138=read.table(handl_OneDrive("Mapping/get_data120.05_138.cgi"))
+  }
+  
   Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
   Bathymetry=Bathymetry%>%filter(V2<=(-26))
   Bathymetry=Bathymetry[order(Bathymetry$V1,Bathymetry$V2),]
@@ -1291,6 +1297,14 @@ if(do.map)
     SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
     SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
     WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
+    
+  }
+  
+  if(User=='Sarah')
+  {
+    SDGDLL_zone1=readOGR(handl_OneDrive("Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+    SDGDLL_zone2=readOGR(handl_OneDrive("Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+    WCDGDLL=readOGR(handl_OneDrive("Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
     
   }
   
@@ -2348,6 +2362,8 @@ ggsave(le.paste("Video/underwater/interactions_simper.tiff"),
 # NOTE: combine Underwater habitat classification with habitat damage (deck and underwater)
 
 # 1. Underwater habitat classification. MISSING: Data still to be updated
+do.habitat <- FALSE
+if(do.habitat){
 #gillnets
 Video.habitat=Video.habitat%>%
   data.frame%>%
@@ -2676,7 +2692,7 @@ Out.damg_GN=fn.habitat.damg.deck(Gear='gillnet')
 ggarrange(Out.damg_GN$p2, Out.damg_GN$p3, Out.damg_GN$p4, ncol = 1, nrow = 3)
 ggsave(le.paste("Video/deck.cameras/Habitat.interactions.tiff"),
        width = 6,height = 10,compression = "lzw")
-
+}
 
 #---------Dropouts, Gaffing & Position in water column (catch around weight or float) ---------  
 Video.camera2.deck=Video.camera2.deck%>%
@@ -3250,8 +3266,8 @@ Video.camera1.deck=Video.camera1.deck%>%
               dplyr::select(COMMON_NAME,Code)%>%
               distinct(Code,.keep_all=T),
             by="Code") %>% 
-  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
-  filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
+  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) #%>%
+  # filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
 
 Video.camera1.deck=Video.camera1.deck%>%
   rename(DIPRD.code='DIPRD code')%>%
@@ -3512,7 +3528,7 @@ fig=ggarrange(p1+rremove("xlab"), p2+rremove("xlab"),
               ncol = 1, nrow = 2,
               common.legend=TRUE)
 annotate_figure(fig,bottom = text_grob("Number of individuals",size = 18))
-# ggsave(le.paste("Camera_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
 
 
 #3. Statistical comparison
@@ -3863,30 +3879,30 @@ fig=ggarrange(Out$mod_all.species$p+rremove("xlab")+rremove("ylab"),
 annotate_figure(fig,
                 bottom = text_grob("Number of individuals reported by observer",size = 18),
                 left = text_grob("Number of individuals recorded by camera",size = 18,rot = 90))
-# ggsave(le.paste("Camera_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
 
 
 #export Percentage difference
 Out$Per.dif
-# ggsave(le.paste("Camera_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
 #Out$Per.dif.com
-#ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
 
 #Out$Per.dif.dis
-#ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
 
 
 #export MDS
 fig=ggarrange(Out$p.GN, Out$p.LL,
               ncol = 1, nrow = 2,
               common.legend=TRUE)
-# ggsave(le.paste("Camera_v_Observer/MDS.tiff"),width = 8,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/MDS.tiff"),width = 8,height = 12,compression = "lzw")
 
 
 #export Permanovas
-# write.csv(Out$adon.GN,le.paste("Camera_v_Observer/Permanova_GN.csv"),row.names = T)
-# write.csv(Out$adon.LL,le.paste("Camera_v_Observer/Permanova_LL.csv"),row.names = T)
+write.csv(Out$adon.GN,le.paste("Camera_v_Observer/Permanova_GN.csv"),row.names = T)
+write.csv(Out$adon.LL,le.paste("Camera_v_Observer/Permanova_LL.csv"),row.names = T)
 
 
 #---------Analysis of Deck 2 camera VS observers --------------------------------------------------------------------
@@ -4622,8 +4638,15 @@ if(check.ASL)
           legend.title = element_blank())
   
   library(rgdal)
+  if (User == "Sarah"){
+    ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
+  }
+  if (User == "Abbey"){
   ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
-  
+  }
+  if (User == "Matias"){
+    ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
+  }
   plot(ASL_shape.file,col="chartreuse3")
   
 }

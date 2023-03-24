@@ -1,0 +1,114 @@
+[
+	{
+		"id": "afonsoFishingGearModifications2011",
+		"type": "article-journal",
+		"abstract": "One of the biggest challenges of fisheries research is reducing the bycatch of unwanted species. The incidental fishing mortality of species with low reproductive rates, such as elasmobranchs (sharks, skates, and rays), is recognized as a key threat for their populations. In the present study, gear modifications related to the type of hook and position of the hook in the water column were tested to examine their effects on catch rates and mortality of elasmobranch species in both pelagic and coastal environments. Comparisons between circle (size 18/0, 0° offset) and J-style (size 9/0, 10° offset) hooks demonstrated that the circle hooks have a greater efficiency in reducing the mortality of most species caught, both in pelagic and coastal longline fisheries. Internal lodging of the hook was significantly less frequent for the individuals caught with circle hooks, which likely contributed to their higher survival rate at haulback. Additionally, circle hooks also increased the CPUE of elasmobranchs caught in the pelagic longline fishery, which was particularly evident for Carcharhinus falciformis and Prionace glauca. The position of the hook in the water column exhibited a strong influence on the species caught in the coastal bottom longline fishery. Suspending hooks in the middle of the water column reduced the bycatch of common demersal species, such as Carcharhinus acronotus, Ginglymostoma cirratum, and Dasyatis americana, while increasing the CPUE of potentially aggressive species, such as Galeocerdo cuvier and Carcharhinus leucas. The interaction of the type of hook utilized with its position in the water column appears to be an essential factor in the optimization of longline selectivity and minimization of bycatch mortality.",
+		"container-title": "Fisheries Research",
+		"DOI": "10.1016/j.fishres.2011.01.007",
+		"ISSN": "0165-7836",
+		"issue": "2",
+		"journalAbbreviation": "Fisheries Research",
+		"page": "336-343",
+		"title": "Fishing gear modifications to reduce elasmobranch mortality in pelagic and bottom longline fisheries off Northeast Brazil",
+		"URL": "https://www.sciencedirect.com/science/article/pii/S0165783611000117",
+		"volume": "108",
+		"author": [
+			{
+				"family": "Afonso",
+				"given": "André S."
+			},
+			{
+				"family": "Hazin",
+				"given": "Fábio H.V."
+			},
+			{
+				"family": "Carvalho",
+				"given": "Felipe"
+			},
+			{
+				"family": "Pacheco",
+				"given": "José C."
+			},
+			{
+				"family": "Hazin",
+				"given": "Humberto"
+			},
+			{
+				"family": "Kerstetter",
+				"given": "David W."
+			},
+			{
+				"family": "Murie",
+				"given": "Debra"
+			},
+			{
+				"family": "Burgess",
+				"given": "George H."
+			}
+		],
+		"issued": {
+			"date-parts": [
+				[
+					"2011",
+					3,
+					1
+				]
+			]
+		}
+	},
+	{
+		"id": "coelhoruiReductionElasmobranchBycatch2003",
+		"type": "article-journal",
+		"abstract": "ABSTRACT:? Elasmobranch fish, particularly deep-sea sharks, are the mostimportant component of the by-catch of the hake semipelagic near-bottom ?pedra-e-bola? longlinefishery in the Algarve (South Portugal) and most of these fish arediscarded. The effects of the removal of the lower hooks were evaluated,in terms of target and by-catch reductions, by quantifying the catchesof each hook relative to the distance from the bottom. The analysisshowed that most European hake (Merluccius merluccius), thetarget species of this fishery, were caught in the middle rangeof the hooks, with very few individuals caught near the bottom,whereas for sharks the situation was the opposite, with most hookednear the bottom. The removal of the lower three pairs of hooks wouldresult in a small reduction in the catch of the target species,but a much more significant reduction in elasmobranch by-catch.In the specific case of the blackmouth catshark (Galeus melastomus),discard mortality would be further minimized due to the fact thatthe lower hooks capture significantly smaller animals that are alwaysdiscarded compared with hooks that are more distant from the bottom.",
+		"container-title": "Fisheries Science",
+		"DOI": "10.1046/j.1444-2906.2003.00620.x",
+		"ISSN": "0919-9268",
+		"issue": "2",
+		"journalAbbreviation": "Fisheries Science",
+		"note": "publisher: John Wiley & Sons, Ltd",
+		"page": "293-299",
+		"title": "Reduction of elasmobranch by-catch in the hake semipelagicnear-bottom longline fishery in the Algarve (Southern Portugal)",
+		"URL": "https://doi.org/10.1046/j.1444-2906.2003.00620.x",
+		"volume": "69",
+		"author": [
+			{
+				"family": "Coelho, Rui",
+				"given": "RUI"
+			},
+			{
+				"family": "Goncalves",
+				"given": "Jorge MS"
+			},
+			{
+				"family": "Lino",
+				"given": "Pedro G"
+			},
+			{
+				"family": "Ribeiro",
+				"given": "Joaquim"
+			},
+			{
+				"family": "Erzini",
+				"given": "Karim"
+			}
+		],
+		"accessed": {
+			"date-parts": [
+				[
+					"2022",
+					10,
+					5
+				]
+			]
+		},
+		"issued": {
+			"date-parts": [
+				[
+					"2003",
+					4,
+					1
+				]
+			]
+		}
+	}
+]

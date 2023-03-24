@@ -1,0 +1,122 @@
+---
+title: Catch Composition by Position of Hook in Water Column
+author:
+  - name: Sarah A. Jessop
+    email: Sarah.Jessop@dpird.wa.gov.au
+    affiliation: Department of Primary Industries and Regional Development
+    correspondingauthor: true
+    footnote: 1
+  - name: Matias Braccini
+    email: Matias.Braccini@dpird.wa.gov.au
+    affiliation: Department of Primary Industries and Regional Development
+address:
+  - code: Department of Primary Industries and Regional Development
+    address: Department of Primary Industries and Regional Development, 39 Northside Drive, Hillarys, 6025
+abstract: |
+  Stuff
+keywords: 
+  - Longline
+  - Catch Composition
+  - Fisheries
+journal: "A Journal"
+date: "`r Sys.Date()`"
+classoption: preprint, 3p, authoryear
+bibliography: references.json
+linenumbers: false
+numbersections: true
+# Use a CSL with `citation_package = "default"`
+# csl: https://www.zotero.org/styles/elsevier-harvard
+output: 
+  rticles::elsevier_article:
+    keep_tex: true
+    citation_package: "default"
+---
+
+```{r, include=FALSE}
+rm(list=ls(all=TRUE))
+library(rticles)
+PA.outpus <- "C:/Users/S.Jesso/Documents/GitHub/Outputs"
+PA.Observer=paste(PA.outpus,'Observer',sep='/')
+PA.TEPS=paste(PA.outpus,'TEPS',sep='/')
+PA.cam.obs=paste(PA.outpus,'Camera_v_Observer',sep='/')
+PA.cam2.obs=paste(PA.outpus,'Camera2_v_Observer',sep='/')
+PA.selectivity=paste(PA.outpus,'Selectivity_LL',sep='/')
+PA.video=paste(PA.outpus,'Video',sep='/')
+PA.video.underwater=paste(PA.video,'underwater',sep='/')
+PA.video.deck.cameras=paste(PA.video,'deck.cameras',sep='/')
+
+Main.species=c("Dusky shark","Gummy shark","Sandbar shark","Whiskery shark",
+               "Blue groper","Pink snapper","Queen snapper","West Australian dhufish")
+```
+
+# Introduction
+Overfishing is a global issue with estimatioins of over 30% of the worlds fish stocks being unsustainably fished @faoStateWorldFisheries2016. Catch of non-targetted species is also a problem. Intorduce the fishery. Brief overview of gear used, number of licences and main targetted species and bycatch. 
+
+Gear selectivity is an important consideration in multispecies fisheries. Different species groups with different life history traits such as growth rates and fecundity can be vulnerable to different types of fishing gear. Brif explination of longline set up and explain position of hook in the water column. Another study in the Algarve showed lower three hooks to have reduced bycatch of elsmobranchs in the semipelagic near-bottom longline fishery in the Algarve. Longlines can also vary in selectivity depending on the specific gear used. Such as wire versus monofillament snoods and different hook sizes.
+
+AIMS - This study assessed how the catch composition of longlines in the TDGDLF varied with relative position in the water column and discussed the importance of understanding fishing efficiecy and the ability to minimise bycatch. We hypothesised that catch composition would vary depending on the hook position relative to floats and weights as demersal species would be unlikely to be caught higher in the water column. 
+
+# Methods
+
+## Study Area
+This study took place in south-west Western Australia within The Temperate Demersal Gillnet and Demersal Longline Fisheries (TDGDLF). This comprises of the West Coast Demersal Gillnet and Demersal Longline (Interim) Managed Fishery (WCDGDLF), which operates between 26° and 33° S, and the Southern Demersal Gillnet and Demersal Longline Managed Fishery (SDGDLF), which operates from 33° S to the Western Australian (WA)/South Australian (SA) border (Figure 1). Fishers in the TDGDLF employ mostly demersal gillnets to target sharks with scalefish taken as byproduct. Demersal longline is also permitted but is not widely used.
+
+## Research Vessels
+Sampling was conducted on three charted vessels that normally operate in the TDGDLF. The three operators were distributed across the WCDGDLF and Zone 1 and Zone 2 of the SDGDLF, providing the ability for robust data collection. The vessels were chosen by discussions with all commercial licence holders in the TDGDLF. DPIRD staff then met with licence holders and active operators who had expressed interest. Five operators were then deemed suitable, however due to external circumstances, only three participated in the project. The specific selection of each trip length was determined by vessel size, capacity to accommodate the additional research staff and equipment, and experience in operating across the different fishing zones. The order for vessel chartering was determined to optimise timeframes for data collection whilst considering vessel availability and logistical constraints.
+
+## Longline Configuration
+Sampling followed standard commercial fishing operations with skippers allowed to choose when and where the gear was set. The demersal longlines were ~1500 m long and comprised of ~240 hooks of different size (10/0, 12/0 and 14/0) and shape (tuna circle hooks and Ezi-baiter) attached to the main line (8 mm diameter) via ~60 cm stainless steel wire rope (2 mm diameter 7x7 grade stainless steel coated with PVC) or monofilament (1.8 mm diameter) snoods (Figure 2). Approximately 20 of each combination of snood type, hook type and hook size were used per gear deployment. Each hook was manually baited with squid, octopus, mullet, whiting, herring or pilchards. Approximately 10 snoods were clipped to the main line between each weight and pressure float to allow sampling close to the bottom and into the water column. Depending on vessel configuration, longlines were set either by using the gillnet reel or a small dedicated longline reel. Once the first longline weight and float were deployed, the vessel steamed slowly forward and the crew and staff clipped the snoods onto the line at roughly 5m intervals. Floats and weights were set in an alternating fashion with either a float or weight attached to the longline after every 10 hooks (50 m, Figure 2); however, this was up to the fisher’s discretion and one elected to use two weights then a float to keep their longline lower in the water column. Longlines were retrieved using the gillnet retrieval roller and winch.
+
+## Camera Configuration
+A Sony FRD-x3000 action camera was mounted in on deck of the fishing vessels, positioned above the retrieval roller of the vessel. This camaera allowed data to be gathered on (i) the number of individuals that came onboard, (ii) the number that dropped out and if they were retrieved by crew members before being lost, and (iii) the position of fish relative to a weight (i.e. caught closer to the sea floor) or pressure float (i.e. caught higher in the water column). 
+
+## Image Analysis 
+Video analysis was completed using the software ‘EventMeasure Stereo’ (https://www.seagis.com.au/event.html). All individuals brough to the surface in the longline were identified to the lowest taxonomic level (usually species). Where a species level identification was not possible, individuals were identified to genus. The position of fish caught in relation to the closest pressure float or weight was recorded (Figure 2). Finally, dropout and gaffing events were also recorded.
+
+## Statistical Analysis
+Statistical analysis took place using the programming language 'R' in R studio (version and ref).
+
+# Results
+```{r, include=FALSE}
+# setwd("C:/Users/S.Jesso/Documents/GitHub/shark_analysis")
+# source("PA.script_shared.R")
+```
+
+
+Some introductory results such as...A total of blah blah individuals were caught across blah blah longline deployments. Blah blah different species were caught, of which blah blah were defined as bycatch. The most common bycatch species was x and the most common targetted species was y.
+
+## Catch Composition
+Present the longline catch composition with plot showing proportion of total catch of species (grouping minor species). eg (Figure 31 in report).
+Present catch composition of longlines by zone with nMDS. There is a sig diff in comp by zone. Indicates that zone needs to be considered as a factor in the experimental design. 
+
+## Catch Composition by Hook Postion
+Ideas:
+Multivariate comparison of catch composition by hook location (factor - hook location (7 levels: 1w, 2w, 3w, midwater, 3f, 2f, 1f)). COnsider using zone as a factor also but this may be too much going on.
+Probablity of catch near float or weight. Already done in report
+
+# Discussion
+
+Stuff
+
+
+
+# Figures and tables
+
+Figure \ref{fig2} is generated using an R chunk.
+
+```{r fig2, fig.width = 5, fig.height = 5, fig.align='center', out.width="50%", fig.cap = "\\label{fig2}A meaningless scatterplot.", echo = FALSE}
+plot(runif(25), runif(25))
+```
+
+# Tables coming from R
+
+Tables can also be generated using R chunks, as shown in Table \ref{tab1} for example.
+
+```{r tab1, echo = TRUE}
+knitr::kable(head(mtcars)[,1:4], 
+    caption = "\\label{tab1}Caption centered above table"
+)
+```
+
+# References {-}
+
