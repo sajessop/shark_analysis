@@ -4659,6 +4659,7 @@ if(check.ASL)
 
 ## Consider: was the same amount of the two hooks used in each shot??
 library(car)
+library(doBy)
 {
   IndicatorSpecies <- c(
     "Chrysophrys auratus",
@@ -4679,10 +4680,15 @@ library(car)
 
 lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
 anovas <- lapply(lms$model, anova)
+summ <- summaryBy(n~hooktype+scientific_name, data = testDATA, FUN=function(x) + {c(mean=mean(x),sd=sd(x),num=length(x),se=sd(x)/sqrt(length(x)))})
 
-ggplot(testDATA, aes(hooktype)) +
-  geom_bar() + 
-  facet_grid(. ~ scientific_name)
+ggplot(summ, aes(hooktype, n.mean)) +
+  geom_errorbar(aes(ymin = n.mean- n.se, ymax = n.mean + n.se), width=0.1, position=position_dodge(width=0.3)) + 
+  geom_point(position = position_dodge(width=0.3),size=5,pch=16) + 
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Type") + ylab("Mean Number of Fish Caught") + 
+  ggtitle("Effect of hook type on mean catch of indicator species")
+  
 
 }
 
