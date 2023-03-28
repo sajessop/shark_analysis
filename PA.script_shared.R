@@ -4652,42 +4652,49 @@ if(check.ASL)
 
 
 ########################SJ Testing Stuff For LL##########################
-# ANOVA to test for sig difference in number of fish caught on different hooks
-## Dependent var = number of fish caught per shot
-## Independent var = hooktype
+# test for sig difference in number of fish caught on different hook type, size, position
+## Dependent var = number of fish caught per unit effort
+## Independent var = hook type, size, location
 ## Hypothesis - The mean number of fish caught on different hooks is not significantly different 
 
 ## Consider: was the same amount of the two hooks used in each shot??
 library(car)
 library(doBy)
 {
-  IndicatorSpecies <- c(
-    "Chrysophrys auratus",
-    "Mustelus antarcticus",
-    "Glaucosoma hebracium",
-    "Carcharhinus obscurus",
-    "Carcharhinus brachyurus",
-    "Carcharhinus plumbeus",
-    "Furgaleus macki",
-    "Heterodontus portusjacksoni"
-  )
+  # Use species with highest n
+  IndicatorSpecies <- DATA %>% 
+    count(scientific_name, sort = TRUE) %>%
+    filter(n > 80)
+    
   testDATA <- DATA %>%
-    filter(scientific_name %in% IndicatorSpecies) %>%
-    filter(!is.na(hooktype)) %>% 
-    dplyr::select("hooktype", "scientific_name", "sheet_no") %>%
-    group_by(sheet_no, hooktype, scientific_name) %>%
-    summarise(n=n())
-
-lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
-anovas <- lapply(lms$model, anova)
-summ <- summaryBy(n~hooktype+scientific_name, data = testDATA, FUN=function(x) + {c(mean=mean(x),sd=sd(x),num=length(x),se=sd(x)/sqrt(length(x)))})
-
-ggplot(summ, aes(hooktype, n.mean)) +
-  geom_errorbar(aes(ymin = n.mean- n.se, ymax = n.mean + n.se), width=0.1, position=position_dodge(width=0.3)) + 
-  geom_point(position = position_dodge(width=0.3),size=5,pch=16) + 
-  facet_grid(. ~ scientific_name) +
-  xlab("Hook Type") + ylab("Mean Number of Fish Caught") + 
-  ggtitle("Effect of hook type on mean catch of indicator species")
+    filter(scientific_name %in% IndicatorSpecies$scientific_name) %>%
+    dplyr::select("hooktype", "scientific_name", "sheet_no", "hooksize", "soak.time", "zone", "hooklocation", "wiretrace", "CAAB_code", "n.hooks")
+  
+  # Hook type
+  catch <- testDATA %>% filter(!is.na(hooktype)) %>% 
+    dplyr::select("hooktype", "scientific_name", "sheet_no") %>% 
+    group_by(sheet_no, hooktype, scientific_name) %>% 
+    summarise(n = n())
+  effort <- testDATA %>% filter(!is.na(hooktype)) %>%
+    dplyr::select("hooktype", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+    group_by(sheet_no, hooktype, scientific_name) %>% 
+    summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+  
+  
+# CPUE (n fish caught/fishing hours*n hooks) Carcharhinus obscurus
+  CPUEcatchCircle <- catch %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular")
+ x <- sum(CPUEcatchCircle$n)/(sum(CPUEeffortCircle$effort.hours)*sum(CPUEeffortCircle$effort.hooks)) 
+  CPUEeffortCircle <- effort %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular") #%>% 
+# lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
+# anovas <- lapply(lms$model, anova)
+# summ <- summaryBy(n~hooktype+scientific_name, data = testDATA, FUN=function(x) + {c(mean=mean(x),sd=sd(x),num=length(x),se=sd(x)/sqrt(length(x)))})
+# 
+# ggplot(summ, aes(hooktype, n.mean)) +
+#   geom_errorbar(aes(ymin = n.mean- n.se, ymax = n.mean + n.se), width=0.1, position=position_dodge(width=0.3)) + 
+#   geom_point(position = position_dodge(width=0.3),size=5,pch=16) + 
+#   facet_grid(. ~ scientific_name) +
+#   xlab("Hook Type") + ylab("Mean Number of Fish Caught") + 
+#   ggtitle("Effect of hook type on mean catch of indicator species")
   
 
 }
