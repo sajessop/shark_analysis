@@ -497,6 +497,14 @@ MatchCAABFUN <- function(df){
 }
 
 
+
+
+################################CPUE
+# CPUE as n fish caught/fishing hours * n hooks
+CPUE <- function(n.catch, effort.hours, n.hooks){
+  n.catch/(effort.hours*n.hooks)
+}
+
   
 # Assess and combine species groups
 columnselect<-function(df){

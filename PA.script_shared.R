@@ -4651,6 +4651,9 @@ if(check.ASL)
 }
 
 
+
+
+
 ########################SJ Testing Stuff For LL##########################
 # test for sig difference in number of fish caught on different hook type, size, position
 ## Dependent var = number of fish caught per unit effort
@@ -4660,7 +4663,7 @@ if(check.ASL)
 ## Consider: was the same amount of the two hooks used in each shot??
 library(car)
 library(doBy)
-{
+
   # Use species with highest n
   IndicatorSpecies <- DATA %>% 
     count(scientific_name, sort = TRUE) %>%
@@ -4673,38 +4676,24 @@ library(doBy)
   # Hook type
   catch <- testDATA %>% filter(!is.na(hooktype)) %>% 
     dplyr::select("hooktype", "scientific_name", "sheet_no") %>% 
-    group_by(sheet_no, hooktype, scientific_name) %>% 
+    group_by(hooktype, scientific_name) %>% 
     summarise(n = n())
   effort <- testDATA %>% filter(!is.na(hooktype)) %>%
     dplyr::select("hooktype", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
-    group_by(sheet_no, hooktype, scientific_name) %>% 
+    group_by(hooktype, scientific_name) %>% 
     summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+  catchandeffort <- left_join(catch, effort, join_by("scientific_name", "hooktype")) %>% 
+    group_by(scientific_name, hooktype) %>% 
+    mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+    ungroup()
   
-  
-# CPUE (n fish caught/fishing hours*n hooks) Carcharhinus obscurus
-  CPUEcatchCircle <- catch %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular")
- x <- sum(CPUEcatchCircle$n)/(sum(CPUEeffortCircle$effort.hours)*sum(CPUEeffortCircle$effort.hooks)) 
-  CPUEeffortCircle <- effort %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular")
-CPUE <- function(n.catch, effort.hours, effort.hooks){
-  n.catch/(effort.hours*effort.hooks)
-}  
-specieslist <- as.list(IndicatorSpecies$scientific_name)  
-for(i in 1:length(specieslist)){
-  CPUE()
-}  
-# lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
-# anovas <- lapply(lms$model, anova)
-# summ <- summaryBy(n~hooktype+scientific_name, data = testDATA, FUN=function(x) + {c(mean=mean(x),sd=sd(x),num=length(x),se=sd(x)/sqrt(length(x)))})
-# 
-# ggplot(summ, aes(hooktype, n.mean)) +
-#   geom_errorbar(aes(ymin = n.mean- n.se, ymax = n.mean + n.se), width=0.1, position=position_dodge(width=0.3)) + 
-#   geom_point(position = position_dodge(width=0.3),size=5,pch=16) + 
-#   facet_grid(. ~ scientific_name) +
-#   xlab("Hook Type") + ylab("Mean Number of Fish Caught") + 
-#   ggtitle("Effect of hook type on mean catch of indicator species")
+ggplot(catchandeffort, aes(hooktype, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Type") + ylab("CPUE") +
+  ggtitle("Effect of hook type on mean catch of indicator species")
   
 
-}
 
 
 
