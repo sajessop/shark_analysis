@@ -4677,7 +4677,7 @@ library(doBy)
   catch <- testDATA %>% filter(!is.na(hooktype)) %>% 
     dplyr::select("hooktype", "scientific_name", "sheet_no") %>% 
     group_by(hooktype, scientific_name) %>% 
-    summarise(n = n())
+    summarise(n = n()) 
   effort <- testDATA %>% filter(!is.na(hooktype)) %>%
     dplyr::select("hooktype", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
     group_by(hooktype, scientific_name) %>% 
