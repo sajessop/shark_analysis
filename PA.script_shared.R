@@ -4684,7 +4684,14 @@ library(doBy)
 # CPUE (n fish caught/fishing hours*n hooks) Carcharhinus obscurus
   CPUEcatchCircle <- catch %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular")
  x <- sum(CPUEcatchCircle$n)/(sum(CPUEeffortCircle$effort.hours)*sum(CPUEeffortCircle$effort.hooks)) 
-  CPUEeffortCircle <- effort %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular") #%>% 
+  CPUEeffortCircle <- effort %>% filter(scientific_name == "Carcharhinus obscurus" & hooktype == "Circular")
+CPUE <- function(n.catch, effort.hours, effort.hooks){
+  n.catch/(effort.hours*effort.hooks)
+}  
+specieslist <- as.list(IndicatorSpecies$scientific_name)  
+for(i in 1:length(specieslist)){
+  CPUE()
+}  
 # lms <- testDATA %>% group_by(scientific_name) %>% do(model = lm(n ~ hooktype, data = .))
 # anovas <- lapply(lms$model, anova)
 # summ <- summaryBy(n~hooktype+scientific_name, data = testDATA, FUN=function(x) + {c(mean=mean(x),sd=sd(x),num=length(x),se=sd(x)/sqrt(length(x)))})
@@ -4699,3 +4706,16 @@ library(doBy)
 
 }
 
+
+
+#################################################George############################################
+## Underwater Caught by species
+### Run on data from underwater_clean_loop
+# We want to filter data where the interaction is "Caught-Gilled/hooked" OR "Caught while predating" for both Video.longline.interaction AND Video.net.interaction
+# And then we want to make a table of how many of each species we have caught
+
+write.csv(Video.net.interaction %>% filter(Interaction == "Caught-Gilled/hooked"|Interaction == "Caught while predating") %>% 
+  {table(.$taxa, .$Interaction)}, "Gillnet.n.for.George.csv")
+
+write.csv(Video.longline.interaction %>% filter(Interaction == "Caught-Gilled/hooked"|Interaction == "Caught while predating") %>% 
+  {table(.$taxa, .$Interaction)}, "Longline.n.for.George.csv")  
