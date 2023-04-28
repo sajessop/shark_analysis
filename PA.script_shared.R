@@ -4654,6 +4654,7 @@ if(check.ASL)
 
 
 
+
 ########################SJ Testing Stuff For LL##########################
 # test for sig difference in number of fish caught on different hook type, size, position
 ## Dependent var = number of fish caught per unit effort
@@ -4674,25 +4675,45 @@ library(doBy)
     dplyr::select("hooktype", "scientific_name", "sheet_no", "hooksize", "soak.time", "zone", "hooklocation", "wiretrace", "CAAB_code", "n.hooks")
   
   # Hook type
-  catch <- testDATA %>% filter(!is.na(hooktype)) %>% 
+  hooktypecatch <- testDATA %>% filter(!is.na(hooktype)) %>% 
     dplyr::select("hooktype", "scientific_name", "sheet_no") %>% 
     group_by(hooktype, scientific_name) %>% 
     summarise(n = n()) 
-  effort <- testDATA %>% filter(!is.na(hooktype)) %>%
+  hooktypeeffort <- testDATA %>% filter(!is.na(hooktype)) %>%
     dplyr::select("hooktype", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
     group_by(hooktype, scientific_name) %>% 
     summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
-  catchandeffort <- left_join(catch, effort, join_by("scientific_name", "hooktype")) %>% 
+  hooktype.catchandeffort <- left_join(hooktypecatch, hooktypeeffort, join_by("scientific_name", "hooktype")) %>% 
     group_by(scientific_name, hooktype) %>% 
     mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
     ungroup()
   
-ggplot(catchandeffort, aes(hooktype, cpue)) +
+ggplot(hooktype.catchandeffort, aes(hooktype, cpue)) +
   geom_point() +
   facet_grid(. ~ scientific_name) +
   xlab("Hook Type") + ylab("CPUE") +
   ggtitle("Effect of hook type on mean catch of indicator species")
-  
+
+
+# Hook size  
+hooksizecatch <- testDATA %>% filter(!is.na(hooksize)) %>% 
+  dplyr::select("hooksize", "scientific_name", "sheet_no") %>% 
+  group_by(hooksize, scientific_name) %>% 
+  summarise(n = n()) 
+hooksizeeffort <- testDATA %>% filter(!is.na(hooksize)) %>%
+  dplyr::select("hooksize", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+  group_by(hooksize, scientific_name) %>% 
+  summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+hooksize.catchandeffort <- left_join(hooksizecatch, hooksizeeffort, join_by("scientific_name", "hooksize")) %>% 
+  group_by(scientific_name, hooksize) %>% 
+  mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+  ungroup()
+
+ggplot(hooksize.catchandeffort, aes(hooksize, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Size") + ylab("CPUE") +
+  ggtitle("Effect of hook size on mean catch of indicator species")
 
 
 
