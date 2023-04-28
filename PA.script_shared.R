@@ -4716,7 +4716,25 @@ ggplot(hooksize.catchandeffort, aes(hooksize, cpue)) +
   ggtitle("Effect of hook size on mean catch of indicator species")
 
 
+# Snood type
+wiretracecatch <- testDATA %>% filter(!is.na(wiretrace)) %>% 
+  dplyr::select("wiretrace", "scientific_name", "sheet_no") %>% 
+  group_by(wiretrace, scientific_name) %>% 
+  summarise(n = n()) 
+wiretraceeffort <- testDATA %>% filter(!is.na(wiretrace)) %>%
+  dplyr::select("wiretrace", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+  group_by(wiretrace, scientific_name) %>% 
+  summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+wiretrace.catchandeffort <- left_join(wiretracecatch, wiretraceeffort, join_by("scientific_name", "wiretrace")) %>% 
+  group_by(scientific_name, wiretrace) %>% 
+  mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+  ungroup()
 
+ggplot(wiretrace.catchandeffort, aes(wiretrace, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Size") + ylab("CPUE") +
+  ggtitle("Effect of snood type on mean catch of indicator species")
 
 #################################################George############################################
 ## Underwater Caught by species
