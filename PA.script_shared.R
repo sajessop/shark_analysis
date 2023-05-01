@@ -4656,12 +4656,12 @@ if(check.ASL)
 
 
 ########################SJ Testing Stuff For LL##########################
+## Exploratory Analysis
 # test for sig difference in number of fish caught on different hook type, size, position
 ## Dependent var = number of fish caught per unit effort
 ## Independent var = hook type, size, location
 ## Hypothesis - The mean number of fish caught on different hooks is not significantly different 
 
-## Consider: was the same amount of the two hooks used in each shot??
 library(car)
 library(doBy)
 
@@ -4735,6 +4735,22 @@ ggplot(wiretrace.catchandeffort, aes(wiretrace, cpue)) +
   facet_grid(. ~ scientific_name) +
   xlab("Hook Size") + ylab("CPUE") +
   ggtitle("Effect of snood type on mean catch of indicator species")
+
+
+# Hook Distance to weight or float
+hookdist <- Video.camera2.deck %>% filter(!is.na(`hook distance to float/weight`)) %>% 
+  filter(taxa %in% IndicatorSpecies$scientific_name) %>%
+  dplyr::select("hook distance to float/weight", "taxa") %>% 
+  group_by(`hook distance to float/weight`, taxa) %>%
+  mutate(n = n()) %>%
+  ungroup()
+
+ggplot(hookdist) +
+  geom_col(aes(x = factor(`hook distance to float/weight`, levels = c("1w", "2w", "3w", "3f", "2f", "1f")),y = `n`)) +
+  facet_grid(. ~ taxa) +
+  xlab("Relative Distance to Weight or Float") + ylab("n") +
+  ggtitle("Hook distance to weight or float")
+
 
 #################################################George############################################
 ## Underwater Caught by species

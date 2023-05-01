@@ -261,7 +261,12 @@ deck.2.observations <-
   c(
     "caught feeding on Sargent Baker",
     "tagged and released",
-    "4min gap between vidsdidn't see fish on dec"
+    "4min gap between vidsdidn't see fish on dec",
+    "depredated",
+    "caughtfeedingonSargentBaker",
+    "2",
+    "taggedandreleased",
+    "4mingapbetweenvidsdidn'tseefishondec"
   )
 
 ######################################################Subsurface################################################

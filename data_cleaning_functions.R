@@ -147,6 +147,7 @@ HookLocation <- function(df) {
       str_detect(hookloc.and.comments, "(?i)^2f") ~ "2f",
       str_detect(hookloc.and.comments, "(?i)^3f") ~ "3f",
       str_detect(hookloc.and.comments, "(?i)^4f") ~ as.character(NA),
+      str_detect(hookloc.and.comments, "(?i)^bag|gil") ~ as.character(NA),
       TRUE ~ "ERROR"
     )
   )
