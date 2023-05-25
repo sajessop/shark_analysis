@@ -1,5 +1,7 @@
 # SCRIPT FOR ANALYSING AND REPORTING PARKS AUSTRALIA PROJECT 2019
 
+#notes: For all cameras, C. obscurus, C. brachyurus and C. spp all combined under C. obscurus
+#         as they cannot be distinguished
 # to do: 
 #   Once all data entered and validated, copy data set to C drive from M drive and move M drive to U/Shark databases
 #   Review calculations with Jack '#4. Rates of depredation, bait loss and drop outs'
@@ -12,166 +14,133 @@
 
 rm(list=ls(all=TRUE))
 
-# Clean data
-source("underwater_clean_loop.R")
-       
-# User="Matias"
-User="Sarah"
+  library(devtools)
+  library(tidyverse)
+  library(dplyr)
+  library(readxl)
+  library(ggrepel)
+  library(ggpubr)
+  library(rlang)
+  library(MASS)
+  library(ggmosaic)
+  library(Hmisc)
+  library(gridExtra)
+  library(stringr)
+  library(extdplyr)
+  library(ggpubr)
+  library(ggridges)
+  library(vegan)
+  library(pairwiseAdonis)
+  library(overlapping)
+  library(tweedie)
+  library(mgcv)
+  library(emmeans)  #for model predictions
+  library(doParallel)
+  library(flextable)
+  library(webshot)
+  library(visNetwork)
+  library(ozmaps)
+  library(sf)
+  library(ggpmisc)
+  library(forecast)
+  library(performance)
+  library(ggforce)
+  library(scales)
+  library(igraph)
+  library(janitor)
+  library(lubridate)
+
+options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
+
+#--------- DATA ------------
+#User="Matias"
+User <- "Sarah"
 # User="Abbey"
 
 if(!exists('handl_OneDrive'))
 {
   if(User=="Matias") source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
   if(User=="Sarah")    handl_OneDrive=function(x)paste('C:/Users/S.Jesso/Documents/GitHub',x,sep='/')
-  if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users',Usr,'OneDrive - Department of Primary Industries and Regional Development/Matias',x,sep='/')
+  if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users/A.Shutt/OneDrive - Department of Primary Industries And Regional Development/Masters_Rscript_2023/GitHub',x,sep='/')
 }
 
 
-library(tidyverse)
-library(dplyr)
-library(readxl)
-library(ggrepel)
-library(ggpubr)
-library(rlang)
-library(MASS)
-library(ggmosaic)
-library(Hmisc)
-library(gridExtra)
-library(stringr)
-library(extdplyr)
-library(ggpubr)
-library(ggridges)
-library(vegan)
-library(pairwiseAdonis)
-library(overlapping)
-library(tweedie)
-library(mgcv)
-library(emmeans)  #for model predictions
-library(doParallel)
-library(flextable)
-library(webshot)
-library(visNetwork)
-library(ozmaps)
-library(sf)
-library(ggpmisc)
-library(forecast)
-library(performance)
-library(ggforce)
-library(scales)
-library(igraph)
-library(janitor)
 
-options(stringsAsFactors = FALSE,dplyr.summarise.inform = FALSE) 
 
-#--------- DATA ------------
 #1. Sharks data base
 if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
 if(User=="Sarah") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
-if(User=="Abbey") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
+if(User=="Abbey") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
+ 
+ #2. PA - Video
+if(User=="Matias") setwd(handl_OneDrive('Analyses/Parks Australia/Git_parks.australia'))
+if(User=="Abbey") setwd("C:/Users/A.Shutt/OneDrive - Department of Primary Industries And Regional Development/Masters_Rscript_2023/GitHub")
+if(User=="Sarah") setwd("~/GitHub/shark_analysis")
+ # Clean data
+source("underwater_clean_loop.R")
 
-# User="Matias"
-User="Sarah"
-# User="Abbey"
 
-#2. Species list
+#3. Species list
 if(User=="Matias") All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
-if(User=="Sarah") All.species.names=read.csv(handl_OneDrive("Species_code/Species.code.csv"))
-if(User=="Abbey") All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
+if(User=="Sarah") All.species.names=read.csv(handl_OneDrive("Data/Species.code.csv"))
+if(User=="Abbey") All.species.names=read.csv(handl_OneDrive("Git_other/Species.code.csv"))
 
+setwd("//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019")
+if(User=="Abbey") setwd("C:/Users/A.Shutt/OneDrive - Department of Primary Industries And Regional Development/Masters_Rscript_2023")
+CAAB.gillnet.txt=read.delim('CAAB gillnet.txt', header = TRUE, sep = "\t", dec = ".")
 
-#3. PA - TEPS interactions recorded by Observers
+#4. PA - TEPS interactions recorded by Observers
 setwd('M:/Agency Data/Draft Publications/Braccini/2019-20_Parks Australia Project/Fieldwork/Data')
+if(User=="Abbey") setwd("C:/Users/A.Shutt/OneDrive - Department of Primary Industries And Regional Development/Masters_Rscript_2023")
 TEPS <- read_excel("TEPS interactions.xlsx", sheet = "Sheet1",skip = 1)
 
 
-#4. PA - number of hook combinations used and lost in PA project
+#5. PA - number of hook combinations used and lost in PA project
 Hook.combos <- read_excel("Hook count.xlsx", sheet = "Sheet1",skip = 0)
 Lost.snoods<- read_excel("Broken hook specs.xlsx",sheet = "Sheet1")
 
+#6. PA - battery life
+setwd("//fish.wa.gov.au/Data/Production Databases/Shark/ParksAustralia_2019")
+D1.cam.battery <- read.csv("Deck 1 final metadata check.csv") %>% 
+  dplyr::select(x, Full.LL, Full.GN, More.comments) %>% 
+  rename(`DIPRD code` = x)
+D2.cam.battery <- read.csv("Deck 2 final metadata check.csv")%>% 
+  dplyr::select(x, Full.LL, Full.GN, More.comments) %>% 
+  rename(DPIRD.code = x)
 
-#5. PA - underwater video
-Event.Mes.data.dump='Abbey_Sarah'
-#Event.Mes.data.dump='Jack'
-if(Event.Mes.data.dump=='Jack')
-{
-  if(User=="Matias") setwd(handl_OneDrive("Parks Australia/2019_project/Data/cameras"))
-  if(User=="Sarah") setwd(handl_OneDrive("Parks Australia/2019_project/Data/cameras"))
-  if(User=="Abbey")  setwd(handl_OneDrive("Parks Australia/2019_project/Data/cameras"))
-  
-  #net
-  file.name.GN="Gillnet_Data_2_12_2021_Clean.xlsx"
-  Video.net.interaction <- read_excel(file.name.GN, sheet = "Interactions")
-  Video.net.maxN <- read_excel(file.name.GN, sheet = "MaxN")
-  Video.net.obs <- read_excel(file.name.GN, sheet = "Observation") 
-  
-  #longline
-  file.name.LL="Longline_Data_1_12_2021_Clean.xlsx"
-  Video.longline.interaction <- read_excel(file.name.LL, sheet = "Interactions")
-  Video.longline.maxN <- read_excel(file.name.LL, sheet = "MaxN")
-  Video.longline.obs <- read_excel(file.name.LL, sheet = "Observations")
-  
-  #habitat 
-  #note: CATAMI code used to determine habitat types
-  file.name.habitat="Gillnet_longline habitat.xlsx"
-  Video.habitat<- read_excel(file.name.habitat, sheet = "gillnet habitat")
-  Video.habitat.LL<- read_excel(file.name.habitat, sheet = "longline habitat")
-  
-  
-  #6. PA - deck camera 1 (points to measuring board)
-  file.name.habitat.deck="Deck 1 habitat and fish_6_12_2021.xlsx"
-  Video.habitat.deck<- read_excel(file.name.habitat.deck, sheet = "Habitat")
-  Video.camera1.deck<- read_excel(file.name.habitat.deck, sheet = "Deck 1 fish landed")
-  Video.camera1.deck_extra.records<- read_excel(file.name.habitat.deck, sheet = "extra records")
-  
-  
-  #7. PA - deck camera 2 (points to roller)
-  file.name.camera2.deck="Deck 2_6_12_2021.xlsx"
-  Video.camera2.deck<- read_excel(file.name.camera2.deck, sheet = "Deck 2")
-  Video.camera2.deck_observations<- read_excel(file.name.camera2.deck, sheet = "Other observations")
-  
-  
-  #8. PA - subsurface camera   
-  file.name.subsurface="SubSurface_7_12_2021.xlsx"
-  Video.subsurface<- read_excel(file.name.subsurface, sheet = "ALL Dot Point Measurements")
-  Video.subsurface.comments<- read_excel(file.name.subsurface, sheet = "comment")
-  
-}
-
-if(Event.Mes.data.dump=='Abbey_Sarah') 
-{
-  source("underwater_clean_loop.R")
-  
-}
 
 
 Do.tiff="YES"
 Do.jpeg="NO"
-if(User=="Matias") 
+
+if(User=="Matias")
 {
-  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R"))
   source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/ggplot.themes.R'))
   source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R"))
-}
-if(User=="Sarah") 
-{
   source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R"))
-  source(handl_OneDrive('Git_other'))
-  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R"))
+  
 }
+
 if(User=="Abbey") 
 {
-  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_Population.dynamics/fn.fig.R"))
-  source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/ggplot.themes.R'))
-  source(handl_OneDrive("Analyses/SOURCE_SCRIPTS/Git_other/Smart_par.R"))
+  source(handl_OneDrive("Git_other/Analyses/fn.fig.R"))
+  source(handl_OneDrive('Git_other/ggplot.themes.R'))
+  source(handl_OneDrive("Git_other/Smart_par.R"))
+}
+
+if(User=="Sarah")
+{
+  source(handl_OneDrive('Git_other/ggplot.themes.R'))
+  source(handl_OneDrive("Git_other/Smart_par.R"))
+  source(handl_OneDrive("Git_Population.dynamics/fn.fig.R"))
 }
 
 if(User=="Matias")  HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
-if(User=="Sarah")  HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
-if(User=="Abbey")  HNDL=handl_OneDrive('Analyses/Parks Australia/outputs/')
+if(User=="Abbey")  HNDL=handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/')
+if(User=="Sarah")  HNDL=handl_OneDrive('Outputs/')
 le.paste=function(x) paste(HNDL,x,sep='')
-
 #---------CONTROL SECTION------------
-explr.dat.entry=TRUE
+explr.dat.entry=FALSE
 do.len_len=FALSE
 do.Historic=FALSE
 do.soc.econ.papr=FALSE
@@ -186,8 +155,8 @@ distance.roller.spreader=mean(c(distance.roller.spreader.Anthony,distance.roller
 metres.observed=5 # average metres observed by underwater cameras.        REVIEW THIS
 hooks.observed=2   #average number of hooks observed by underwater cameras.        REVIEW THIS
 
-hours.underwater.ll='360'          #total number of hours of longline underwater footage analysed   #UPDATE ALL THESE
-hours.underwater.gn='1064'         #total number of hours of gillnet underwater footage analysed  
+hours.underwater.ll='1329'          #total number of hours of longline underwater footage analysed   #UPDATE ALL THESE
+hours.underwater.gn='2245'         #total number of hours of gillnet underwater footage analysed  
 hours.subsurface.ll='27'           #total number of hours of subsurface footage longline analysed  
 hours.subsurface.gn='54'           #total number of hours of subsurface footage gillnet analysed  
 hours.deck1.ll='42'               #total number of hours of deck camera 1 longline footage analysed  
@@ -265,11 +234,12 @@ Minobs.per=5              #minimum smaple size for percentage diff OM vs EM
 
 
 
-#---------Define TEPS------------                UPDATE IF NEW TEP SPECIES OBSERVED
+# -----------------Define TEPS---------------------------------------------
+#note: UPDATE IF NEW TEP SPECIES OBSERVED
 TEPS_Shark.rays=c(37008001,37010003,37035001,37035002)
 TEPS_marine.mam=4.1e+07:4.115e+07
 TEPS_seabirds=4.0e+07:4.09e+07
-TEPS_reptiles=3.747e7:3.99e+07
+TEPS_reptiles=3.9e7:3.99e+07          #3.747e7:3.99e+07
 TEPS.codes=c(TEPS_Shark.rays,TEPS_marine.mam,TEPS_seabirds,TEPS_reptiles)
 TEPS.names=data.frame(Name=c('Grey nurse shark','White shark','Smooth stingray','Black stingray','Oversized dusky shark',
                              'Shearwaters','Cormorants','Little black cormorant',
@@ -298,22 +268,47 @@ suppressWarnings({
   All.species.names=All.species.names%>%
     mutate(Code=ifelse(Taxa=='Elasmobranch'&!is.na(CAAB_code) & nchar(CAAB_code)==4,
                        as.numeric(paste('3700',CAAB_code,sep='')),
-                       ifelse(Taxa=='Elasmobranch'&!is.na(CAAB_code) & nchar(CAAB_code)==5,
+                ifelse(Taxa=='Elasmobranch'&!is.na(CAAB_code) & nchar(CAAB_code)==5,
                               as.numeric(paste('370',CAAB_code,sep='')),
-                              ifelse(Taxa=='Teleost'&!is.na(CAAB_code),as.numeric(paste('37',CAAB_code,sep='')),
-                                     NA)))) 
+                ifelse(Taxa=='Teleost'&!is.na(CAAB_code)& nchar(CAAB_code)==5,
+                       as.numeric(paste('370',CAAB_code,sep='')),
+                ifelse(Taxa=='Teleost'&!is.na(CAAB_code)& nchar(CAAB_code)==6,
+                      as.numeric(paste('37',CAAB_code,sep='')),
+                NA))))) 
 })
+# All.species.names=All.species.names%>%
+#   mutate(Code=ifelse(COMMON_NAME=='Scaly mackerel',37085018,Code))
 
-#Add Codes used by Jack
-Addis=All.species.names[1:3,]%>%
-  mutate(Species=rep('',3),
-         COMMON_NAME=c('Wobbegongs','Whaler sharks','Stingrays'),
-         SCIENTIFIC_NAME=c('Orectolobus spp','Carcharhinus spp','Dasyatis spp'),
-         Taxa=rep('Elasmobranch',3),
-         CAES_Code=rep(NA,3),
-         CAAB_code=rep(NA,3),
-         Code=c(37013906,37018904,37035901))
+
+#Add Codes used by Jack   NOTE: add here any species not in All.species.names
+Addis=All.species.names[1:2,]%>%
+  mutate(Species=rep('',),
+         COMMON_NAME=c('Whaler sharks','Stingrays'),
+         SCIENTIFIC_NAME=c('Carcharhinus spp','Dasyatis spp'),
+         Taxa=rep('Elasmobranch',2),
+         CAES_Code=rep(NA,2),
+         CAAB_code=rep(NA,2),
+         Code=c(37018904,37035901))
 All.species.names=rbind(All.species.names,Addis)
+
+#Video.net.interaction <- Video.net.interaction %>% filter(!Interaction =="Missing data")
+#video.longline.interactions <- Video.longline.interaction%>%filter(!Interaction =="Missing data")
+
+
+CAAB.gillnet.txt=CAAB.gillnet.txt%>%
+  rename(Code=CAAB.CODE)%>%
+  mutate(Species='',COMMON_NAME='',CAES_Code='',CAAB_code='',
+         SCIENTIFIC_NAME=paste(GENUS,SPECIES))%>%
+  filter(!SPECIES=='')%>%
+  filter(!Code%in%All.species.names$Code)%>%
+  mutate(Taxa=ifelse(Code%in% 37005000:37041902,"Elasmobranch",
+              ifelse(Code%in% 37067000:37470903,"Teleost",
+              NA)))%>%
+  dplyr::select(colnames(All.species.names))
+  
+All.species.names=rbind(All.species.names,CAAB.gillnet.txt)
+
+
 
 #---------Manipulate PA hook size, type and snood combinations  ------------
 if('no of baited hooks'%in%names(Hook.combos))  Hook.combos<-Hook.combos%>%dplyr::select(-'no of baited hooks')
@@ -490,7 +485,7 @@ DATA=DATA%>%
 #note: not needed once all data have been entered
 if(explr.dat.entry)
 {
-  setwd(handl_OneDrive("Analyses/Parks Australia/fix this"))
+  setwd(handl_OneDrive("Git_other/Analyses/Parks_Australia/outputs/fix this"))
   file.remove(list.files())
   
   No.times=DATA%>%
@@ -612,19 +607,19 @@ if(explr.dat.entry)
 
 
 
-# ---------Fishing days by zone and method  -------------------------------
+#---------Fishing days by zone and method  -------------------------------
 Fishing.days.by.zone.method=DATA%>%
   distinct(date,zone,method)%>%
   group_by(zone,method)%>%
   tally()
 
-# ---------Functions: Multivariate stats  -------------------------------
+#---------Functions: Multivariate stats  -------------------------------
 multivariate.fn=function(d,Terms,Def.sp.term,Transf,Show.term,Group,hndl,
                          MDS.title,Simper.title,Permanova.title,
                          simper.cumsum=0.85,
                          LGSIZE=12)
 {
-  names(d)=tolower(names(d))
+  names(d)=tolower(names(d))    
   
   what.species.GN=d%>%
     filter(method=='GN')%>%
@@ -724,8 +719,10 @@ multivariate.fn=function(d,Terms,Def.sp.term,Transf,Show.term,Group,hndl,
   
   #Permanova
   # 1. overall significance test
-  adon.results<-adonis(formula(paste('Community',Show.term,sep='~')),data=d, method="bray",perm=5e3)
-  write.csv(as.data.frame(adon.results$aov.tab),paste(hndl,Permanova.title,'.csv',sep=""))
+  adon.results<-adonis2(formula(paste('Community',Show.term,sep='~')),data=d, method="bray",perm=5e3)
+  write.csv(as.data.frame(adon.results),paste(hndl,Permanova.title,'.csv',sep=""))
+  #adon.results<-adonis(formula(paste('Community',Show.term,sep='~')),data=d, method="bray",perm=5e3)
+  #write.csv(as.data.frame(adon.results$aov.tab),paste(hndl,Permanova.title,'.csv',sep=""))
   
   # 2. multilevel pairwise comparison with adjusted p-values
   #adonis.pairwise=pairwise.adonis(Community,d[,match(Show.term,names(d))])
@@ -809,7 +806,7 @@ multivariate.fn=function(d,Terms,Def.sp.term,Transf,Show.term,Group,hndl,
   }
   write.csv(do.call(rbind,SIMPER.out),paste(hndl,Simper.title,'.csv',sep=""),row.names = F)
 }
-#---------Functions: CPUE standardisation ------------
+#---------Functions: CPUE standardisation ------------              
 cpue.stand.fun=function(d,Formula)
 {
   mod=gam(Formula,dat=d,family=tw,method="REML")
@@ -1054,7 +1051,7 @@ Video.net.obs=Video.net.obs%>%
          Method="Gillnet", 
          Position="Gillnet",
          Species=tolower(observation))
-if(!is.na(match('code',colnames(Video.net.obs)))) Video.net.obs=Video.net.obs%>%rename(Code=code)
+if(!is.na(match('code',colnames(Video.net.obs)))) #Video.net.obs=Video.net.obs%>%rename(Code=code)
 cols.vid.inter=colnames(Video.net.interaction)
 add=cols.vid.inter[which(!cols.vid.inter%in%colnames(Video.net.obs))]
 empty_df = Video.net.obs[,1:length(add)]
@@ -1269,13 +1266,23 @@ N.fshn%>%
 with(subset(N.fshn,zone=="Zone2"),table(method,skipper,useNA = 'ifany'))
 #---------Observer catch composition ------------ 
 # Map of sampling sites
-do.map=FALSE
+do.map=TRUE
 if(do.map)
 {
   library(grDevices)
   library(PBSmapping)
-  Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
-  Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
+  if(User=='Abbey')
+  {
+    Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
+    Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
+  }
+
+  if(User=='Sarah')
+  {
+    Bathymetry_120=read.table(handl_OneDrive("Mapping/get_data112_120.cgi"))
+    Bathymetry_138=read.table(handl_OneDrive("Mapping/get_data120.05_138.cgi"))
+  }
+  
   Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
   Bathymetry=Bathymetry%>%filter(V2<=(-26))
   Bathymetry=Bathymetry[order(Bathymetry$V1,Bathymetry$V2),]
@@ -1284,9 +1291,21 @@ if(do.map)
   reshaped=as.matrix(reshape(Bathymetry,idvar="V1",timevar="V2",v.names="V3", direction="wide"))
   
   library(rgdal)
-  SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
-  SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
-  WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/Shark_shape_files/WCDGDLL.shp"), layer="WCDGDLL") 
+  if(User=='Abbey')
+  {
+    SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+    SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+    WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
+    
+  }
+  
+  if(User=='Sarah')
+  {
+    SDGDLL_zone1=readOGR(handl_OneDrive("Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+    SDGDLL_zone2=readOGR(handl_OneDrive("Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+    WCDGDLL=readOGR(handl_OneDrive("Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
+    
+  }
   
   #Spatial range
   #Lat.range=round(c(min(DATA$mid.lat)-1,max(DATA$mid.lat)+1))
@@ -1355,6 +1374,7 @@ if(do.map)
 }  
 
 # 1. Table of number of individuals caught by species and gear
+
 Tab.n.sp.gear=DATA%>%
   group_by(method,common_name,scientific_name,taxa)%>%
   tally()%>%
@@ -1364,7 +1384,7 @@ Tab.n.sp.gear=DATA%>%
   arrange(taxa,-Total)%>%
   dplyr::select(-taxa)%>%
   filter(!common_name=='')
-write.csv(Tab.n.sp.gear,le.paste("Observer/Observed.number.species.by.gear.csv"),row.names=F)
+write.csv(Tab.n.sp.gear,le.paste("Observer/Observed.number.species.by.gear.csv"),row.names=F) 
 
 Tab.n.sp.longline=DATA%>%
   filter(method=='LL')%>%
@@ -1378,6 +1398,19 @@ Tab.n.sp.longline=DATA%>%
   filter(!common_name=='')
 write.csv(Tab.n.sp.longline,le.paste("Observer/Observed.number.species.by.longline.config.csv"),row.names=F)
 
+Tab.n.sp.gillnet=DATA%>%
+  filter(method=='GN')%>%
+  group_by(LL.config,common_name,taxa)%>%
+  tally()%>%
+  ungroup()%>%
+  spread(LL.config,n,fill=0)%>%
+  mutate(Total = rowSums(across(where(is.numeric))))%>%
+  arrange(taxa,-Total)%>%
+  dplyr::select(-taxa,-Total)%>%
+filter(!common_name=='')
+write.csv(Tab.n.sp.longline,le.paste("Observer/Observed.number.species.by.gillnet.config.csv"),row.names=F)
+
+#library(extrafont)
 
 # 2. Number of individuals caught by snood configuration 
 fn.fig(le.paste("Observer/Barplot Longline configurations"),2400,2000)
@@ -1534,7 +1567,7 @@ mtext("Proportion of total catch",1,outer=T,line=0.1,cex=1.2)
 dev.off()
 
 
-#Multivariate stats  
+#Multivariate stats
 UNIK.gear.zone=unique(paste(DATA$method,DATA$zone))
 colfunc <- colorRampPalette(c("orange","firebrick1"))
 n.col.GN=colfunc(length(grep("GN",UNIK.gear.zone)))
@@ -1542,7 +1575,7 @@ colfunc <- colorRampPalette(c("lightblue3", "dodgerblue4"))
 n.col.LL=colfunc(length(grep("LL",UNIK.gear.zone)))
 dis.cols=c(n.col.GN,n.col.LL)
 names(dis.cols)=UNIK.gear.zone
-multivariate.fn(d=DATA%>%
+multivariate.fn(d=DATA%>%  
                   filter(!is.na(zone))%>%
                   filter( !is.na(method))%>%
                   mutate(species=CAES_Code,
@@ -1560,8 +1593,7 @@ multivariate.fn(d=DATA%>%
                 Permanova.title="/catch_comp/Catch.comp_GN_LL_Permanova",
                 simper.cumsum=0.8,
                 LGSIZE=10.5)  
-rm(Community)
-
+rm(Community)  
 #---------Observer size distribution ------------ 
 
 #GN vs LL for main species
@@ -1691,12 +1723,12 @@ Tab.Kolmo=Tab.Kolmo%>%
 write.csv(Tab.Kolmo,le.paste("Observer/size/Size.Kolmo_Smirnov.csv"),row.names = F)
 
 #Stats
-# this.sp.sizes=DATA%>%
-#   filter(!is.na(Size))%>%
-#   group_by(common_name)%>%
-#   tally()%>%
-#   filter(n>50)%>%
-#   pull(common_name)
+ this.sp.sizes=DATA%>%
+   filter(!is.na(Size))%>%
+   group_by(common_name)%>%
+   tally()%>%
+   filter(n>50)%>%
+   pull(common_name)
 this.sp.sizes=Tabl.sizes
 fn.glm.size=function(d,Formula,Pred,Anova.title)
 {
@@ -1710,7 +1742,7 @@ fn.glm.size=function(d,Formula,Pred,Anova.title)
   
   #export anova table
   ft <- as_flextable(mod)
-  save_as_image(ft, path = le.paste(paste("Observer/size/ANOVA_",Anova.title,".png",sep='')))
+  save_as_image(ft, path = le.paste(paste("ANOVA_",Anova.title,".png",sep='')))
   rm(ft)
   
   if(any(Pred=="method"))
@@ -1879,15 +1911,25 @@ DATA%>%
             MAX=max(soak.time,na.rm=T))%>%
   arrange(method)
 
+#Total soak time 
+# soak.time1 <- (DATA_PA$soak.time)
+  
+# sum(soak.time1, na.rm=T)  
+
+
 #1. number of events 
-do.events=FALSE
+#added line ( filter(!Interaction=='Missing data')%>% ) to remove Missing data from interactions
+#remove NA from SP group: (  filter(!SP.group%in%NA)%>% )
+do.events=TRUE
 if(do.events)
 {
   #1.1. by gear and species group
-  rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
         Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
     filter(!Species=='birds feeding at surface')%>%
     filter(!SP.group%in%TEP.groups)%>%
+    filter(!Interaction=='Missing data')%>%
+    filter(!SP.group%in%NA)%>%
     mutate(Number=1,
            Method=capitalize(Method))%>%
     group_by(Method,Interaction,SP.group)%>%
@@ -1906,14 +1948,15 @@ if(do.events)
           axis.text=element_text(size=14),
           axis.title=element_text(size=16))+
     xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
-  ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf_by.group.tiff"),
-         width = 12,height = 10,compression = "lzw")
-  
+ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf_by_group.tiff"),
+        width = 12,height = 10,compression = "lzw")
+
   #1.2. by gear
-  rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
+rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species),
         Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
     filter(!Species=='birds feeding at surface')%>%
     filter(!SP.group%in%TEP.groups)%>%
+    filter(!Interaction=='Missing data')%>%
     mutate(Number=1,
            Method=capitalize(Method))%>%
     group_by(Method,Interaction)%>%
@@ -1931,7 +1974,7 @@ if(do.events)
           axis.text=element_text(size=14),
           axis.title=element_text(size=16))+
     xlab('')+ylab('Number of events')+ guides(color = guide_legend(nrow = 1))
-  ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf.tiff"),width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("Video/underwater/Interactions_number.events_sqrt.transf.tiff"),width = 16,height = 8,compression = "lzw")
   
 }
 
@@ -1941,8 +1984,10 @@ rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.gr
       Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
   filter(!Species=='birds feeding at surface')%>%
   filter(!SP.group%in%TEP.groups)%>%
+  filter(!SP.group%in%NA)%>%
   mutate(Method=capitalize(Method))%>%
   group_by(Method,Interaction,SP.group)%>%
+  # tally(Number, name="n")%>%  #workaround for no "swim past" data-check
   summarise(n=sum(Number))%>%
   filter(!is.na(Interaction))%>%
   mutate(Interaction=capitalize(tolower(Interaction)),
@@ -1965,8 +2010,10 @@ rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number,SP.gr
       Video.net.interaction%>%dplyr::select(Method,Interaction,Number,SP.group,Species))%>%
   filter(!Species=='birds feeding at surface')%>%
   filter(!SP.group%in%TEP.groups)%>%
+  #filter(!Interaction=='Missing data')%>%
   mutate(Method=capitalize(Method))%>%
   group_by(Method,Interaction)%>%
+  #tally(Number, name="n")%>%      #workaround for no "swim past" data-check
   summarise(n=sum(Number))%>%
   filter(!is.na(Interaction))%>%
   mutate(Interaction=capitalize(tolower(Interaction)))%>%
@@ -2016,58 +2063,65 @@ d%>%
   xlab('')+ylab('Number of individuals')+ guides(color = guide_legend(nrow = 1))+
   scale_fill_manual(values=dis.cols)
 ggsave(le.paste("Video/underwater/Interactions_number.individuals_main.target.tiff"),
-       width = 12,height = 10,compression = "lzw")
+        width = 12,height = 10,compression = "lzw")
 
 #3. Export data for Abbey
-add.effort=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Camera),
-                 Video.net.interaction%>%dplyr::select(sheet_no,Method,Camera))%>%
-  mutate(Method=capitalize(Method))%>%
-  group_by(sheet_no,Method,Camera)%>%
-  summarise(n=n())%>%
-  group_by(sheet_no,Method)%>%
-  summarise(n.cameras=n())
-Abbey.data.chapter.1_species=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group),
-                                   Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group))%>%
-  mutate(Method=capitalize(Method),
-         Interaction=capitalize(tolower(Interaction)))%>%
-  filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
-  group_by(sheet_no,Method,Interaction,Code)%>%
-  summarise(Number=sum(Number))%>%
-  spread(Code,Number,fill = 0)%>%
-  data.frame%>%
-  left_join(add.effort,by=c('sheet_no','Method'))
-Abbey.data.chapter.1_SP.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group),
-                                    Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group))%>%
-  mutate(Method=capitalize(Method),
-         Interaction=capitalize(tolower(Interaction)))%>%
-  filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
-  group_by(sheet_no,Method,Interaction,SP.group)%>%
-  summarise(Number=sum(Number))%>%
-  spread(SP.group,Number,fill = 0)%>%
-  data.frame%>%
-  left_join(add.effort,by=c('sheet_no','Method'))
-Abbey.data.chapter.1_Retain.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group),
-                                        Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group))%>%
-  mutate(Method=capitalize(Method),
-         Interaction=capitalize(tolower(Interaction)))%>%
-  group_by(sheet_no,Method,Interaction,Retain.group)%>%
-  summarise(Number=sum(Number))%>%
-  filter(!is.na(Retain.group))%>%
-  spread(Retain.group,Number,fill = 0)%>%
-  data.frame%>%
-  left_join(add.effort,by=c('sheet_no','Method'))
-write.csv(Abbey.data.chapter.1_species,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_species.csv'),row.names = F)
-write.csv(Abbey.data.chapter.1_SP.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_SP.group.csv'),row.names = F)
-write.csv(Abbey.data.chapter.1_Retain.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.1_Retain.group.csv'),row.names = F)
+export.abbeys=FALSE
+if(export.abbeys)
+{
+  add.effort=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Camera),
+                   Video.net.interaction%>%dplyr::select(sheet_no,Method,Camera))%>%
+    mutate(Method=capitalize(Method))%>%
+    group_by(sheet_no,Method,Camera)%>%
+    summarise(n=n())%>%
+    group_by(sheet_no,Method)%>%
+    summarise(n.cameras=n())
+  Abbey.data.chapter.1_species=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group),
+                                     Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Code,SP.group))%>%
+    mutate(Method=capitalize(Method),
+           Interaction=capitalize(tolower(Interaction)))%>%
+    filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
+    group_by(sheet_no,Method,Interaction,Code)%>%
+    summarise(Number=sum(Number))%>%
+    spread(Code,Number,fill = 0)%>%
+    data.frame%>%
+    left_join(add.effort,by=c('sheet_no','Method'))
+  Abbey.data.chapter.1_SP.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group),
+                                      Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,SP.group))%>%
+    mutate(Method=capitalize(Method),
+           Interaction=capitalize(tolower(Interaction)))%>%
+    filter(!SP.group%in%c('Macroalgae','Rock/reef structure'))%>%
+    group_by(sheet_no,Method,Interaction,SP.group)%>%
+    summarise(Number=sum(Number))%>%
+    spread(SP.group,Number,fill = 0)%>%
+    data.frame%>%
+    left_join(add.effort,by=c('sheet_no','Method'))
+  Abbey.data.chapter.1_Retain.group=rbind(Video.longline.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group),
+                                          Video.net.interaction%>%dplyr::select(sheet_no,Method,Interaction,Number,Retain.group))%>%
+    mutate(Method=capitalize(Method),
+           Interaction=capitalize(tolower(Interaction)))%>%
+    group_by(sheet_no,Method,Interaction,Retain.group)%>%
+    summarise(Number=sum(Number))%>%
+    filter(!is.na(Retain.group))%>%
+    spread(Retain.group,Number,fill = 0)%>%
+    data.frame%>%
+    left_join(add.effort,by=c('sheet_no','Method'))
+  write.csv(Abbey.data.chapter.1_species,handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/Abbey.data.chapter.1_species.csv'),row.names = F)
+  write.csv(Abbey.data.chapter.1_SP.group,handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/Abbey.data.chapter.1_SP.group.csv'),row.names = F)
+  write.csv(Abbey.data.chapter.1_Retain.group,handl_OneDrive('Git_other/Analyses/Parks_Australia/outputs/Abbey.data.chapter.1_Retain.group.csv'),row.names = F)
+  
+}
+  
 
 
 #4. Lolipop approach
-do.loli=FALSE
+do.loli=TRUE
 if(do.loli)
 {
   #Lollipop graph of % of interaction types by gear 
   df=rbind(Video.longline.interaction%>%dplyr::select(Method,Interaction,Number),
-           Video.net.interaction%>%dplyr::select(Method,Interaction,Number))
+           Video.net.interaction%>%dplyr::select(Method,Interaction,Number))%>%
+  filter(!Interaction=='NA')
   df=pct_routine(df, Method, Interaction)
   ggplot(df)+
     geom_linerange(aes(x = Interaction, ymin = 0, ymax = pct, colour = Method), 
@@ -2076,7 +2130,7 @@ if(do.loli)
                position = position_dodge(width = 1))+
     coord_flip()
   ggsave(le.paste("Video/underwater/Interactions_lollipop.tiff"), 
-         width = 12,height = 10,compression = "lzw")
+          width = 12,height = 10,compression = "lzw")
   
   
   #Mosaic plot
@@ -2090,21 +2144,21 @@ if(do.loli)
     geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
     labs(x = "",y='', title='Gillnet')+
     facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
-  ggsave(le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"), 
-         width = 12,height = 10,compression = "lzw")
-  
+   ggsave(le.paste("Video/underwater/Interactions_mosaic_gillnet.tiff"), 
+          width = 12,height = 10,compression = "lzw")
+   
   #longline
   TAB=table(Video.longline.interaction$Interaction)
   lab=c(TAB)
   lab=paste(names(TAB)," (n= ",lab,")",sep='')
   names(lab)=names(TAB)
   
-  ggplot(data = Video.longline.interaction) +
+  ggplot(data = Video.longline.interaction %>% filter(!is.na(Interaction))) +
     geom_mosaic(aes(x = product(SP.group), fill=SP.group), na.rm=TRUE) + 
-    labs(x = "",y='', title='Gillnet')+
+    labs(x = "",y='', title='Longline')+
     facet_wrap(~Interaction,labeller = labeller(Interaction=lab)) + labs(fill = "")
-  ggsave(le.paste("Video/underwater/Interactions_mosaic_longline.tiff"), 
-         width = 12,height = 10,compression = "lzw")
+   ggsave(le.paste("Video/underwater/Interactions_mosaic_longline.tiff"), 
+          width = 12,height = 10,compression = "lzw")
   
 }
 
@@ -2198,8 +2252,8 @@ fn.test.underwtr=function(what,trans)
     arrange(Method,SP.group)
   id=match(c('Method','SP.group','SPECIES'),names(TAB))
   
-  TAB.GN=TAB%>%filter(Method=="Gillnet")
-  TAB.LL=TAB%>%filter(Method=="Longline")
+  TAB.GN=TAB%>%filter(Method=="Gillnet")%>%filter(SP.group%in%c('Scalefish','Sharks','Rays'))
+  TAB.LL=TAB%>%filter(Method=="Longline")%>%filter(SP.group%in%c('Scalefish','Sharks','Rays'))
   
   Community.GN <<- TAB.GN[-id]
   if(trans=='proportion') Community.GN=Community.GN/rowSums(Community.GN)
@@ -2217,8 +2271,12 @@ fn.test.underwtr=function(what,trans)
   
   #Permanova
   # 1. overall significance test
-  adon.results.GN<-adonis(formula('Community.GN~SP.group'),data=TAB.GN, method="bray",perm=5e3)
-  adon.results.LL<-adonis(formula('Community.LL~SP.group'),data=TAB.LL, method="bray",perm=5e3)
+  adon.results.GN<-adonis2(formula('Community.GN~SP.group'),data=TAB.GN%>%
+                                                              mutate(SP.group=as.character(SP.group)),
+                            method="bray",perm=5e3)
+  adon.results.LL<-adonis2(formula('Community.LL~SP.group'),data=TAB.LL%>%
+                                                                  mutate(SP.group=as.character(SP.group)),
+                           method="bray",perm=5e3)
   
   # 2. multilevel pairwise comparison with adjusted p-values
   dummy=pairwise.adonis2(Community.GN~SP.group,data=TAB.GN)
@@ -2256,8 +2314,8 @@ fn.test.underwtr=function(what,trans)
   
   return(list(p.mdsGN=p.mdsGN,
               p.mdsLL=p.mdsLL,
-              Permanova.GN=as.data.frame(adon.results.GN$aov.tab),
-              Permanova.LL=as.data.frame(adon.results.LL$aov.tab),
+              Permanova.GN=as.data.frame(adon.results.GN),
+              Permanova.LL=as.data.frame(adon.results.LL),
               adonis.pairwise.GN=adonis.pairwise.GN,
               adonis.pairwise.LL=adonis.pairwise.LL,
               simper.GN=simper.GN,
@@ -2267,12 +2325,14 @@ simper.cumsum=.95
 out.under.n=fn.test.underwtr(what='Numbers',trans='squareroot')
 rm(Community.GN,Community.LL)
 #export stuff
+{
 ggarrange(plotlist=list(out.under.n$p.mdsGN+rremove("xlab")+rremove("ylab"),
                         out.under.n$p.mdsLL+rremove("xlab")+rremove("ylab")),
           ncol = 1,
           common.legend=TRUE)
 ggsave(le.paste("Video/underwater/interactions_MDS.tiff"),
-       width = 5,height = 8,compression = "lzw")
+      width = 6,height = 9,compression = "lzw")
+
 
 write.csv(out.under.n$Permanova.GN,le.paste("Video/underwater/interactions_Permanova.GN.csv"))
 write.csv(out.under.n$Permanova.LL,le.paste("Video/underwater/interactions_Permanova.LL.csv"))
@@ -2287,7 +2347,9 @@ annotate_figure(fig,
                 left = text_grob("Average proportion",size = 20,rot = 90))
 
 ggsave(le.paste("Video/underwater/interactions_simper.tiff"),
-       width = 6,height = 8,compression = "lzw")
+        width = 6,height = 8,compression = "lzw")
+}
+
 
 
 
@@ -2296,8 +2358,11 @@ ggsave(le.paste("Video/underwater/interactions_simper.tiff"),
 
 
 #---------Analyse PA Habitat ------------
+# NOTE: combine Underwater habitat classification with habitat damage (deck and underwater)
 
-# 1. Underwater habitat classification
+# 1. Underwater habitat classification. MISSING: Data still to be updated
+do.habitat <- FALSE
+if(do.habitat){
 #gillnets
 Video.habitat=Video.habitat%>%
   data.frame%>%
@@ -2472,13 +2537,14 @@ ggplot() +
 ggsave(le.paste("Video/underwater/Habitat.damage_LL.tiff"),width = 6,height = 10,compression = "lzw")
 
 
-# 3. Deck camera Habitat interactions (gillnets only)
+# 3. Deck camera observations of habitat damage (gillnets only) 
 Video.habitat.deck=Video.habitat.deck%>%
   data.frame%>%
   mutate(Period=tolower(Period),
          SHEET_NO=case_when(Period=='gillnet'~str_remove(word(DIPRD.code,1,sep = "\\/"),'GN'),
                             Period=='longline'~str_remove(word(DIPRD.code,2,sep = "\\/"),'LL')),
-         Percentage.cover=ifelse(Percentage.cover=='<1',1,Percentage.cover),
+         Percentage.cover=ifelse(original.meshed=='<1',1,
+                          ifelse(original.meshed=='<10',10,original.meshed)),
          Percentage.cover=as.numeric(Percentage.cover),
          Species=capitalize(tolower(Species)),
          Frame_sheet=paste(SHEET_NO,Frame))%>%
@@ -2489,7 +2555,8 @@ Video.habitat.deck=Video.habitat.deck%>%
   mutate(net_length=net_length*1000,      #add net length in m
          Species=ifelse(Species=="Radiata","Macroalgae",Species),      #group Eklonia with macroalgae
          Period=ifelse(SHEET_NO%in%c("PA0129","PA0094","PA0084"),'longline',
-                       Period))   #wrongfully allocated method
+                       Period),
+         net_length=ifelse(is.na(net_length) & SHEET_NO=='PA0142',1800,net_length))   #wrongfully allocated method
 
 fn.habitat.damg.deck=function(Gear)  
 {
@@ -2624,7 +2691,7 @@ Out.damg_GN=fn.habitat.damg.deck(Gear='gillnet')
 ggarrange(Out.damg_GN$p2, Out.damg_GN$p3, Out.damg_GN$p4, ncol = 1, nrow = 3)
 ggsave(le.paste("Video/deck.cameras/Habitat.interactions.tiff"),
        width = 6,height = 10,compression = "lzw")
-
+}
 
 #---------Dropouts, Gaffing & Position in water column (catch around weight or float) ---------  
 Video.camera2.deck=Video.camera2.deck%>%
@@ -2867,7 +2934,7 @@ p1=fn.plt.dropouts(d=Video.subsurface%>%filter(!dropout=='No')%>%
                    var='Gaffed',
                    MinN=1)
 p1=p1+theme(plot.title=element_text(hjust = -.25))
-#ggsave(le.paste("Video/deck.cameras/Drop.out.events_gaffing_subsurface.tiff"),width = 10,height = 8,compression = "lzw")
+ggsave(le.paste("Video/deck.cameras/Drop.out.events_gaffing_subsurface.tiff"),width = 10,height = 8,compression = "lzw")
 
 #deck camera 2  
 p2=fn.plt.dropouts(d=Video.camera2.deck%>%
@@ -2894,7 +2961,9 @@ Data_water.column=Video.camera2.deck%>%
   filter(!SHEET_NO%in%No.good.water.column)%>%
   mutate(Code=ifelse(Code==37018001,37018003,Code),
          water.column=tolower(hook.distance.to.float.weight))%>%
-  filter(!is.na(water.column))
+  filter(!is.na(water.column))%>%
+  filter(grepl('longlin',tolower(Period)))%>%
+  mutate(Period='Longline')
 these.compo.sp=Data_water.column%>%
   group_by(Code)%>%
   tally()%>%
@@ -3005,7 +3074,7 @@ Rate.under_bait.loss=Rate.under_bait.loss%>%
               dplyr::select(sheet_no,N.cameras),by='sheet_no')%>%
   group_by(sheet_no,Method,Interaction)%>%
   summarise(n=sum(Number),
-            soak.time=max(soak.time),
+            soak.time=max(soak.time,na.rm=T),
             N.cameras=max(N.cameras))%>%
   mutate(Effort=case_when(Method=='Longline'~soak.time*hooks.observed*N.cameras,
                           Method=='Gillnet'~soak.time*metres.observed*N.cameras))
@@ -3026,15 +3095,15 @@ Rate.under=rbind(Video.longline.interaction%>%
                    distinct(Camera,sheet_no,Method,soak.time,Interaction),
                  Video.net.interaction%>%
                    distinct(Camera,sheet_no,Method,soak.time,Interaction))%>%
-  filter(Interaction%in%c("Predated on","Caught while predating","Dropout"))%>%
+  filter(Interaction%in%c("Predated on","Caught while predating","Feeding","Escape"))%>%
   mutate(Number=1,
          Method=capitalize(Method),
-         Interaction=ifelse(Interaction%in%c("Caught while predating","Predated on"),
+         Interaction=ifelse(Interaction%in%c("Caught while predating","Predated on","Feeding"),
                             "Depredation",Interaction))
 Rate.under=Rate.under%>%
   left_join(All.underwater.shts%>%
               filter(sheet_no%in%unique(Rate.under$sheet_no))%>%
-              dplyr::select(sheet_no,N.cameras),by='sheet_no')%>%
+              dplyr::select(sheet_no,N.cameras),by='sheet_no')%>%  
   group_by(sheet_no,Method,Interaction)%>%
   summarise(n=sum(Number),
             soak.time=max(soak.time),
@@ -3043,7 +3112,7 @@ Rate.under=Rate.under%>%
                           Method=='Gillnet'~soak.time*metres.observed*N.cameras))
 
 Drop.out.rate_under=rbind(Rate.under%>%
-                            filter(Interaction=='Dropout')%>%
+                            filter(Interaction=='Escape')%>%
                             dplyr::select(Method,sheet_no,n,Effort),
                           All.underwater.shts%>%     #add observed 0 records
                             filter(!sheet_no%in%Rate.under$sheet_no)%>%
@@ -3171,15 +3240,23 @@ write.csv(Drop.out.rate_subsurface,
 
 
 #---------Analysis of Deck 1 camera VS observers --------------------------------------------------------------------
-
 #   For paper:
 #     Try model: EM = OM + species group (either species, or genus or family) + day/night + boat + EM analysist
-#           Consider EM analysist to discuss potential bias (Abbey and Jack could remember species from when onboard).
+#           Consider EM analysis to discuss potential bias (Abbey and Jack could remember species from when onboard).
 #     For duskies-coppers, group as 'whalers' for gummy-whiskery, also group.
 #     
-
-
-
+#AKA   STILL NEED TO CHECK FOR CODES THAT ARE IN METADATA CHECK BUT NOT DATAFRAME
+# Get video shots with bull battery life 
+D1.good.ones <- D1.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
+  mutate(
+    LL = ifelse(str_detect(`DIPRD code`, "(?i)ll"), as.character(`DIPRD code`), as.character(NA)),
+    GN = ifelse(str_detect(`DIPRD code`, "(?i)gn"), as.character(`DIPRD code`), as.character(NA))
+  )
+D2.good.ones <- D2.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
+  mutate(
+    LL = ifelse(str_detect(DPIRD.code, "(?i)ll"), as.character(DPIRD.code), as.character(NA)),
+    GN = ifelse(str_detect(DPIRD.code, "(?i)gn"), as.character(DPIRD.code), as.character(NA))
+  )
 # Deck 1  (pointing to deck)                      
 Video.camera1.deck=Video.camera1.deck%>%
   mutate(Code=gsub('\\s+', '',Code),
@@ -3187,7 +3264,9 @@ Video.camera1.deck=Video.camera1.deck%>%
   left_join(All.species.names%>%
               dplyr::select(COMMON_NAME,Code)%>%
               distinct(Code,.keep_all=T),
-            by="Code")
+            by="Code") %>% 
+  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) #%>%
+  # filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
 
 Video.camera1.deck=Video.camera1.deck%>%
   rename(DIPRD.code='DIPRD code')%>%
@@ -3230,7 +3309,8 @@ Video.camera1=rbind(Video.camera1.deck_extra.records%>%
          Period=ifelse(Period=='gillnet' & method=='LL','longline',
                        ifelse(Period=='longline' & method=='GN','gillnet',Period)))
 
-#1. Export data for Abbey
+#1. Export data for Abbey\
+#### NOTE: made changes to code here because there was a "q" in number, will fix in EMob and remove changes 
 Abbey.data.chapter.2=rbind(Video.camera1%>%
                              dplyr::rename(Number=number)%>%
                              mutate(Method=capitalize(Period))%>%
@@ -3263,19 +3343,19 @@ add.effort=DATA%>%
                               NA)))%>%
   dplyr::rename(Fishing.effort=Effort)%>%
   dplyr::select(-method)
-Abbey.data.chapter.2_species=Abbey.data.chapter.2%>%
+Abbey.data.chapter.2_species=mutate(Abbey.data.chapter.2, Number = as.numeric(1))%>%
   group_by(sheet_no,Method,Data.set,Code)%>%
   summarise(Number=sum(Number))%>%
   spread(Code,Number,fill = 0)%>%
   data.frame%>%
   left_join(add.effort,by=c('sheet_no','Method'))
-Abbey.data.chapter.2_SP.group=Abbey.data.chapter.2%>%
+Abbey.data.chapter.2_SP.group=mutate(Abbey.data.chapter.2, Number = as.numeric(1))%>%
   group_by(sheet_no,Method,Data.set,SP.group)%>%
   summarise(Number=sum(Number))%>%
   spread(SP.group,Number,fill = 0)%>%
   data.frame%>%
   left_join(add.effort,by=c('sheet_no','Method'))
-Abbey.data.chapter.2_Retain.group=Abbey.data.chapter.2%>%
+Abbey.data.chapter.2_Retain.group=mutate(Abbey.data.chapter.2, Number = as.numeric(1))%>%
   left_join(Retained.tabl,by='Code')%>%
   mutate(Retain.group=
            ifelse(retained=='Yes' & SP.group%in% c('Sharks','Rays'),"Retained elasmobranch",
@@ -3289,9 +3369,9 @@ Abbey.data.chapter.2_Retain.group=Abbey.data.chapter.2%>%
   spread(Retain.group,Number,fill = 0)%>%
   data.frame%>%
   left_join(add.effort,by=c('sheet_no','Method'))
-write.csv(Abbey.data.chapter.2_species,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_species.csv'),row.names = F)
-write.csv(Abbey.data.chapter.2_SP.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_SP.group.csv'),row.names = F)
-write.csv(Abbey.data.chapter.2_Retain.group,handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Abbey.data.chapter.2_Retain.group.csv'),row.names = F)
+# write.csv(Abbey.data.chapter.2_species,le.paste('Data for Abbey/Abbey.data.chapter.2_species.csv'),row.names = F)
+# write.csv(Abbey.data.chapter.2_SP.group,le.paste('Data for Abbey/Abbey.data.chapter.2_SP.group.csv'),row.names = F)
+# write.csv(Abbey.data.chapter.2_Retain.group,le.paste('Data for Abbey/Abbey.data.chapter.2_Retain.group.csv'),row.names = F)
 
 #2 Barplot of observer VS camera
 EM.vs.OM.DATA=DATA%>%
@@ -3772,23 +3852,23 @@ Out=fn.compare.obs.cam(CAM=EM.vs.OM.Video.camera1,
                        Terms='Platform',
                        Minobs.per=Minobs.per)
 #export data issues
-write.csv(Out$out.for.Jack,le.paste("Camera_v_Observer/out.for.Jack.csv"),row.names=F)
+# write.csv(Out$out.for.Jack,le.paste("Camera_v_Observer/out.for.Jack.csv"),row.names=F)
 
 #export Raw data comparison
 Out$p.ind
-ggsave(le.paste("Camera_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
+# ggsave(le.paste("Camera_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
 
 Out$p.sp
-ggsave(le.paste("Camera_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
+# ggsave(le.paste("Camera_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
 
 
 #export GLMS
 ft <- as_flextable(Out$mod_all.species$mod)
-save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_all.species.png"))
+# save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_all.species.png"))
 ft <- as_flextable(Out$mod_commercial.species$mod)
-save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_commercial.species.png"))
+# save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_commercial.species.png"))
 ft <- as_flextable(Out$mod_discarded.species$mod)
-save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_discarded.species.png"))
+# save_as_image(ft, path = le.paste("Camera_v_Observer/GLM_mod_discarded.species.png"))
 
 fig=ggarrange(Out$mod_all.species$p+rremove("xlab")+rremove("ylab"),
               Out$mod_commercial.species$p+rremove("xlab")+rremove("ylab"),
@@ -3806,10 +3886,10 @@ Out$Per.dif
 ggsave(le.paste("Camera_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
 #Out$Per.dif.com
-#ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
 
 #Out$Per.dif.dis
-#ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
 
 
 #export MDS
@@ -3825,7 +3905,7 @@ write.csv(Out$adon.LL,le.paste("Camera_v_Observer/Permanova_LL.csv"),row.names =
 
 
 #---------Analysis of Deck 2 camera VS observers --------------------------------------------------------------------
-
+#AKA
 # Deck 2  (over roller)                      
 Video.camera2=Video.camera2.deck%>%
   mutate(Code=ifelse(Genus=="Kyphosus" & Species=="spp",'37361903',Code))%>%
@@ -3850,7 +3930,9 @@ Video.camera2=Video.camera2.deck%>%
   left_join(DATA_PA,by='sheet_no')%>%
   mutate(Data.set="camera",
          Period=ifelse(Period=='gillnet' & method=='LL','longline',
-                       ifelse(Period=='longline' & method=='GN','gillnet',Period)))
+                       ifelse(Period=='longline' & method=='GN','gillnet',Period))) %>% 
+  separate(DPIRD.code, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
+  filter(LL %in% D2.good.ones$LL|GN %in% D2.good.ones$GN)
 
 EM.vs.OM.Video.camera2=Video.camera2%>%
   mutate(Code=as.numeric(Code))%>%
@@ -3949,7 +4031,7 @@ fig=ggarrange(p1+rremove("xlab"), p2+rremove("xlab"),
               ncol = 1, nrow = 2,
               common.legend=TRUE)
 annotate_figure(fig,bottom = text_grob("Number of individuals",size = 18))
-ggsave(le.paste("Camera2_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
+# ggsave(le.paste("Camera2_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
 
 
 #2. Statistical comparison
@@ -3960,14 +4042,14 @@ Out=fn.compare.obs.cam(CAM=EM.vs.OM.Video.camera2,
                        Terms='Platform',
                        Minobs.per=Minobs.per)
 #export data issues
-write.csv(Out$out.for.Jack,le.paste("Camera2_v_Observer/out.for.Jack.csv"),row.names=F)
+# write.csv(Out$out.for.Jack,le.paste("Camera2_v_Observer/out.for.Jack.csv"),row.names=F)
 
 #export Raw data comparison
 Out$p.ind
-ggsave(le.paste("Camera2_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
+# ggsave(le.paste("Camera2_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
 
 Out$p.sp
-ggsave(le.paste("Camera2_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
+# ggsave(le.paste("Camera2_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
 
 
 #export GLMS
@@ -3986,12 +4068,12 @@ fig=ggarrange(Out$mod_all.species$p+rremove("xlab")+rremove("ylab"),
 annotate_figure(fig,
                 bottom = text_grob("Number of individuals reported by observer",size = 18),
                 left = text_grob("Number of individuals recorded by camera",size = 18,rot = 90))
-ggsave(le.paste("Camera2_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
+# ggsave(le.paste("Camera2_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
 
 
 #export Percentage difference
 Out$Per.dif
-ggsave(le.paste("Camera2_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
+# ggsave(le.paste("Camera2_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
 #Out$Per.dif.com
 #ggsave(le.paste("Camera2_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
@@ -4008,8 +4090,8 @@ ggsave(le.paste("Camera2_v_Observer/MDS.tiff"),width = 8,height = 12,compression
 
 
 #export Permanovas
-write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = T)
-write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = T)
+# write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = T)
+# write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = T)
 
 
 #---------Gilled or bagged ------------ 
@@ -4027,59 +4109,63 @@ Tab.gilled.bagged=Video.camera1.deck%>%
   arrange(Taxa,-n)%>%
   dplyr::select(-Taxa,-n)%>%
   filter(!is.na(COMMON_NAME))
-write.csv(Tab.gilled.bagged,le.paste("Video/deck.cameras/Tab.gilled.bagged.csv"),row.names=F)
+# write.csv(Tab.gilled.bagged,le.paste("Video/deck.cameras/Tab.gilled.bagged.csv"),row.names=F)
 
 
 
 #---------Analyses for Abbey ------------
-fn.get.top.1=function(d,N)
+if(export.abbeys)
 {
-  d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Interaction,-n.cameras))
-  out=names(d[d>N])
+  fn.get.top.1=function(d,N)
+  {
+    d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Interaction,-n.cameras))
+    out=names(d[d>N])
+  }
+  fn.explr.Abbey.1=function(d,vars)
+  {
+    d1=d[,vars]/d$Eff
+    d1%>%
+      mutate(sheet_no=d$sheet_no,
+             Method=d$Method,
+             Interaction=d$Interaction)%>%
+      gather("Species","cpue",-sheet_no,-Method,-Interaction)%>%
+      filter(cpue>0)%>%
+      mutate(log.cpue=log(cpue))%>%
+      ggplot(aes(x=Method, y=log.cpue, fill=Interaction)) + 
+      geom_boxplot()+
+      facet_wrap(~Species, scale="free")
+  }
+  fn.get.top.2=function(d,N)
+  {
+    d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Data.set,-Fishing.effort))
+    out=names(d[d>N])
+  }
+  fn.explr.Abbey.2=function(d,vars)
+  {
+    d1=d[,vars]/d$Eff
+    d1%>%
+      mutate(sheet_no=d$sheet_no,
+             Method=d$Method,
+             Data.set=d$Data.set)%>%
+      gather("Species","cpue",-sheet_no,-Method,-Data.set)%>%
+      filter(cpue>0)%>%
+      mutate(log.cpue=log(cpue))%>%
+      ggplot(aes(x=Method, y=log.cpue, fill=Data.set)) + 
+      geom_boxplot()+
+      facet_wrap(~Species, scale="free")
+  }
+  pdf(file=handl_OneDrive('Analyses/Parks_Australia/outputs/Data_for_Abbey/Exploraty.pdf'))
+  fn.explr.Abbey.1(d=Abbey.data.chapter.1_species%>%dplyr::rename(Eff=n.cameras),
+                   vars=fn.get.top.1(d=Abbey.data.chapter.1_species,N=250))
+  fn.explr.Abbey.1(d=Abbey.data.chapter.1_SP.group%>%dplyr::rename(Eff=n.cameras),
+                   vars=fn.get.top.1(d=Abbey.data.chapter.1_SP.group,N=30))
+  fn.explr.Abbey.2(d=Abbey.data.chapter.2_species%>%dplyr::rename(Eff=Fishing.effort),
+                   vars=fn.get.top.2(d=Abbey.data.chapter.2_species,N=100))
+  fn.explr.Abbey.2(d=Abbey.data.chapter.2_SP.group%>%dplyr::rename(Eff=Fishing.effort),
+                   vars=fn.get.top.2(d=Abbey.data.chapter.2_SP.group,N=30))
+  dev.off()
+  
 }
-fn.explr.Abbey.1=function(d,vars)
-{
-  d1=d[,vars]/d$Eff
-  d1%>%
-    mutate(sheet_no=d$sheet_no,
-           Method=d$Method,
-           Interaction=d$Interaction)%>%
-    gather("Species","cpue",-sheet_no,-Method,-Interaction)%>%
-    filter(cpue>0)%>%
-    mutate(log.cpue=log(cpue))%>%
-    ggplot(aes(x=Method, y=log.cpue, fill=Interaction)) + 
-    geom_boxplot()+
-    facet_wrap(~Species, scale="free")
-}
-fn.get.top.2=function(d,N)
-{
-  d=colSums(d%>%dplyr::select(-sheet_no,-Method,-Data.set,-Fishing.effort))
-  out=names(d[d>N])
-}
-fn.explr.Abbey.2=function(d,vars)
-{
-  d1=d[,vars]/d$Eff
-  d1%>%
-    mutate(sheet_no=d$sheet_no,
-           Method=d$Method,
-           Data.set=d$Data.set)%>%
-    gather("Species","cpue",-sheet_no,-Method,-Data.set)%>%
-    filter(cpue>0)%>%
-    mutate(log.cpue=log(cpue))%>%
-    ggplot(aes(x=Method, y=log.cpue, fill=Data.set)) + 
-    geom_boxplot()+
-    facet_wrap(~Species, scale="free")
-}
-pdf(file=handl_OneDrive('Analyses/Parks Australia/outputs/Data for Abbey/Exploraty.pdf'))
-fn.explr.Abbey.1(d=Abbey.data.chapter.1_species%>%dplyr::rename(Eff=n.cameras),
-                 vars=fn.get.top.1(d=Abbey.data.chapter.1_species,N=250))
-fn.explr.Abbey.1(d=Abbey.data.chapter.1_SP.group%>%dplyr::rename(Eff=n.cameras),
-                 vars=fn.get.top.1(d=Abbey.data.chapter.1_SP.group,N=30))
-fn.explr.Abbey.2(d=Abbey.data.chapter.2_species%>%dplyr::rename(Eff=Fishing.effort),
-                 vars=fn.get.top.2(d=Abbey.data.chapter.2_species,N=100))
-fn.explr.Abbey.2(d=Abbey.data.chapter.2_SP.group%>%dplyr::rename(Eff=Fishing.effort),
-                 vars=fn.get.top.2(d=Abbey.data.chapter.2_SP.group,N=30))
-dev.off()
 
 
 #---------Analyse PA TEPS --------------  
@@ -4110,12 +4196,12 @@ fn.TEPS.barplot=function(n.shots,d,hours.LL,hours.GN,show.all.levels=TRUE,LGN,TI
     facet_wrap(~Method.hour,dir='h')+ 
     theme_PA(str.siz=16,strx.siz=16,leg.siz=17,axs.t.siz=16,axs.T.siz=18)+
     theme(legend.position = LGN,
-          legend.justification='left',
+          legend.justification='top',
           legend.direction='horizontal',
           legend.title = element_blank())+
     xlab('')+ylab('Number of events')+
     scale_y_continuous(breaks = integer_breaks())+
-    guides(fill = guide_legend(nrow = 3))+
+    guides(fill = guide_legend(nrow = 4))+
     scale_x_discrete(position = "top")
   
   if(!is.null(TITL)) p=p+ggtitle(TITL)
@@ -4127,6 +4213,7 @@ fn.TEPS.barplot=function(n.shots,d,hours.LL,hours.GN,show.all.levels=TRUE,LGN,TI
   }
   print(p)
 }
+
 
 # 1.1. Underwater
 p1=fn.TEPS.barplot(n.shots=rbind(Video.longline.interaction%>%
@@ -4158,9 +4245,9 @@ p1=fn.TEPS.barplot(n.shots=rbind(Video.longline.interaction%>%
                                                   TRUE~Interaction)),
                    hours.LL=hours.underwater.ll,
                    hours.GN=hours.underwater.gn,
-                   LGN="none",
+                   LGN="top",
                    TITL="Underwater cameras")
-#ggsave(le.paste("TEPS/Interactions_number.events_underwater.tiff"),width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("TEPS/Interactions_number.events_underwater.test.tiff"),width = 20,height = 8,compression = "lzw")
 
 
 # 1.2. subsurface
@@ -4194,9 +4281,9 @@ p2=fn.TEPS.barplot(n.shots=Video.subsurface%>%
                      mutate(Name=factor(Name,levels=TEPS.names$Name)),
                    hours.LL=hours.subsurface.ll,
                    hours.GN=hours.subsurface.gn,
-                   LGN="none",
+                   LGN="top",
                    TITL="Subsurface camera")
-#ggsave(le.paste("TEPS/Interactions_number.events_subsurface.tiff"),width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("TEPS/Interactions_number.events_subsurface.tiff"),width = 20,height = 8,compression = "lzw")
 
 # 1.3. Deck 1 
 p3=fn.TEPS.barplot(n.shots=Video.camera1%>%
@@ -4219,10 +4306,11 @@ p3=fn.TEPS.barplot(n.shots=Video.camera1%>%
                    hours.GN=hours.deck1.gn,
                    LGN="none",
                    TITL="Deck camera 1")
-#ggsave(le.paste("TEPS/Interactions_number.events_deck1.tiff"),width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("TEPS/Interactions_number.events_deck1.tiff"),width = 12,height = 8,compression = "lzw")
 
 # 1.4. Deck 2  (pointing to roller) 
 #note: condition is not recorded by this camera
+## NOTE: Activity strings changed because "passing" should be "caught"
 p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Period,SHEET_NO),
                                  Video.camera2.deck%>%distinct(Period,SHEET_NO))%>%
                      distinct(SHEET_NO,Period)%>%
@@ -4231,12 +4319,21 @@ p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Peri
                      spread(Period,n),
                    d=rbind(Video.camera2.deck_observations%>%    
                              filter(Code%in%TEPS.codes)%>%
+                             mutate(Activity = case_when(original.hooklocation == "caught feeding on Sargent Baker" ~ "Feeding",
+                                                         original.dropout == "sealion feeding on macki" ~ "Feeding",
+                                                         Activity == "Passing" ~ "Caught"))%>%
                              dplyr::select(Period,Genus,Species,Code,Activity),
                            Video.camera2.deck%>%
                              filter(Code%in%TEPS.codes)%>%
-                             mutate(Activity=ifelse(dropout=='Yes' & gaffed=="No","Drop out",
-                                                    ifelse(dropout=='Yes' & gaffed=="Yes","Drop out and gaffed",
-                                                           NA)))%>%
+                             # mutate(Activity=ifelse(dropout=='Yes' & gaffed=="No","Drop out",
+                             #                        ifelse(dropout=='Yes' & gaffed=="Yes","Drop out and gaffed",
+                             #                               as.character(Activity))),
+                                mutate(Activity = case_when(original.hooklocation == "caught feeding on Sargent Baker" ~ "Feeding",
+                                                           original.dropout == "sealion feeding on macki" ~ "Feeding",
+                                                           dropout=='Yes' & gaffed=="No" ~ "Drop out",
+                                                           dropout=='Yes' & gaffed=="Yes" ~ "Drop out and gaffed",
+                                                           Activity == "Passing" ~ "Caught",
+                                                           is.na(Activity) ~ "Caught"))%>%
                              dplyr::select(Period,Genus,Species,Code,Activity))%>%
                      filter(!is.na(Activity))%>%
                      left_join(TEPS.names,by="Code")%>%
@@ -4245,15 +4342,13 @@ p4=fn.TEPS.barplot(n.shots=rbind(Video.camera2.deck_observations%>%distinct(Peri
                             Activity=capitalize(Activity))%>%
                      group_by(Method,Activity,Name,Colr,Code)%>%
                      tally(Number)%>%
-                     mutate(Interaction=case_when(Activity%in%c("Feeding from gillnet",
-                                                                "Feeding from longline")~"Feeding",
-                                                  TRUE~Activity))%>%
+                     mutate(Interaction= Activity)%>%
                      mutate(Name=factor(Name,levels=TEPS.names$Name)),
                    hours.LL=hours.deck2.ll,
                    hours.GN=hours.deck2.gn,
-                   LGN="none",
+                   LGN="top",
                    TITL="Deck camera 2")
-#ggsave(le.paste("TEPS/Interactions_number.events_deck2.tiff"),width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("TEPS/Interactions_number.events_deck2_new.tiff"),width = 12,height = 8,compression = "lzw")
 
 #2. Observer data 
 #data from TEPS data sheets
@@ -4320,9 +4415,9 @@ p5=fn.TEPS.barplot(n.shots=DATA%>%
                    d=rbind(d.teps,d.data),
                    hours.LL=NULL,
                    hours.GN=NULL,
-                   LGN="none",
+                   LGN="top",
                    TITL="Onboard observers")
-#ggsave(le.paste("TEPS/Numbers.interactions.by.gear_Observers.tiff"), width = 12,height = 8,compression = "lzw")
+ggsave(le.paste("TEPS/Numbers.interactions.by.gear_Observers.tiff"), width = 20,height = 8,compression = "lzw")
 
 fig=ggarrange(p1+rremove("xlab"), p2+rremove("xlab"),
               p4+rremove("xlab"), p3+rremove("xlab"), 
@@ -4437,7 +4532,7 @@ if(do.inter.for.each.shot)
 }
 
 #check ASLs
-check.ASL=FALSE
+check.ASL=TRUE
 if(check.ASL)
 {
   #underwater
@@ -4542,9 +4637,129 @@ if(check.ASL)
           legend.title = element_blank())
   
   library(rgdal)
+  if (User == "Sarah"){
+    ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
+  }
+  if (User == "Abbey"){
   ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
-  
+  }
+  if (User == "Matias"){
+    ASL_shape.file=readOGR(handl_OneDrive("Data/Mapping/Closures/ASL_closures/ASL_Closures.shp")) #south coast only
+  }
   plot(ASL_shape.file,col="chartreuse3")
   
 }
 
+
+
+
+
+
+########################SJ Testing Stuff For LL##########################
+## Exploratory Analysis
+# test for sig difference in number of fish caught on different hook type, size, position
+## Dependent var = number of fish caught per unit effort
+## Independent var = hook type, size, location
+## Hypothesis - The mean number of fish caught on different hooks is not significantly different 
+
+library(car)
+library(doBy)
+
+  # Use species with highest n
+  IndicatorSpecies <- DATA %>% 
+    count(scientific_name, sort = TRUE) %>%
+    filter(n > 80)
+    
+  testDATA <- DATA %>%
+    filter(scientific_name %in% IndicatorSpecies$scientific_name) %>%
+    dplyr::select("hooktype", "scientific_name", "sheet_no", "hooksize", "soak.time", "zone", "hooklocation", "wiretrace", "CAAB_code", "n.hooks")
+  
+  # Hook type
+  hooktypecatch <- testDATA %>% filter(!is.na(hooktype)) %>% 
+    dplyr::select("hooktype", "scientific_name", "sheet_no") %>% 
+    group_by(hooktype, scientific_name) %>% 
+    summarise(n = n()) 
+  hooktypeeffort <- testDATA %>% filter(!is.na(hooktype)) %>%
+    dplyr::select("hooktype", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+    group_by(hooktype, scientific_name) %>% 
+    summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+  hooktype.catchandeffort <- left_join(hooktypecatch, hooktypeeffort, join_by("scientific_name", "hooktype")) %>% 
+    group_by(scientific_name, hooktype) %>% 
+    mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+    ungroup()
+  
+ggplot(hooktype.catchandeffort, aes(hooktype, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Type") + ylab("CPUE") +
+  ggtitle("Effect of hook type on mean catch of indicator species")
+
+
+# Hook size  
+hooksizecatch <- testDATA %>% filter(!is.na(hooksize)) %>% 
+  dplyr::select("hooksize", "scientific_name", "sheet_no") %>% 
+  group_by(hooksize, scientific_name) %>% 
+  summarise(n = n()) 
+hooksizeeffort <- testDATA %>% filter(!is.na(hooksize)) %>%
+  dplyr::select("hooksize", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+  group_by(hooksize, scientific_name) %>% 
+  summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+hooksize.catchandeffort <- left_join(hooksizecatch, hooksizeeffort, join_by("scientific_name", "hooksize")) %>% 
+  group_by(scientific_name, hooksize) %>% 
+  mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+  ungroup()
+
+ggplot(hooksize.catchandeffort, aes(hooksize, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Size") + ylab("CPUE") +
+  ggtitle("Effect of hook size on mean catch of indicator species")
+
+
+# Snood type
+wiretracecatch <- testDATA %>% filter(!is.na(wiretrace)) %>% 
+  dplyr::select("wiretrace", "scientific_name", "sheet_no") %>% 
+  group_by(wiretrace, scientific_name) %>% 
+  summarise(n = n()) 
+wiretraceeffort <- testDATA %>% filter(!is.na(wiretrace)) %>%
+  dplyr::select("wiretrace", "scientific_name", "sheet_no", "soak.time", "n.hooks") %>% 
+  group_by(wiretrace, scientific_name) %>% 
+  summarise(effort.hours = max(soak.time), effort.hooks = max(n.hooks))
+wiretrace.catchandeffort <- left_join(wiretracecatch, wiretraceeffort, join_by("scientific_name", "wiretrace")) %>% 
+  group_by(scientific_name, wiretrace) %>% 
+  mutate(cpue=CPUE(n, effort.hours, effort.hooks)) %>% 
+  ungroup()
+
+ggplot(wiretrace.catchandeffort, aes(wiretrace, cpue)) +
+  geom_point() +
+  facet_grid(. ~ scientific_name) +
+  xlab("Hook Size") + ylab("CPUE") +
+  ggtitle("Effect of snood type on mean catch of indicator species")
+
+
+# Hook Distance to weight or float
+hookdist <- Video.camera2.deck %>% filter(!is.na(`hook distance to float/weight`)) %>% 
+  filter(taxa %in% IndicatorSpecies$scientific_name) %>%
+  dplyr::select("hook distance to float/weight", "taxa") %>% 
+  group_by(`hook distance to float/weight`, taxa) %>%
+  mutate(n = n()) %>%
+  ungroup()
+
+ggplot(hookdist) +
+  geom_col(aes(x = factor(`hook distance to float/weight`, levels = c("1w", "2w", "3w", "3f", "2f", "1f")),y = `n`)) +
+  facet_grid(. ~ taxa) +
+  xlab("Relative Distance to Weight or Float") + ylab("n") +
+  ggtitle("Hook distance to weight or float")
+
+
+#################################################George############################################
+## Underwater Caught by species
+### Run on data from underwater_clean_loop
+# We want to filter data where the interaction is "Caught-Gilled/hooked" OR "Caught while predating" for both Video.longline.interaction AND Video.net.interaction
+# And then we want to make a table of how many of each species we have caught
+
+write.csv(Video.net.interaction %>% filter(Interaction == "Caught-Gilled/hooked"|Interaction == "Caught while predating") %>% 
+  {table(.$taxa, .$Interaction)}, "Gillnet.n.for.George.csv")
+
+write.csv(Video.longline.interaction %>% filter(Interaction == "Caught-Gilled/hooked"|Interaction == "Caught while predating") %>% 
+  {table(.$taxa, .$Interaction)}, "Longline.n.for.George.csv")  
