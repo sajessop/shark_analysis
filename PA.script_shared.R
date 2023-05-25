@@ -3281,29 +3281,10 @@ Video.camera1.deck=Video.camera1.deck%>%
               dplyr::select(COMMON_NAME,Code)%>%
               distinct(Code,.keep_all=T),
             by="Code") %>% 
-  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) %>%
-  filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
+  rename(DIPRD.code='DIPRD code')
 
-Video.camera1.deck=Video.camera1.deck%>%
-  rename(DIPRD.code='DIPRD code')%>%
-  mutate(Period=ifelse(is.na(Period) & DIPRD.code=='GNPA003/LLPA0004','gillnet',Period),
-         DIPRD.code=ifelse(DIPRD.code=='GNPA003/LLPA0004','GNPA0003/LLPA0004',DIPRD.code),
-         Period=tolower(Period),
-         Period=ifelse(Period%in%c('longlien','ll','longlinr'),'longline',
-                       ifelse(Period%in%c('gillnet 2','gn'),'gillnet',
-                              Period)),
-         method=ifelse(Period=='gillnet','GN',
-                       ifelse(Period=='longline','LL',
-                              NA)),
-         meshed=tolower(meshed),
-         meshed=ifelse(meshed=='yes','gilled',meshed))          
-
-Video.camera1=rbind(Video.camera1.deck_extra.records%>%
-                      rename(DIPRD.code='DIPRD code')%>%
-                      dplyr::select(DIPRD.code,Code,Period,number,condition),
-                    Video.camera1.deck%>%
-                      mutate(Code=ifelse(Genus=="Kyphosus" & Species=="spp",'37361903',Code))%>%
-                      dplyr::select(DIPRD.code,Code,Period,number,condition))%>%
+Video.camera1 = Video.camera1.deck %>%
+                      dplyr::select(DIPRD.code,Code,Period,number,condition)%>%
   data.frame%>%
   mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                             Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
@@ -3315,15 +3296,11 @@ Video.camera1=rbind(Video.camera1.deck_extra.records%>%
                             Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
                             Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
                             Code == 10000910 ~"Sponges"),
-         Period=tolower(Period),
-         Period=ifelse(Period=='gn','gillnet',
-                       ifelse(Period=='ll','longline',Period)),
-         sheet_no=case_when(Period=='gillnet'~str_remove(word(DIPRD.code,1,sep = "\\/"),'GN'),
-                            Period=='longline'~str_remove(word(DIPRD.code,2,sep = "\\/"),'LL')))%>%
+         sheet_no=case_when(Period=='gillnet'~ substr(GN, 3, 8),
+                            Period=='longline'~ substr(LL, 3, 8)))%>%
   left_join(DATA_PA,by='sheet_no')%>%
-  mutate(Data.set="camera",
-         Period=ifelse(Period=='gillnet' & method=='LL','longline',
-                       ifelse(Period=='longline' & method=='GN','gillnet',Period)))
+  mutate(Data.set="camera") %>% 
+  filter(sheet_no %in% D1.good.ones$sheet_no)
 
 #1. Export data for Abbey\
 #### NOTE: made changes to code here because there was a "q" in number, will fix in EMob and remove changes 
