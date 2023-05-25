@@ -60,7 +60,7 @@ User <- "Sarah"
 if(!exists('handl_OneDrive'))
 {
   if(User=="Matias") source('C:/Users/myb/OneDrive - Department of Primary Industries and Regional Development/Matias/Analyses/SOURCE_SCRIPTS/Git_other/handl_OneDrive.R')
-  if(User=="Sarah")    handl_OneDrive=function(x)paste('C:/Users/S.Jesso/Documents/GitHub',x,sep='/')
+  if(User=="Sarah")    handl_OneDrive=function(x)paste("C:/Users/S.Jesso/OneDrive - Department of Primary Industries And Regional Development/Documents/GitHub",x,sep='/')
   if(User=="Abbey")    handl_OneDrive=function(x)paste('C:/Users/A.Shutt/OneDrive - Department of Primary Industries And Regional Development/Masters_Rscript_2023/GitHub',x,sep='/')
 }
 
@@ -69,7 +69,7 @@ if(!exists('handl_OneDrive'))
 
 #1. Sharks data base
 if(User=="Matias") source(handl_OneDrive('Analyses/SOURCE_SCRIPTS/Git_other/Source_Shark_bio.R'))
-if(User=="Sarah") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
+if(User=="Sarah") source(handl_OneDrive("Git_other/Source_Shark_bio.R"))
 if(User=="Abbey") source(handl_OneDrive('Git_other/Source_Shark_bio.R'))
  
  #2. PA - Video
@@ -1266,112 +1266,112 @@ N.fshn%>%
 with(subset(N.fshn,zone=="Zone2"),table(method,skipper,useNA = 'ifany'))
 #---------Observer catch composition ------------ 
 # Map of sampling sites
-do.map=TRUE
-if(do.map)
-{
-  library(grDevices)
-  library(PBSmapping)
-  if(User=='Abbey')
-  {
-    Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
-    Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
-  }
-
-  if(User=='Sarah')
-  {
-    Bathymetry_120=read.table(handl_OneDrive("Mapping/get_data112_120.cgi"))
-    Bathymetry_138=read.table(handl_OneDrive("Mapping/get_data120.05_138.cgi"))
-  }
-  
-  Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
-  Bathymetry=Bathymetry%>%filter(V2<=(-26))
-  Bathymetry=Bathymetry[order(Bathymetry$V1,Bathymetry$V2),]
-  xbat=sort(unique(Bathymetry$V1))
-  ybat=sort(unique(Bathymetry$V2)) 
-  reshaped=as.matrix(reshape(Bathymetry,idvar="V1",timevar="V2",v.names="V3", direction="wide"))
-  
-  library(rgdal)
-  if(User=='Abbey')
-  {
-    SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
-    SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
-    WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
-    
-  }
-  
-  if(User=='Sarah')
-  {
-    SDGDLL_zone1=readOGR(handl_OneDrive("Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
-    SDGDLL_zone2=readOGR(handl_OneDrive("Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
-    WCDGDLL=readOGR(handl_OneDrive("Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
-    
-  }
-  
-  #Spatial range
-  #Lat.range=round(c(min(DATA$mid.lat)-1,max(DATA$mid.lat)+1))
-  #Long.range=round(c(min(DATA$mid.long)-1,max(DATA$mid.long)+1))  
-  Lat.range=c(-36,-29)
-  Long.range=c(113,119)  
-  
-  seq.Lat=seq(Lat.range[1],Lat.range[2])
-  seq.Long=seq(Long.range[1],Long.range[2])
-  
-  Sites=DATA%>%distinct(sheet_no,mid.lat,mid.long,method)%>%
-    mutate(Col=ifelse(method=='GN',"#F8766D", "#00BFC4"))
-  #bring in shape file
-  data(worldLLhigh)
-  
-  fn.fig(le.paste("Map site area"),1600,2400)
-  par(mar = c(0, 0, 0, 0),oma=c(0,0,0,0),mgp=c(.1, 0.15, 0))
-  
-  #plot shots' Sampling site locations 
-  plotMap(worldLLhigh, xlim=Long.range,ylim=Lat.range,axes=F,
-          col="dark grey",tck = 0.025, tckMinor = 0.0125, xlab="",ylab="")
-  
-  #add zones
-  plot(WCDGDLL,add=T,col="aquamarine3")
-  text(114,-31,"West coast",srt=90,cex=1.5)
-  
-  plot(SDGDLL_zone1,add=T,col="deepskyblue3")
-  text(114.5,-35,"(Zone 1)",cex=1.5,srt=-45)
-  
-  plot(SDGDLL_zone2,add=T,col="chartreuse3")
-  text(118,-35.75,"(Zone 2)",cex=1.5)
-  
-  
-  points(Sites$mid.long,Sites$mid.lat,col='black',pch=21,bg=Sites$Col,cex=1.25)
-  
-  #add bathymetry
-  contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=plotlat[[i]],xlim=plotlong[[i]], zlim=c(-1,-300),
-          nlevels = 3,labcex=1,lty = c(1,2,3),col=c(rep("black",3)),add=T)
-  axis(side = 1, at =seq.Long, labels = seq.Long, tcl = .5,las=1,cex.axis=0.9)
-  axis(side = 2, at = seq.Lat, labels = -seq.Lat,tcl = .5,las=2,cex.axis=0.9)
-  
-  mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=1.25,las=3,cex=1.5)
-  mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=1.5,cex=1.5)
-  legend('bottomleft',c("Gillnet","Longline"),pch=21,
-         pt.bg=c("#F8766D", "#00BFC4"),bty='n',cex=1.25)
-  box()
-  
-  #inset Australia
-  par(fig=c(.35,.95,.35,.95), new = T,mgp=c(.1,.4,0),mai=c(.01,01,.01,.01))
-  plotMap(worldLLhigh, xlim=c(113,155), ylim=c(-44,-11),col="grey80", axes=F, xlab="", ylab="",
-          border="black",bg="white",plt = NULL)
-  
-  text(122,-24,"Western",col="black",cex=1,font=2.5)
-  text(122,-27,"Australia",col="black",cex=1,font=2.5)
-  polygon(x=c(Long.range,rev(Long.range)),
-          y=c(rep(Lat.range[1],2),rep(Lat.range[2],2)),
-          col=rgb(.1, .6, .1, alpha = .4),border = "black")
-  dummy.ln=c(152.8,154.6)
-  dummy.la=c(-12.03,-10.94)
-  polygon(x=c(dummy.ln,rev(dummy.ln)),
-          y=c(rep(dummy.la[1],2),rep(dummy.la[2],2)),
-          col='white',border = 'white')
-  lines(x=c(129,129),y=c(-31.64,-15),lty=2)
-  dev.off()
-  
-}  
+# do.map=TRUE
+# if(do.map)
+# {
+#   library(grDevices)
+#   library(PBSmapping)
+#   if(User=='Abbey')
+#   {
+#     Bathymetry_120=read.table(handl_OneDrive("Data/Mapping/get_data112_120.cgi"))
+#     Bathymetry_138=read.table(handl_OneDrive("Data/Mapping/get_data120.05_138.cgi"))
+#   }
+# 
+#   if(User=='Sarah')
+#   {
+#     Bathymetry_120=read.table(handl_OneDrive("Mapping/get_data112_120.cgi"))
+#     Bathymetry_138=read.table(handl_OneDrive("Mapping/get_data120.05_138.cgi"))
+#   }
+#   
+#   Bathymetry=rbind(Bathymetry_120,Bathymetry_138)
+#   Bathymetry=Bathymetry%>%filter(V2<=(-26))
+#   Bathymetry=Bathymetry[order(Bathymetry$V1,Bathymetry$V2),]
+#   xbat=sort(unique(Bathymetry$V1))
+#   ybat=sort(unique(Bathymetry$V2)) 
+#   reshaped=as.matrix(reshape(Bathymetry,idvar="V1",timevar="V2",v.names="V3", direction="wide"))
+#   
+#   library(rgdal)
+#   if(User=='Abbey')
+#   {
+#     SDGDLL_zone1=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+#     SDGDLL_zone2=readOGR(handl_OneDrive("Data/Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+#     WCDGDLL=readOGR(handl_OneDrive("Data/Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
+#     
+#   }
+#   
+#   if(User=='Sarah')
+#   {
+#     SDGDLL_zone1=readOGR(handl_OneDrive("Mapping/SDGDLL_zone1.shp"), layer="SDGDLL_zone1") 
+#     SDGDLL_zone2=readOGR(handl_OneDrive("Mapping/SDGDLL_zone2.shp"), layer="SDGDLL_zone2") 
+#     WCDGDLL=readOGR(handl_OneDrive("Mapping/WCDGDLL.shp"), layer="WCDGDLL") 
+#     
+#   }
+#   
+#   #Spatial range
+#   #Lat.range=round(c(min(DATA$mid.lat)-1,max(DATA$mid.lat)+1))
+#   #Long.range=round(c(min(DATA$mid.long)-1,max(DATA$mid.long)+1))  
+#   Lat.range=c(-36,-29)
+#   Long.range=c(113,119)  
+#   
+#   seq.Lat=seq(Lat.range[1],Lat.range[2])
+#   seq.Long=seq(Long.range[1],Long.range[2])
+#   
+#   Sites=DATA%>%distinct(sheet_no,mid.lat,mid.long,method)%>%
+#     mutate(Col=ifelse(method=='GN',"#F8766D", "#00BFC4"))
+#   #bring in shape file
+#   data(worldLLhigh)
+#   
+#   fn.fig(le.paste("Map site area"),1600,2400)
+#   par(mar = c(0, 0, 0, 0),oma=c(0,0,0,0),mgp=c(.1, 0.15, 0))
+#   
+#   #plot shots' Sampling site locations 
+#   plotMap(worldLLhigh, xlim=Long.range,ylim=Lat.range,axes=F,
+#           col="dark grey",tck = 0.025, tckMinor = 0.0125, xlab="",ylab="")
+#   
+#   #add zones
+#   plot(WCDGDLL,add=T,col="aquamarine3")
+#   text(114,-31,"West coast",srt=90,cex=1.5)
+#   
+#   plot(SDGDLL_zone1,add=T,col="deepskyblue3")
+#   text(114.5,-35,"(Zone 1)",cex=1.5,srt=-45)
+#   
+#   plot(SDGDLL_zone2,add=T,col="chartreuse3")
+#   text(118,-35.75,"(Zone 2)",cex=1.5)
+#   
+#   
+#   points(Sites$mid.long,Sites$mid.lat,col='black',pch=21,bg=Sites$Col,cex=1.25)
+#   
+#   #add bathymetry
+#   contour(xbat, ybat, reshaped[,2:ncol(reshaped)],ylim=plotlat[[i]],xlim=plotlong[[i]], zlim=c(-1,-300),
+#           nlevels = 3,labcex=1,lty = c(1,2,3),col=c(rep("black",3)),add=T)
+#   axis(side = 1, at =seq.Long, labels = seq.Long, tcl = .5,las=1,cex.axis=0.9)
+#   axis(side = 2, at = seq.Lat, labels = -seq.Lat,tcl = .5,las=2,cex.axis=0.9)
+#   
+#   mtext(expression(paste("Latitude (",degree,"S)",sep="")),side=2,line=1.25,las=3,cex=1.5)
+#   mtext(expression(paste("Longitude (",degree,"E)",sep="")),side=1,line=1.5,cex=1.5)
+#   legend('bottomleft',c("Gillnet","Longline"),pch=21,
+#          pt.bg=c("#F8766D", "#00BFC4"),bty='n',cex=1.25)
+#   box()
+#   
+#   #inset Australia
+#   par(fig=c(.35,.95,.35,.95), new = T,mgp=c(.1,.4,0),mai=c(.01,01,.01,.01))
+#   plotMap(worldLLhigh, xlim=c(113,155), ylim=c(-44,-11),col="grey80", axes=F, xlab="", ylab="",
+#           border="black",bg="white",plt = NULL)
+#   
+#   text(122,-24,"Western",col="black",cex=1,font=2.5)
+#   text(122,-27,"Australia",col="black",cex=1,font=2.5)
+#   polygon(x=c(Long.range,rev(Long.range)),
+#           y=c(rep(Lat.range[1],2),rep(Lat.range[2],2)),
+#           col=rgb(.1, .6, .1, alpha = .4),border = "black")
+#   dummy.ln=c(152.8,154.6)
+#   dummy.la=c(-12.03,-10.94)
+#   polygon(x=c(dummy.ln,rev(dummy.ln)),
+#           y=c(rep(dummy.la[1],2),rep(dummy.la[2],2)),
+#           col='white',border = 'white')
+#   lines(x=c(129,129),y=c(-31.64,-15),lty=2)
+#   dev.off()
+#   
+# }  
 
 # 1. Table of number of individuals caught by species and gear
 
@@ -3257,6 +3257,20 @@ D2.good.ones <- D2.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detec
     LL = ifelse(str_detect(DPIRD.code, "(?i)ll"), as.character(DPIRD.code), as.character(NA)),
     GN = ifelse(str_detect(DPIRD.code, "(?i)gn"), as.character(DPIRD.code), as.character(NA))
   )
+
+#### Write csv for in meta but not df and vice versa
+do.check = TRUE
+if(do.check) {
+d1meta <- unique(D1.cam.battery$`DIPRD code`)
+d1df <- as.data.frame(unique(Video.camera1.deck$`DIPRD code`)) %>% separate("unique(Video.camera1.deck$`DIPRD code`)", c("code1", "code2"), sep = "/") %>% unlist()
+write.csv(setdiff(d1meta, d1df), file = "U:/Shark/ParksAustralia_2019/d1.in.meta.but.not.df.csv")
+write.csv(setdiff(d1df, d1meta), file = "U:/Shark/ParksAustralia_2019/d1.in.df.but.not.meta.csv")
+d2meta <- unique(D2.cam.battery$DPIRD.code)
+d2df <- as.data.frame(unique(Video.camera2.deck$DPIRD.code)) %>% separate( "unique(Video.camera2.deck$DPIRD.code)", c("code1", "code2"), sep = "/") %>% unlist()
+write.csv(setdiff(d2meta, d2df), file = "U:/Shark/ParksAustralia_2019/d2.in.meta.but.not.df.csv")
+write.csv(setdiff(d2df, d2meta), file = "U:/Shark/ParksAustralia_2019/d2.in.df.but.not.meta.csv")
+}
+
 # Deck 1  (pointing to deck)                      
 Video.camera1.deck=Video.camera1.deck%>%
   mutate(Code=gsub('\\s+', '',Code),
@@ -3265,8 +3279,8 @@ Video.camera1.deck=Video.camera1.deck%>%
               dplyr::select(COMMON_NAME,Code)%>%
               distinct(Code,.keep_all=T),
             by="Code") %>% 
-  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) #%>%
-  # filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
+  separate(`DIPRD code`, into = c("GN", "LL"), sep = "/", remove = FALSE) %>%
+  filter(LL %in% D1.good.ones$LL|GN %in% D1.good.ones$GN)
 
 Video.camera1.deck=Video.camera1.deck%>%
   rename(DIPRD.code='DIPRD code')%>%
@@ -4693,7 +4707,7 @@ ggplot(hooktype.catchandeffort, aes(hooktype, cpue)) +
   facet_grid(. ~ scientific_name) +
   xlab("Hook Type") + ylab("CPUE") +
   ggtitle("Effect of hook type on mean catch of indicator species")
-
+ggsave("hooktype.png")
 
 # Hook size  
 hooksizecatch <- testDATA %>% filter(!is.na(hooksize)) %>% 
@@ -4714,7 +4728,7 @@ ggplot(hooksize.catchandeffort, aes(hooksize, cpue)) +
   facet_grid(. ~ scientific_name) +
   xlab("Hook Size") + ylab("CPUE") +
   ggtitle("Effect of hook size on mean catch of indicator species")
-
+ggsave("hooksize.png")
 
 # Snood type
 wiretracecatch <- testDATA %>% filter(!is.na(wiretrace)) %>% 
@@ -4735,7 +4749,7 @@ ggplot(wiretrace.catchandeffort, aes(wiretrace, cpue)) +
   facet_grid(. ~ scientific_name) +
   xlab("Hook Size") + ylab("CPUE") +
   ggtitle("Effect of snood type on mean catch of indicator species")
-
+ggsave("snoodtype.png")
 
 # Hook Distance to weight or float
 hookdist <- Video.camera2.deck %>% filter(!is.na(`hook distance to float/weight`)) %>% 
@@ -4750,7 +4764,15 @@ ggplot(hookdist) +
   facet_grid(. ~ taxa) +
   xlab("Relative Distance to Weight or Float") + ylab("n") +
   ggtitle("Hook distance to weight or float")
+ggsave("hookdist.png")
 
+
+# Multivariate
+multivar <- Video.camera2.deck %>% filter(!is.na(`hook distance to float/weight`)) %>% 
+  filter(taxa %in% IndicatorSpecies$scientific_name)
+
+# example
+birds<-read.csv('https://raw.githubusercontent.com/collnell/lab-demo/master/bird_by_fg.csv')
 
 #################################################George############################################
 ## Underwater Caught by species
