@@ -3250,12 +3250,14 @@ write.csv(Drop.out.rate_subsurface,
 D1.good.ones <- D1.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
   mutate(
     LL = ifelse(str_detect(`DIPRD code`, "(?i)ll"), as.character(`DIPRD code`), as.character(NA)),
-    GN = ifelse(str_detect(`DIPRD code`, "(?i)gn"), as.character(`DIPRD code`), as.character(NA))
+    GN = ifelse(str_detect(`DIPRD code`, "(?i)gn"), as.character(`DIPRD code`), as.character(NA)),
+    sheet_no = ifelse(is.na(LL), substr(GN, 3, 8), substr(LL, 3, 8))
   )
 D2.good.ones <- D2.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
   mutate(
     LL = ifelse(str_detect(DPIRD.code, "(?i)ll"), as.character(DPIRD.code), as.character(NA)),
-    GN = ifelse(str_detect(DPIRD.code, "(?i)gn"), as.character(DPIRD.code), as.character(NA))
+    GN = ifelse(str_detect(DPIRD.code, "(?i)gn"), as.character(DPIRD.code), as.character(NA)),
+    sheet_no = ifelse(is.na(LL), substr(GN, 3, 8), substr(LL, 3, 8))
   )
 
 #### Write csv for in meta but not df and vice versa
@@ -3926,6 +3928,7 @@ Video.camera2=Video.camera2.deck%>%
   dplyr::select(DPIRD.code,Code,Period)%>%
   mutate(number=1)%>%
   data.frame%>%
+  separate(DPIRD.code, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
   mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                             Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                             Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
@@ -3939,14 +3942,13 @@ Video.camera2=Video.camera2.deck%>%
          Period=tolower(Period),
          Period=ifelse(Period=='gn','gillnet',
                        ifelse(Period=='ll','longline',Period)),
-         sheet_no=case_when(Period=='gillnet'~str_remove(word(DPIRD.code,1,sep = "\\/"),'GN'),
-                            Period=='longline'~str_remove(word(DPIRD.code,2,sep = "\\/"),'LL')))%>%
+         sheet_no=case_when(Period=='gillnet'~ substr(GN, 3, 8),
+                            Period=='longline'~ substr(LL, 3, 8)))%>%
   left_join(DATA_PA,by='sheet_no')%>%
-  mutate(Data.set="camera",
-         Period=ifelse(Period=='gillnet' & method=='LL','longline',
-                       ifelse(Period=='longline' & method=='GN','gillnet',Period))) %>% 
-  separate(DPIRD.code, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
-  filter(LL %in% D2.good.ones$LL|GN %in% D2.good.ones$GN)
+  mutate(Data.set="camera") %>%
+         #Period=ifelse(Period=='gillnet' & method=='LL','longline',
+                       #ifelse(Period=='longline' & method=='GN','gillnet',Period))) %>% 
+  filter(sheet_no %in% D2.good.ones$sheet_no)
 
 EM.vs.OM.Video.camera2=Video.camera2%>%
   mutate(Code=as.numeric(Code))%>%
@@ -4045,7 +4047,7 @@ fig=ggarrange(p1+rremove("xlab"), p2+rremove("xlab"),
               ncol = 1, nrow = 2,
               common.legend=TRUE)
 annotate_figure(fig,bottom = text_grob("Number of individuals",size = 18))
-# ggsave(le.paste("Camera2_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/Barplot.tiff"),width = 12,height = 12,compression = "lzw")
 
 
 #2. Statistical comparison
@@ -4060,10 +4062,10 @@ Out=fn.compare.obs.cam(CAM=EM.vs.OM.Video.camera2,
 
 #export Raw data comparison
 Out$p.ind
-# ggsave(le.paste("Camera2_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/raw.tiff"),width = 12,height = 10,compression = "lzw")
 
 Out$p.sp
-# ggsave(le.paste("Camera2_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/raw_species.tiff"),width = 12,height = 10,compression = "lzw")
 
 
 #export GLMS
@@ -4082,18 +4084,18 @@ fig=ggarrange(Out$mod_all.species$p+rremove("xlab")+rremove("ylab"),
 annotate_figure(fig,
                 bottom = text_grob("Number of individuals reported by observer",size = 18),
                 left = text_grob("Number of individuals recorded by camera",size = 18,rot = 90))
-# ggsave(le.paste("Camera2_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/GLM_preds.tiff"),width = 8,height = 12,compression = "lzw")
 
 
 #export Percentage difference
 Out$Per.dif
-# ggsave(le.paste("Camera2_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/Percentage.difference.tiff"),width = 10,height = 12,compression = "lzw")
 
-#Out$Per.dif.com
-#ggsave(le.paste("Camera2_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
+Out$Per.dif.com
+ggsave(le.paste("Camera2_v_Observer/Percentage.difference_com.tiff"),width = 10,height = 12,compression = "lzw")
 
 # Out$Per.dif.dis
-# ggsave(le.paste("Camera2_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
+ggsave(le.paste("Camera2_v_Observer/Percentage.difference_disc.tiff"),width = 10,height = 12,compression = "lzw")
 
 
 #export MDS
@@ -4104,8 +4106,8 @@ ggsave(le.paste("Camera2_v_Observer/MDS.tiff"),width = 8,height = 12,compression
 
 
 #export Permanovas
-# write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = T)
-# write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = T)
+write.csv(Out$adon.GN,le.paste("Camera2_v_Observer/Permanova_GN.csv"),row.names = T)
+write.csv(Out$adon.LL,le.paste("Camera2_v_Observer/Permanova_LL.csv"),row.names = T)
 
 
 #---------Gilled or bagged ------------ 
