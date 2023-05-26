@@ -3251,17 +3251,17 @@ D1.good.ones <- D1.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detec
   mutate(
     LL = ifelse(str_detect(`DIPRD code`, "(?i)ll"), as.character(`DIPRD code`), as.character(NA)),
     GN = ifelse(str_detect(`DIPRD code`, "(?i)gn"), as.character(`DIPRD code`), as.character(NA)),
-    sheet_no = ifelse(is.na(LL), substr(GN, 3, 8), substr(LL, 3, 8))
+    sheet_no = ifelse(is.na(LL), as.character(GN), as.character(LL))
   )
 D2.good.ones <- D2.cam.battery %>% filter(str_detect(Full.LL, "(?i)y")|str_detect(Full.GN, "(?i)y")) %>% 
   mutate(
     LL = ifelse(str_detect(DPIRD.code, "(?i)ll"), as.character(DPIRD.code), as.character(NA)),
     GN = ifelse(str_detect(DPIRD.code, "(?i)gn"), as.character(DPIRD.code), as.character(NA)),
-    sheet_no = ifelse(is.na(LL), substr(GN, 3, 8), substr(LL, 3, 8))
+    sheet_no = ifelse(is.na(LL), as.character(GN), as.character(LL))
   )
 
 #### Write csv for in meta but not df and vice versa
-do.check = TRUE
+do.check = FALSE
 if(do.check) {
 d1meta <- unique(D1.cam.battery$`DIPRD code`)
 d1df <- as.data.frame(unique(Video.camera1.deck$`DIPRD code`)) %>% separate("unique(Video.camera1.deck$`DIPRD code`)", c("code1", "code2"), sep = "/") %>% unlist()
@@ -3286,6 +3286,7 @@ Video.camera1.deck=Video.camera1.deck%>%
 Video.camera1 = Video.camera1.deck %>%
                       dplyr::select(DIPRD.code,Code,Period,number,condition)%>%
   data.frame%>%
+  separate(DIPRD.code, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
   mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
                             Code >3.7025e7 & Code<=3.7041e7 ~"Rays",
                             Code >=3.7042e7 & Code<=3.7044e7 ~"Chimaeras",
@@ -3296,11 +3297,14 @@ Video.camera1 = Video.camera1.deck %>%
                             Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
                             Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
                             Code == 10000910 ~"Sponges"),
-         sheet_no=case_when(Period=='gillnet'~ substr(GN, 3, 8),
-                            Period=='longline'~ substr(LL, 3, 8)))%>%
+         sheet_no=case_when(Period=='Gillnet'~ as.character(GN),
+                            Period=='Longline'~ as.character(LL)))%>%
   left_join(DATA_PA,by='sheet_no')%>%
   mutate(Data.set="camera") %>% 
-  filter(sheet_no %in% D1.good.ones$sheet_no)
+  filter(sheet_no %in% D1.good.ones$sheet_no) %>% 
+  mutate(
+    sheet_no = substr(sheet_no, 3, 8)
+  )
 
 #1. Export data for Abbey\
 #### NOTE: made changes to code here because there was a "q" in number, will fix in EMob and remove changes 
@@ -3919,13 +3923,13 @@ Video.camera2=Video.camera2.deck%>%
          Period=tolower(Period),
          Period=ifelse(Period=='gn','gillnet',
                        ifelse(Period=='ll','longline',Period)),
-         sheet_no=case_when(Period=='gillnet'~ substr(GN, 3, 8),
-                            Period=='longline'~ substr(LL, 3, 8)))%>%
+         sheet_no=ifelse(Period=='gillnet',  as.character(GN),as.character(LL)))%>%
   left_join(DATA_PA,by='sheet_no')%>%
   mutate(Data.set="camera") %>%
-         #Period=ifelse(Period=='gillnet' & method=='LL','longline',
-                       #ifelse(Period=='longline' & method=='GN','gillnet',Period))) %>% 
-  filter(sheet_no %in% D2.good.ones$sheet_no)
+  filter(sheet_no %in% D2.good.ones$sheet_no) %>% 
+  mutate(
+    sheet_no = substr(sheet_no, 3,8)
+  )
 
 EM.vs.OM.Video.camera2=Video.camera2%>%
   mutate(Code=as.numeric(Code))%>%
