@@ -3276,15 +3276,17 @@ write.csv(setdiff(d2df, d2meta), file = "U:/Shark/ParksAustralia_2019/d2.in.df.b
 # Deck 1  (pointing to deck)                      
 Video.camera1.deck=Video.camera1.deck%>%
   mutate(Code=gsub('\\s+', '',Code),
-         Code=as.numeric(Code))%>%
+         Code=as.numeric(Code),
+         method = case_when(Period=='Gillnet'~ 'GN',
+                            Period=='Longline' ~ 'LL'))%>%
   left_join(All.species.names%>%
               dplyr::select(COMMON_NAME,Code)%>%
               distinct(Code,.keep_all=T),
             by="Code") %>% 
   rename(DIPRD.code='DIPRD code')
 
-Video.camera1 = Video.camera1.deck %>%
-                      dplyr::select(DIPRD.code,Code,Period,number,condition)%>%
+Video.camera1 <- Video.camera1.deck %>%
+                      dplyr::select(DIPRD.code,Code,Period,number,condition) %>% 
   data.frame%>%
   separate(DIPRD.code, into = c("GN", "LL"), sep = "/", remove = FALSE) %>% 
   mutate(SP.group=case_when(Code >=3.7e7 & Code<=3.70241e7 ~"Sharks",
@@ -3297,14 +3299,16 @@ Video.camera1 = Video.camera1.deck %>%
                             Code >=1.1e7 & Code<1.2e7 ~"Rock/reef structure",
                             Code >=5.4e7 & Code<5.49e7 ~"Macroalgae",
                             Code == 10000910 ~"Sponges"),
-         sheet_no=case_when(Period=='Gillnet'~ as.character(GN),
-                            Period=='Longline'~ as.character(LL)))%>%
-  left_join(DATA_PA,by='sheet_no')%>%
-  mutate(Data.set="camera") %>% 
-  filter(sheet_no %in% D1.good.ones$sheet_no) %>% 
-  mutate(
-    sheet_no = substr(sheet_no, 3, 8)
-  )
+         Period=tolower(Period),
+         sheet_no=case_when(Period == 'gillnet'~ substr(GN, 3, 8),
+                            Period == 'longline'~ substr(LL, 3, 8))) %>% 
+  left_join(DATA_PA,by = 'sheet_no')%>%
+  mutate(Data.set = "camera",
+         Period = ifelse(Period == 'gillnet' & method == 'LL','longline',
+                       ifelse(Period == 'longline' & method == 'GN','gillnet', Period))) %>% 
+  mutate(filter.sheet_no = case_when(str_detect(Period, "(?i)long") ~ as.character(LL),
+                                    str_detect(Period, "(?i)gill") ~ as.character(GN))) %>% 
+  filter(filter.sheet_no %in% D1.good.ones$sheet_no) 
 
 #1. Export data for Abbey\
 #### NOTE: made changes to code here because there was a "q" in number, will fix in EMob and remove changes 
